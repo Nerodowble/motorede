@@ -233,3 +233,26 @@ web fica atrás de HTTPS de verdade.
 
 O hook `useVoiceConnection` agora detecta a situação e explica o que fazer, em vez de
 deixar o erro críptico vazar.
+
+---
+
+## 11. Confirmado na prática: web não sustenta voz em segundo plano
+
+**Status:** `decidido` — verificado com teste real, não é mais suposição
+**Data:** 2026-09-18
+
+Primeiro teste de voz real (PC ↔ navegador do celular, pelo LiveKit local):
+**a voz funcionou.** Ao bloquear a tela do celular, o áudio parou imediatamente.
+
+**Causa:** com a tela bloqueada o navegador suspende a página, e a captura do
+microfone para junto. O truque de áudio silencioso + MediaSession que já existe em
+`audioEngine.ts` mantém a **reprodução** viva em segundo plano — não mantém a
+**captura**. Não existe contorno no navegador.
+
+**O que isso fecha:**
+- A arquitetura de rede está validada: servidor, token, firewall, codec e a conexão
+  entre dois aparelhos funcionam.
+- A hipótese que justificava o app nativo está confirmada por medição.
+
+Ver [ideia 8](#8-arquitetura-local-first) e a decisão de direção do produto: o app é
+nativo, a web fica como painel sem voz.
