@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, Suspense, lazy } from 'react';
-import { UserRole, UserProfile, Motorcycle, ConsumableStatus, SOSAlert, VoiceRoom, Coupon, MaintenanceRecord, EmergencyType } from './types';
+import { UserRole, UserProfile, Motorcycle, ConsumableStatus, SOSAlert, VoiceRoom, Coupon, MaintenanceRecord, EmergencyType } from '@motorede/shared';
 import { storageService } from './services/storage';
 import { GeoPoint, geolocationService, DEFAULT_USER_COORDS } from './services/geolocation';
 import { audioEngine } from './services/audioEngine';

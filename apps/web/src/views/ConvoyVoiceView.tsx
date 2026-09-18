@@ -19,7 +19,7 @@ import {
   Smartphone,
   Sparkles,
 } from 'lucide-react';
-import { VoiceRoom, VoiceParticipant } from '../types';
+import { VoiceRoom, VoiceParticipant } from '@motorede/shared';
 import { audioEngine } from '../services/audioEngine';
 import { getGoogleMapsNavigationUrl, getWazeNavigationUrl } from '../services/geolocation';
 

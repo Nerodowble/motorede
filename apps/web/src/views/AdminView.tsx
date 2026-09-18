@@ -11,7 +11,7 @@ import {
   AlertTriangle,
   BadgeCheck,
 } from 'lucide-react';
-import { PartnerShop, SOSAlert } from '../types';
+import { PartnerShop, SOSAlert } from '@motorede/shared';
 import { storageService } from '../services/storage';
 
 interface AdminViewProps {

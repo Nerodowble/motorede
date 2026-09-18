@@ -17,7 +17,7 @@ import {
   Fuel,
   Bike,
 } from 'lucide-react';
-import { Motorcycle, ConsumableStatus, SOSAlert, VoiceRoom } from '../types';
+import { Motorcycle, ConsumableStatus, SOSAlert, VoiceRoom } from '@motorede/shared';
 import { GeoPoint, getGoogleMapsNavigationUrl, getWazeNavigationUrl } from '../services/geolocation';
 import { ActiveTab } from '../components/Navigation';
 

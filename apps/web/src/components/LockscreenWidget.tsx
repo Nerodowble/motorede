@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Mic, MicOff, Volume2, ShieldAlert, Radio, Lock, Unlock, Compass } from 'lucide-react';
 import { audioEngine } from '../services/audioEngine';
-import { VoiceRoom } from '../types';
+import { VoiceRoom } from '@motorede/shared';
 import { GeoPoint } from '../services/geolocation';
 
 interface LockscreenWidgetProps {

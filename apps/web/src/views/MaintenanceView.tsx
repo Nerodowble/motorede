@@ -16,7 +16,7 @@ import {
   Filter,
   Settings2,
 } from 'lucide-react';
-import { Motorcycle, ConsumableStatus, Coupon, ConsumableCategory } from '../types';
+import { Motorcycle, ConsumableStatus, Coupon, ConsumableCategory } from '@motorede/shared';
 
 interface MaintenanceViewProps {
   motorcycle: Motorcycle;

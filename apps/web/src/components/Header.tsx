@@ -12,7 +12,7 @@ import {
   LogIn,
   Settings2,
 } from 'lucide-react';
-import { UserRole, UserProfile } from '../types';
+import { UserRole, UserProfile } from '@motorede/shared';
 import { useOnlineStatus } from '../hooks/usePWAInstall';
 
 interface HeaderProps {

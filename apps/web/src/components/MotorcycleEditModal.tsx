@@ -12,7 +12,7 @@ import {
   Clock,
   ShieldCheck,
 } from 'lucide-react';
-import { Motorcycle, ConsumableCategory } from '../types';
+import { Motorcycle, ConsumableCategory } from '@motorede/shared';
 
 interface MotorcycleEditModalProps {
   isOpen: boolean;

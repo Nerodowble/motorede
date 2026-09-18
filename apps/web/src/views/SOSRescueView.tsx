@@ -17,7 +17,7 @@ import {
   ArrowRight,
   ExternalLink,
 } from 'lucide-react';
-import { SOSAlert, EmergencyType, SOSVolunteer } from '../types';
+import { SOSAlert, EmergencyType, SOSVolunteer } from '@motorede/shared';
 import { GeoPoint, calculateDistanceKm, formatDistance, getGoogleMapsNavigationUrl, getWazeNavigationUrl } from '../services/geolocation';
 import { storageService } from '../services/storage';
 

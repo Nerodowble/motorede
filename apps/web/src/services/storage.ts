@@ -7,10 +7,13 @@ import {
   ShopPartner,
   Coupon,
   CommunitySymptom,
-  DiagnosticDecisionStep,
   UserRole,
   UserProfile,
-} from '../types';
+  ConsumableCategory,
+  SOSVolunteer,
+  DiagnosticNode,
+} from '@motorede/shared';
+import { calculateConsumablesStatus } from '@motorede/shared';
 import { calculateDistanceKm } from './geolocation';
 
 export interface StoredUser extends UserProfile {
@@ -448,376 +451,10 @@ const DEFAULT_COMMUNITY_SYMPTOMS: CommunitySymptom[] = [
   },
 ];
 
-// Diagnostic Decision Tree definition
-export const DIAGNOSTIC_DECISION_TREE: Record<string, DiagnosticDecisionStep> = {
-  root: {
-    id: 'root',
-    question: 'Qual é o sintoma ou área com mau funcionamento na sua moto?',
-    options: [
-      { label: 'Motor não liga ou engasga', nextStepId: 'motor_engine' },
-      { label: 'Freios ou vibração no guidão / rodas', nextStepId: 'brakes_vibration' },
-      { label: 'Pane Elétrica ou Bateria descarregada', nextStepId: 'electrical' },
-      { label: 'Transmissão, corrente estalando ou embreagem', nextStepId: 'transmission' },
-      { label: 'Superaquecimento / Temperatura alta', nextStepId: 'cooling' },
-    ],
-  },
-  motor_engine: {
-    id: 'motor_engine',
-    question: 'Ao acionar o botão de partida, o que ocorre?',
-    options: [
-      {
-        label: 'O motor de partida gira rápido, mas a moto não pega fogo',
-        nextStepId: 'starter_turns_no_fire',
-      },
-      {
-        label: 'Não gira nada (apenas um "click" ou silêncio total)',
-        nextStepId: 'starter_silent',
-      },
-      {
-        label: 'Liga, mas engasga em alta rotação ou morre na lenta',
-        nextStepId: 'engine_stuttering',
-      },
-    ],
-  },
-  starter_silent: {
-    id: 'starter_silent',
-    question: 'O painel e os faróis acendem forte quando você liga a chave?',
-    options: [
-      {
-        label: 'Sim, farol acende normal, mas nada acontece na partida',
-        result: {
-          title: 'Interruptor Corta-Corrente ou Sensor de Cavalete / Neutro',
-          category: 'Elétrica de Segurança',
-          probableCause: 'Interruptor vermelho "Killswitch" desativado, sensor do cavalete lateral travado com sujeira ou sensor da manete de embreagem desconectado.',
-          urgency: 'low',
-          roadsideCheckInstructions: [
-            '1. Verifique se o botão vermelho corta-corrente no punho direito está na posição de ligar.',
-            '2. Coloque a moto estritamente no Ponto Neutro (luz N verde acesa).',
-            '3. Recolha o cavalete lateral e aperte a embreagem até o final.',
-            '4. Se não resolver, dê leves batidinhas no sensor do cavalete com a chave de fenda.',
-          ],
-          estimatedCostRange: 'R$ 0 (ajuste simples) a R$ 120 (troca do sensor)',
-          suggestedAction: 'Verificação rápida de segurança no local antes de acionar guincho.',
-        },
-      },
-      {
-        label: 'Não, o painel apaga ou pisca fraco ao apertar o botão',
-        result: {
-          title: 'Bateria com Carga Baixa ou Polo Frouxo',
-          category: 'Bateria / Elétrica',
-          probableCause: 'Tensão abaixo de 11.8V, terminais da bateria oxidados ou sulfatados, ou fuga de corrente por rastreador/alarme.',
-          urgency: 'warning',
-          roadsideCheckInstructions: [
-            '1. Remova o banco e verifique se os parafusos dos bornes positivo e negativo estão bem firmes.',
-            '2. Se tiver cabos de chupeta, faça ligação com bateria de outra moto (nunca com motor de carro ligado).',
-            '3. Em motos com injeção eletrônica, evite empurrar "no tranco" para não danificar o catalisador ou queimar a ECU.',
-          ],
-          estimatedCostRange: 'R$ 50 (recarga) a R$ 380 (bateria nova Yuasa/Moura)',
-          suggestedAction: 'Recarga ou substituição da bateria.',
-        },
-      },
-    ],
-  },
-  starter_turns_no_fire: {
-    id: 'starter_turns_no_fire',
-    question: 'Você escuta o zumbido fino de 2 segundos da bomba de combustível ao virar a chave?',
-    options: [
-      {
-        label: 'Sim, escuto o zumbido da injeção normalmente',
-        result: {
-          title: 'Falha de Ignição (Vela ou Cachimbo) ou Combustível Adulterado',
-          category: 'Ignição & Injeção',
-          probableCause: 'Falta de centelha nas velas de ignição, cachimbo solto ou combustível adulterado com excesso de água/álcool.',
-          urgency: 'warning',
-          roadsideCheckInstructions: [
-            '1. Pressione firmemente o cachimbo (supressor de ruído) da vela contra o cabeçote.',
-            '2. Verifique se há cheiro forte de gasolina crua saindo pelo escapamento.',
-            '3. Se a moto ficou parada por meses, o combustível pode ter envelhecido na flauta.',
-          ],
-          estimatedCostRange: 'R$ 60 (jogo de velas) a R$ 250 (descarbonização)',
-          suggestedAction: 'Checar velas e drenar gasolina velha se aplicável.',
-        },
-      },
-      {
-        label: 'Não, silêncio total, a bomba não injeta nada',
-        result: {
-          title: 'Fusível da Injeção / Bomba ou Relé Queimado',
-          category: 'Alimentação & Fusíveis',
-          probableCause: 'Fusível principal de 15A/20A da injeção eletrônica rompido ou relé principal travado.',
-          urgency: 'warning',
-          roadsideCheckInstructions: [
-            '1. Abra a caixa de fusíveis sob o banco ou lateral.',
-            '2. Localize o fusível marcado como "FI", "IGN" ou "FUEL PUMP".',
-            '3. Substitua pelo fusível reserva (SPARE) do mesmo valor em amperes.',
-          ],
-          estimatedCostRange: 'R$ 5 (fusível) a R$ 90 (relé original)',
-          suggestedAction: 'Troca imediata do fusível de reserva.',
-        },
-      },
-    ],
-  },
-  engine_stuttering: {
-    id: 'engine_stuttering',
-    question: 'Quando o motor engasga?',
-    options: [
-      {
-        label: 'Engasga em altas rotações ou em aceleração forte na rodovia',
-        result: {
-          title: 'Filtro de Combustível Entupido ou Pré-Filtro da Bomba',
-          category: 'Alimentação',
-          probableCause: 'Refil da bomba de combustível ou pré-filtro obstruído por sujeira no tanque, não entregando vazão suficiente em alta demanda.',
-          urgency: 'warning',
-          roadsideCheckInstructions: [
-            '1. Evite acelerar a fundo e pilote em marcha mais alta e rotação baixa.',
-            '2. Não deixe o tanque entrar na reserva para evitar superaquecimento da bomba.',
-          ],
-          estimatedCostRange: 'R$ 80 a R$ 220',
-          suggestedAction: 'Substituição do pré-filtro e limpeza do tanque.',
-        },
-      },
-      {
-        label: 'Morre na marcha lenta ou rotação oscila muito parada no semáforo',
-        result: {
-          title: 'Atuador de Marcha Lenta ou Entrada Falsa de Ar',
-          category: 'Corpo de Borboletas (TBI)',
-          probableCause: 'Válvula IACV (atuador de marcha lenta) suja ou coletor de admissão com trinca ressecada puxando ar não medido.',
-          urgency: 'low',
-          roadsideCheckInstructions: [
-            '1. Dê leves toques no acelerador para manter o motor ativo nas paradas.',
-            '2. Verifique visualmente se a borracha do coletor está rachada.',
-          ],
-          estimatedCostRange: 'R$ 90 (limpeza TBI) a R$ 180',
-          suggestedAction: 'Limpeza e equalização do corpo de borboleta.',
-        },
-      },
-    ],
-  },
-  brakes_vibration: {
-    id: 'brakes_vibration',
-    question: 'Qual é o tipo de sintoma no conjunto de freio e rodas?',
-    options: [
-      {
-        label: 'Ruído agudo de ferro raspando ao acionar a manete ou pedal de freio',
-        result: {
-          title: 'Pastilha de Freio no Limite Metal-com-Metal',
-          category: 'Sistema de Freio',
-          probableCause: 'Material de atrito da pastilha 100% desgastado. A placa de aço está riscando o disco de freio.',
-          urgency: 'critical',
-          roadsideCheckInstructions: [
-            '1. PERIGO: Pare de pilotar de forma agressiva imediatamente.',
-            '2. A distância de frenagem pode aumentar em mais de 60%.',
-            '3. Dirija-se imediatamente à oficina mais próxima em velocidade reduzida usando freio motor.',
-          ],
-          estimatedCostRange: 'R$ 85 (pastilhas) a R$ 450 (se danificar o disco)',
-          suggestedAction: 'Troca imediata de pastilhas antes de condenar o disco de freio.',
-        },
-      },
-      {
-        label: 'Guidão trepida ou "shimmy" em velocidades acima de 70 km/h',
-        result: {
-          title: 'Roda Desbalanceada, Pneu Deformado ou Calibragem Muito Baixa',
-          category: 'Rodas & Ciclística',
-          probableCause: 'Chumbo de balanceamento solto, pneu dianteiro "escamado" ou deformado, ou pressão abaixo de 24 PSI.',
-          urgency: 'warning',
-          roadsideCheckInstructions: [
-            '1. Pare no primeiro posto de combustível e calibre os pneus conforme a etiqueta na balança da moto (ex: 33 dianteiro / 36 traseiro).',
-            '2. Verifique se o aro da roda tem algum amassado por impacto de buraco.',
-          ],
-          estimatedCostRange: 'R$ 30 (balanceamento) a R$ 90 (desempeno de aro)',
-          suggestedAction: 'Calibragem imediata e balanceamento de rodas.',
-        },
-      },
-    ],
-  },
-  electrical: {
-    id: 'electrical',
-    question: 'Qual é a falha elétrica apresentada?',
-    options: [
-      {
-        label: 'A bateria descarrega após algumas horas de viagem mesmo com moto rodando',
-        result: {
-          title: 'Falha no Estator ou Regulador Retificador de Voltagem',
-          category: 'Sistema de Carga',
-          probableCause: 'O gerador elétrico (estator) queimou uma das fases ou o retificador superaqueceu, não recarregando a bateria enquanto roda.',
-          urgency: 'critical',
-          roadsideCheckInstructions: [
-            '1. Desligue todos os acessórios auxiliares (faróis de milha, carregadores USB, manoplas aquecidas).',
-            '2. Se a moto apagar, não terá carga nem para o painel ou bomba.',
-            '3. Procure um autoelétrico de motos antes que a moto desligue em movimento.',
-          ],
-          estimatedCostRange: 'R$ 220 a R$ 680 (retificador/estator novo)',
-          suggestedAction: 'Teste com multímetro: tensão na bateria com motor ligado a 5.000 RPM deve ser entre 13.8V e 14.5V.',
-        },
-      },
-    ],
-  },
-  transmission: {
-    id: 'transmission',
-    question: 'Qual é a anomalia na transmissão?',
-    options: [
-      {
-        label: 'Estalos secos "tlec-tlec" na aceleração ou corrente batendo na balança',
-        result: {
-          title: 'Corrente de Transmissão Frouxa ou Travada por Elos Gripados',
-          category: 'Conjunto de Transmissão',
-          probableCause: 'Folga da corrente acima do limite recomendado (ideal é 25-35mm) ou falta grave de lubrificação causando elos duros.',
-          urgency: 'warning',
-          roadsideCheckInstructions: [
-            '1. Se a corrente pular dente na coroa, ela pode travar a roda traseira.',
-            '2. Ajuste a folga nos esticadores da balança usando a chave do estojo original.',
-            '3. Aplique graxa ou lubrificante spray apropriado para correntes.',
-          ],
-          estimatedCostRange: 'R$ 25 (regulagem e lubrificação) a R$ 420 (kit relação completo)',
-          suggestedAction: 'Ajuste imediato da folga da corrente e lubrificação.',
-        },
-      },
-    ],
-  },
-  cooling: {
-    id: 'cooling',
-    question: 'Qual é o sintoma de temperatura?',
-    options: [
-      {
-        label: 'Luz vermelha de temperatura acesa ou ventoinha disparada o tempo todo',
-        result: {
-          title: 'Nível Baixo de Líquido de Arrefecimento ou Radiador Obstruído',
-          category: 'Sistema de Refrigeração',
-          probableCause: 'Vazamento em mangueiras, tampa do radiador perdendo pressão ou colmeia do radiador bloqueada por barro/insetos.',
-          urgency: 'critical',
-          roadsideCheckInstructions: [
-            '1. Desligue o motor imediatamente para evitar empenar o cabeçote ou queimar a junta.',
-            '2. NUNCA abra a tampa do radiador com o motor quente (risco grave de queimadura por vapor d\'água sob pressão).',
-            '3. Verifique o reservatório de expansão e complete apenas com líquido pronto para uso ou água destilada em emergência.',
-          ],
-          estimatedCostRange: 'R$ 45 (líquido Motul/Honda) a R$ 350',
-          suggestedAction: 'Parada imediata para resfriamento do motor.',
-        },
-      },
-    ],
-  },
-};
-
-/**
- * Calculates wear of consumables for the given motorcycle with real user parameters
- */
-export function calculateConsumablesStatus(motorcycle: Motorcycle): ConsumableStatus[] {
-  const currentKm = motorcycle.currentKm;
-
-  // Retrieve user custom intervals/last changes if stored
-  let customOverrides: Record<string, { intervalKm?: number; lastChangedKm?: number; lastChangedDate?: string }> = {};
-  if (typeof window !== 'undefined') {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEYS.CONSUMABLES_CUSTOM);
-      if (raw) customOverrides = JSON.parse(raw);
-    } catch {
-      // fallback
-    }
-  }
-
-  // Riding style degradation multiplier:
-  // Aggressive riding wears chain, oil, brakes faster; calm riding extends life
-  let wearMultiplier = 1.0;
-  if (motorcycle.ridingStyle === 'aggressive') wearMultiplier = 1.25;
-  else if (motorcycle.ridingStyle === 'commuter_heavy') wearMultiplier = 1.15;
-  else if (motorcycle.ridingStyle === 'calm') wearMultiplier = 0.9;
-
-  const baseConfig: {
-    category: import('../types').ConsumableCategory;
-    name: string;
-    intervalKm: number;
-    intervalMonths: number;
-    lastChangedKm: number;
-    lastChangedDate: string;
-  }[] = [
-    {
-      category: 'engine_oil',
-      name: 'Óleo do Motor & Filtro',
-      intervalKm: motorcycle.customIntervals?.engine_oil || 5000,
-      intervalMonths: 6,
-      lastChangedKm: Math.max(0, currentKm - 850),
-      lastChangedDate: '2026-07-10',
-    },
-    {
-      category: 'transmission_chain',
-      name: 'Kit Transmissão (Relação)',
-      intervalKm: motorcycle.customIntervals?.transmission_chain || 25000,
-      intervalMonths: 24,
-      lastChangedKm: Math.max(0, currentKm - 24000),
-      lastChangedDate: '2024-01-10',
-    },
-    {
-      category: 'brakes',
-      name: 'Pastilhas de Freio (Diant/Tras)',
-      intervalKm: motorcycle.customIntervals?.brakes || 12000,
-      intervalMonths: 18,
-      lastChangedKm: Math.max(0, currentKm - 3350),
-      lastChangedDate: '2026-05-18',
-    },
-    {
-      category: 'tires',
-      name: 'Pneus (Dianteiro & Traseiro)',
-      intervalKm: motorcycle.customIntervals?.tires || 15000,
-      intervalMonths: 36,
-      lastChangedKm: Math.max(0, currentKm - 10650),
-      lastChangedDate: '2025-10-05',
-    },
-    {
-      category: 'air_filter_spark_plug',
-      name: 'Filtro de Ar & Velas de Ignição',
-      intervalKm: motorcycle.customIntervals?.air_filter_spark_plug || 12000,
-      intervalMonths: 18,
-      lastChangedKm: Math.max(0, currentKm - 10650),
-      lastChangedDate: '2025-10-05',
-    },
-    {
-      category: 'battery',
-      name: 'Bateria 12V e Sistema de Carga',
-      intervalKm: motorcycle.customIntervals?.battery || 40000,
-      intervalMonths: 30,
-      lastChangedKm: 0,
-      lastChangedDate: '2024-01-10',
-    },
-  ];
-
-  return baseConfig.map((item) => {
-    const override = customOverrides[item.category];
-    const effectiveInterval = override?.intervalKm || item.intervalKm;
-    const effectiveLastChangedKm = override?.lastChangedKm !== undefined ? override.lastChangedKm : item.lastChangedKm;
-    const effectiveLastChangedDate = override?.lastChangedDate || item.lastChangedDate;
-
-    const kmSinceChange = Math.max(0, currentKm - effectiveLastChangedKm);
-    const adjustedWear = kmSinceChange * wearMultiplier;
-    const wearRatio = Math.min(1.2, adjustedWear / effectiveInterval);
-    const wearPercentage = Math.min(100, Math.round(wearRatio * 100));
-    const remainingKm = Math.max(0, Math.round(effectiveInterval - adjustedWear));
-
-    // Calculate remaining days based on user's real monthly average km
-    const avgMonthly = motorcycle.avgKmPerMonth > 0 ? motorcycle.avgKmPerMonth : 1000;
-    const dailyKm = avgMonthly / 30;
-    const remainingDays = Math.max(0, Math.round(remainingKm / dailyKm));
-
-    let status: 'optimal' | 'warning' | 'critical' = 'optimal';
-    if (wearPercentage >= 90 || remainingKm <= 500) {
-      status = 'critical';
-    } else if (wearPercentage >= 75 || remainingKm <= 1500) {
-      status = 'warning';
-    }
-
-    return {
-      id: `cons-${item.category}`,
-      category: item.category,
-      name: item.name,
-      intervalKm: effectiveInterval,
-      intervalMonths: item.intervalMonths,
-      lastChangedKm: effectiveLastChangedKm,
-      lastChangedDate: effectiveLastChangedDate,
-      currentWearPercentage: wearPercentage,
-      estimatedRemainingKm: remainingKm,
-      estimatedRemainingDays: remainingDays,
-      status,
-    };
-  });
-}
+// A árvore de diagnóstico e o cálculo de desgaste vivem em @motorede/shared,
+// para serem reaproveitados pelo app mobile e pelo backend.
+// Reexportados aqui para não quebrar quem já importava de services/storage.
+export { DIAGNOSTIC_DECISION_TREE, calculateConsumablesStatus } from '@motorede/shared';
 
 /**
  * Storage Service Helper
@@ -1045,7 +682,7 @@ export const storageService = {
   },
 
   updateConsumableItem(
-    category: import('../types').ConsumableCategory,
+    category: ConsumableCategory,
     details: { lastChangedKm?: number; lastChangedDate?: string; intervalKm?: number }
   ): void {
     if (typeof window === 'undefined') return;
@@ -1138,7 +775,7 @@ export const storageService = {
     return newAlert;
   },
 
-  respondToSOS(alertId: string, volunteer: import('../types').SOSVolunteer): SOSAlert | null {
+  respondToSOS(alertId: string, volunteer: SOSVolunteer): SOSAlert | null {
     const alerts = this.getSOSAlerts();
     const alert = alerts.find((a) => a.id === alertId);
     if (!alert) return null;
@@ -1369,13 +1006,13 @@ export const storageService = {
     if (currentKm !== undefined) {
       bike.currentKm = currentKm;
     }
-    return calculateConsumablesStatus(bike);
+    return calculateConsumablesStatus(bike, this.getCustomConsumables());
   },
 
   calculateConsumablesWear(km: number): ConsumableStatus[] {
     const bike = this.getMotorcycle();
     bike.currentKm = km;
-    return calculateConsumablesStatus(bike);
+    return calculateConsumablesStatus(bike, this.getCustomConsumables());
   },
 
   saveSOSAlerts(alerts: SOSAlert[]): void {
@@ -1412,7 +1049,7 @@ export const storageService = {
     }
   },
 
-  getDiagnosticTree(): Record<string, import('../types').DiagnosticNode> {
+  getDiagnosticTree(): Record<string, DiagnosticNode> {
     return {
       'diag-root': {
         id: 'diag-root',

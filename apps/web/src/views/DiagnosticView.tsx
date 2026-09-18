@@ -12,7 +12,7 @@ import {
   Flame,
   Wrench,
 } from 'lucide-react';
-import { DiagnosticNode } from '../types';
+import { DiagnosticNode } from '@motorede/shared';
 import { storageService } from '../services/storage';
 
 interface DiagnosticViewProps {

@@ -17,7 +17,7 @@ import {
   X,
   Sparkles,
 } from 'lucide-react';
-import { UserRole, UserProfile } from '../types';
+import { UserRole, UserProfile } from '@motorede/shared';
 import { storageService } from '../services/storage';
 
 interface AuthModalProps {

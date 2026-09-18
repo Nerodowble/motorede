@@ -11,7 +11,7 @@ import {
   BookOpenCheck,
   Search,
 } from 'lucide-react';
-import { Coupon, ConsumableCategory, PartnerShop, UserProfile } from '../types';
+import { Coupon, ConsumableCategory, PartnerShop, UserProfile } from '@motorede/shared';
 
 interface PartnerShopViewProps {
   currentUser?: UserProfile | null;

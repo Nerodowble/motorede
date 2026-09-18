@@ -15,7 +15,7 @@ import {
   ChevronRight,
   Bike,
 } from 'lucide-react';
-import { UserRole } from '../types';
+import { UserRole } from '@motorede/shared';
 
 export type ActiveTab =
   | 'dashboard'

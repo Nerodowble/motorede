@@ -17,7 +17,7 @@ import {
   Printer,
   Settings2,
 } from 'lucide-react';
-import { Motorcycle, MaintenanceRecord, ConsumableCategory } from '../types';
+import { Motorcycle, MaintenanceRecord, ConsumableCategory } from '@motorede/shared';
 
 interface PassportViewProps {
   motorcycle: Motorcycle;
