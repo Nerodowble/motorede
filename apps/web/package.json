@@ -11,12 +11,13 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
-    "@motorede/shared": "*",
     "@google/genai": "^2.4.0",
+    "@motorede/shared": "*",
     "@tailwindcss/vite": "^4.1.14",
     "@vitejs/plugin-react": "^5.0.4",
     "dotenv": "^17.2.3",
     "express": "^4.21.2",
+    "livekit-client": "^2.22.3",
     "lucide-react": "^0.546.0",
     "motion": "^12.23.24",
     "react": "^19.0.1",
@@ -31,6 +32,7 @@
     "@types/ws": "^8.18.1",
     "autoprefixer": "^10.4.21",
     "esbuild": "^0.25.0",
+    "livekit-server-sdk": "^2.19.0",
     "tailwindcss": "^4.1.14",
     "tsx": "^4.21.0",
     "typescript": "~5.8.2",

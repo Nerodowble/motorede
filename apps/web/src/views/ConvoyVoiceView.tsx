@@ -22,6 +22,7 @@ import {
 import { VoiceRoom, VoiceParticipant } from '@motorede/shared';
 import { audioEngine } from '../services/audioEngine';
 import { getGoogleMapsNavigationUrl, getWazeNavigationUrl } from '../services/geolocation';
+import { useVoiceConnection } from '../hooks/useVoiceConnection';
 
 interface ConvoyVoiceViewProps {
   voiceRoom: VoiceRoom;
@@ -46,6 +47,28 @@ export const ConvoyVoiceView: React.FC<ConvoyVoiceViewProps> = ({
   const [showEditDestModal, setShowEditDestModal] = useState(false);
   const [newDestName, setNewDestName] = useState(voiceRoom.destinationName || '');
   const [isMicHardwareActive, setIsMicHardwareActive] = useState(false);
+
+  // Conexão de voz real contra o servidor LiveKit.
+  const voice = useVoiceConnection();
+  const isLive = voice.status === 'connected' || voice.status === 'reconnecting';
+
+  // Enquanto não há conexão real, a tela segue mostrando os participantes de
+  // demonstração. Conectado, passa a refletir quem está de fato na sala.
+  const displayParticipants: VoiceParticipant[] = isLive
+    ? voice.participants
+    : voiceRoom.participants;
+
+  const handleToggleLive = async () => {
+    if (isLive) {
+      await voice.disconnect();
+      return;
+    }
+    await voice.connect({
+      roomCode: voiceRoom.code,
+      identity: `piloto-${Math.random().toString(36).slice(2, 8)}`,
+      displayName: 'Você (Piloto)',
+    });
+  };
 
   // Initialize or update background session on mount or room change
   useEffect(() => {
@@ -140,6 +163,80 @@ export const ConvoyVoiceView: React.FC<ConvoyVoiceViewProps> = ({
 
   return (
     <div className="space-y-4 pb-28 sm:pb-24 max-w-4xl mx-auto px-3 sm:px-4 py-3">
+      {/* Conexão de voz real (LiveKit) */}
+      <div className="rounded-2xl bg-slate-900/80 border border-slate-800 p-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <span
+              className={`w-2.5 h-2.5 rounded-full shrink-0 ${
+                voice.status === 'connected'
+                  ? 'bg-emerald-400 animate-pulse'
+                  : voice.status === 'connecting' || voice.status === 'reconnecting'
+                    ? 'bg-amber-400 animate-pulse'
+                    : voice.status === 'error'
+                      ? 'bg-red-500'
+                      : 'bg-slate-600'
+              }`}
+            />
+            <div className="min-w-0">
+              <p className="text-xs font-bold text-slate-200">
+                {voice.status === 'connected' && 'Voz ao vivo — conectado ao servidor'}
+                {voice.status === 'connecting' && 'Conectando...'}
+                {voice.status === 'reconnecting' && 'Reconectando...'}
+                {voice.status === 'error' && 'Falha ao conectar'}
+                {voice.status === 'disconnected' && 'Voz ao vivo — desconectado'}
+              </p>
+              <p className="text-[11px] text-slate-400 truncate">
+                {voice.error
+                  ? voice.error
+                  : isLive
+                    ? `Canal ${voiceRoom.code} • microfone ${voice.isMuted ? 'mudo' : 'aberto'}`
+                    : 'Lista abaixo em modo demonstração até conectar.'}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            {isLive && (
+              <button
+                onClick={() => voice.setMuted(!voice.isMuted)}
+                className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition active:scale-95"
+              >
+                {voice.isMuted ? (
+                  <MicOff className="w-4 h-4 text-red-400" />
+                ) : (
+                  <Mic className="w-4 h-4 text-emerald-400" />
+                )}
+                {voice.isMuted ? 'Reativar' : 'Mudo'}
+              </button>
+            )}
+            <button
+              onClick={handleToggleLive}
+              disabled={voice.status === 'connecting'}
+              className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition active:scale-95 disabled:opacity-50 ${
+                isLive
+                  ? 'bg-red-500/15 text-red-300 border border-red-500/30 hover:bg-red-500/25'
+                  : 'bg-amber-500 text-slate-950 hover:bg-amber-400'
+              }`}
+            >
+              <Signal className="w-4 h-4" />
+              {isLive ? 'Sair do canal' : 'Entrar no canal'}
+            </button>
+          </div>
+        </div>
+
+        {/* Navegadores bloqueiam áudio até um gesto do usuário. */}
+        {voice.needsAudioUnlock && (
+          <button
+            onClick={() => voice.unlockAudio()}
+            className="mt-3 w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-amber-500/15 text-amber-300 border border-amber-500/30 text-xs font-bold hover:bg-amber-500/25 transition"
+          >
+            <Volume2 className="w-4 h-4" />
+            Tocar para liberar o áudio
+          </button>
+        )}
+      </div>
+
       {/* Voice Room Header & Info */}
       <div className="rounded-2xl bg-gradient-to-b from-slate-900 to-slate-950 border border-slate-800 p-4 sm:p-5 shadow-xl">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -157,7 +254,7 @@ export const ConvoyVoiceView: React.FC<ConvoyVoiceViewProps> = ({
                 </span>
               </div>
               <p className="text-xs text-slate-400 mt-0.5 truncate">
-                Líder: {voiceRoom.creatorName} • {voiceRoom.participants.length} pilotos conectados
+                Líder: {voiceRoom.creatorName} • {displayParticipants.length} pilotos conectados
               </p>
             </div>
           </div>
@@ -364,14 +461,14 @@ export const ConvoyVoiceView: React.FC<ConvoyVoiceViewProps> = ({
           <div className="flex items-center gap-2">
             <Users className="w-4 h-4 text-amber-500" />
             <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider font-mono">
-              Integrantes no Comboio ({voiceRoom.participants.length})
+              Integrantes no Comboio ({displayParticipants.length})
             </h3>
           </div>
           <span className="text-[11px] text-slate-400 font-mono">Latência: ~45ms</span>
         </div>
 
         <div className="divide-y divide-slate-800/60">
-          {voiceRoom.participants.map((p) => (
+          {displayParticipants.map((p) => (
             <div key={p.id} className="py-2.5 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 {/* Speaking indicator dot */}

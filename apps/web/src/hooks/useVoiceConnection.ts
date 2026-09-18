@@ -1,0 +1,241 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  AudioPresets,
+  ConnectionState,
+  Participant,
+  RemoteTrack,
+  RemoteTrackPublication,
+  Room,
+  RoomEvent,
+  Track,
+} from 'livekit-client';
+import type { VoiceParticipant } from '@motorede/shared';
+
+export type VoiceConnectionStatus =
+  | 'disconnected'
+  | 'connecting'
+  | 'connected'
+  | 'reconnecting'
+  | 'error';
+
+interface ConnectOptions {
+  /** Código da sala do comboio, ex.: "SERRA-88". */
+  roomCode: string;
+  /** Identificador único deste piloto. */
+  identity: string;
+  /** Nome exibido aos outros. */
+  displayName: string;
+}
+
+interface UseVoiceConnection {
+  status: VoiceConnectionStatus;
+  error: string | null;
+  participants: VoiceParticipant[];
+  isMuted: boolean;
+  /** true quando o navegador bloqueou o áudio e falta um gesto do usuário. */
+  needsAudioUnlock: boolean;
+  connect: (options: ConnectOptions) => Promise<void>;
+  disconnect: () => Promise<void>;
+  setMuted: (muted: boolean) => Promise<void>;
+  unlockAudio: () => Promise<void>;
+}
+
+/**
+ * Conexão de voz do comboio contra um servidor LiveKit.
+ *
+ * Expõe a lista de participantes já no formato `VoiceParticipant` que as telas
+ * existentes consomem, de modo que a interface não precise saber que existe
+ * LiveKit por trás. A mesma lógica é reaproveitada no app React Native — só a
+ * camada de mídia muda.
+ */
+export function useVoiceConnection(): UseVoiceConnection {
+  const roomRef = useRef<Room | null>(null);
+  const audioContainerRef = useRef<HTMLDivElement | null>(null);
+
+  const [status, setStatus] = useState<VoiceConnectionStatus>('disconnected');
+  const [error, setError] = useState<string | null>(null);
+  const [participants, setParticipants] = useState<VoiceParticipant[]>([]);
+  const [isMuted, setIsMuted] = useState(false);
+  const [needsAudioUnlock, setNeedsAudioUnlock] = useState(false);
+
+  // Contêiner oculto onde os elementos <audio> dos outros pilotos são anexados.
+  useEffect(() => {
+    const container = document.createElement('div');
+    container.id = 'motorede-voice-audio';
+    container.style.display = 'none';
+    document.body.appendChild(container);
+    audioContainerRef.current = container;
+
+    return () => {
+      container.remove();
+      audioContainerRef.current = null;
+    };
+  }, []);
+
+  const syncParticipants = useCallback(() => {
+    const room = roomRef.current;
+    if (!room) {
+      setParticipants([]);
+      return;
+    }
+
+    const all: Participant[] = [room.localParticipant, ...room.remoteParticipants.values()];
+
+    // Sem um dono declarado ainda, tratamos quem entrou primeiro como líder.
+    const hostIdentity = all
+      .slice()
+      .sort((a, b) => (a.joinedAt?.getTime() ?? 0) - (b.joinedAt?.getTime() ?? 0))[0]?.identity;
+
+    setParticipants(
+      all.map((p) => ({
+        id: p.identity,
+        name: p.name || p.identity,
+        isHost: p.identity === hostIdentity,
+        isSpeaking: p.isSpeaking,
+        isMuted: !p.isMicrophoneEnabled,
+        volume: Math.round((p.audioLevel ?? 0) * 100),
+        deviceType: 'headset' as const,
+      }))
+    );
+  }, []);
+
+  const attachTrack = useCallback((track: RemoteTrack) => {
+    if (track.kind !== Track.Kind.Audio) return;
+    const element = track.attach();
+    audioContainerRef.current?.appendChild(element);
+  }, []);
+
+  const connect = useCallback(
+    async ({ roomCode, identity, displayName }: ConnectOptions) => {
+      if (roomRef.current) return;
+
+      setStatus('connecting');
+      setError(null);
+
+      try {
+        const response = await fetch('/api/livekit-token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ room: roomCode, identity, name: displayName }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`servidor de token respondeu ${response.status}`);
+        }
+
+        const { token, url } = (await response.json()) as { token: string; url: string };
+
+        const room = new Room({
+          adaptiveStream: true,
+          dynacast: true,
+          audioCaptureDefaults: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          },
+          publishDefaults: {
+            // DTX: não transmite pacote enquanto ninguém fala. Num comboio as
+            // pessoas ficam caladas a maior parte do tempo — corta a maior
+            // parte do tráfego e poupa bateria e franquia do piloto.
+            dtx: true,
+            // Redundância: reenvia pacotes anteriores junto com os novos.
+            // Em 4G de estrada a perda de pacote é a regra, não a exceção.
+            red: true,
+            // Preset de voz: bitrate baixo, suficiente para fala.
+            audioPreset: AudioPresets.speech,
+          },
+        });
+
+        room
+          .on(RoomEvent.ParticipantConnected, syncParticipants)
+          .on(RoomEvent.ParticipantDisconnected, syncParticipants)
+          .on(RoomEvent.ActiveSpeakersChanged, syncParticipants)
+          .on(RoomEvent.TrackMuted, syncParticipants)
+          .on(RoomEvent.TrackUnmuted, syncParticipants)
+          .on(RoomEvent.LocalTrackPublished, syncParticipants)
+          .on(RoomEvent.TrackSubscribed, (track: RemoteTrack) => {
+            attachTrack(track);
+            syncParticipants();
+          })
+          .on(RoomEvent.TrackUnsubscribed, (track: RemoteTrack, _pub: RemoteTrackPublication) => {
+            track.detach().forEach((el) => el.remove());
+            syncParticipants();
+          })
+          .on(RoomEvent.AudioPlaybackStatusChanged, () => {
+            setNeedsAudioUnlock(!room.canPlaybackAudio);
+          })
+          .on(RoomEvent.ConnectionStateChanged, (state: ConnectionState) => {
+            if (state === ConnectionState.Reconnecting) setStatus('reconnecting');
+            else if (state === ConnectionState.Connected) setStatus('connected');
+          })
+          .on(RoomEvent.Disconnected, () => {
+            setStatus('disconnected');
+            setParticipants([]);
+            roomRef.current = null;
+          });
+
+        await room.connect(url, token);
+        await room.localParticipant.setMicrophoneEnabled(true);
+
+        roomRef.current = room;
+        setIsMuted(false);
+        setNeedsAudioUnlock(!room.canPlaybackAudio);
+        setStatus('connected');
+        syncParticipants();
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        setError(message);
+        setStatus('error');
+        roomRef.current = null;
+      }
+    },
+    [attachTrack, syncParticipants]
+  );
+
+  const disconnect = useCallback(async () => {
+    const room = roomRef.current;
+    if (!room) return;
+    await room.disconnect();
+    roomRef.current = null;
+    setStatus('disconnected');
+    setParticipants([]);
+  }, []);
+
+  const setMuted = useCallback(async (muted: boolean) => {
+    const room = roomRef.current;
+    if (!room) return;
+    await room.localParticipant.setMicrophoneEnabled(!muted);
+    setIsMuted(muted);
+  }, []);
+
+  /**
+   * Navegadores bloqueiam áudio até haver um gesto do usuário. Chamado a partir
+   * de um clique, isto libera a reprodução.
+   */
+  const unlockAudio = useCallback(async () => {
+    const room = roomRef.current;
+    if (!room) return;
+    await room.startAudio();
+    setNeedsAudioUnlock(!room.canPlaybackAudio);
+  }, []);
+
+  // Desconecta ao desmontar, para não deixar a sala aberta e o microfone ligado.
+  useEffect(() => {
+    return () => {
+      roomRef.current?.disconnect();
+      roomRef.current = null;
+    };
+  }, []);
+
+  return {
+    status,
+    error,
+    participants,
+    isMuted,
+    needsAudioUnlock,
+    connect,
+    disconnect,
+    setMuted,
+    unlockAudio,
+  };
+}

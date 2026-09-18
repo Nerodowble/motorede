@@ -9,8 +9,9 @@
   "Privado" (rede doméstica) e ao sub-rede local — o computador não fica
   exposto em Wi-Fi público nem para fora da sua rede.
 
-  São três regras porque o WebRTC usa canais separados:
-    TCP 7880        sinalização (a conexão ws://)
+  As regras cobrem quatro canais separados:
+    TCP 3000        o app web (servidor de desenvolvimento do Vite)
+    TCP 7880        sinalização do LiveKit (a conexão ws://)
     TCP 7881        reserva, para redes que bloqueiam UDP
     UDP 50000-50100 a mídia em si (o áudio)
 
@@ -44,6 +45,7 @@ if (-not $IsAdmin) {
 }
 
 $Rules = @(
+    @{ Name = 'MotoRede web dev (TCP 3000)';              Protocol = 'TCP'; Port = '3000' },
     @{ Name = 'MotoRede LiveKit - sinalizacao (TCP 7880)'; Protocol = 'TCP'; Port = '7880' },
     @{ Name = 'MotoRede LiveKit - reserva TCP (7881)';     Protocol = 'TCP'; Port = '7881' },
     @{ Name = 'MotoRede LiveKit - midia (UDP 50000-50100)'; Protocol = 'UDP'; Port = '50000-50100' }
@@ -95,6 +97,7 @@ $LanIp = (Get-NetIPAddress -AddressFamily IPv4 |
     Select-Object -First 1 -ExpandProperty IPAddress)
 
 if ($LanIp) {
-    Write-Host "      http://${LanIp}:7880   (deve mostrar: OK)" -ForegroundColor Green
+    Write-Host "      http://${LanIp}:7880   (servidor de voz, deve mostrar: OK)" -ForegroundColor Green
+    Write-Host "      http://${LanIp}:3000   (o app MotoRede)" -ForegroundColor Green
 }
 Write-Host ''

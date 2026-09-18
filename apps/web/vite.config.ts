@@ -3,12 +3,16 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 import {defineConfig} from 'vite';
 import {VitePWA} from 'vite-plugin-pwa';
+import {livekitTokenPlugin} from './vite/livekit-token-plugin';
 
 export default defineConfig(() => {
   return {
     plugins: [
       react(),
       tailwindcss(),
+      // Emite tokens do LiveKit durante o desenvolvimento. Em produção esse
+      // papel vai para uma Supabase Edge Function.
+      livekitTokenPlugin(),
       VitePWA({
         registerType: 'autoUpdate',
         includeAssets: ['icon.svg', 'apple-touch-icon.png'],
