@@ -1,0 +1,11 @@
+{
+  "name": "MotoRede - Plataforma para Motociclistas",
+  "description": "Plataforma colaborativa PWA para motociclistas com comboio por voz, socorro SOS geolocalizado, manutenção preditiva, passaporte da moto e rede de cupons parceiros.",
+  "requestFramePermissions": [
+    "geolocation",
+    "microphone"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
