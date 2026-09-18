@@ -113,6 +113,19 @@ export function useVoiceConnection(): UseVoiceConnection {
       setError(null);
 
       try {
+        // O navegador só expõe o microfone em "contexto seguro": https, ou
+        // localhost. Num IP de rede via http, navigator.mediaDevices simplesmente
+        // não existe, e o erro nativo ("Cannot read properties of undefined")
+        // não diz nada sobre a causa real.
+        if (!navigator.mediaDevices?.getUserMedia) {
+          throw new Error(
+            'Microfone indisponível: o navegador exige contexto seguro. ' +
+              'Neste computador use http://localhost:3000. ' +
+              'No celular, libere este endereço em chrome://flags → ' +
+              '"Insecure origins treated as secure".'
+          );
+        }
+
         const response = await fetch('/api/livekit-token', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

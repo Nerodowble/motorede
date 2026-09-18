@@ -203,3 +203,33 @@ mídia deve chegar, e sozinho ele escolheu a interface do **Twingate (VPN)** em 
 Wi-Fi. O celular nunca alcançaria esse endereço, e o sintoma seria "conecta mas não
 tem áudio" — dor de cabeça clássica de WebRTC. Resolvido fixando `--node-ip` no IP da
 rede local, detectado pelo script.
+
+---
+
+## 10. Contexto seguro e o microfone em desenvolvimento
+
+**Status:** `decidido` — contorno para desenvolvimento; deixa de existir em produção
+**Data:** 2026-09-18
+
+Navegadores só expõem `navigator.mediaDevices` (microfone e câmera) em **contexto
+seguro**: `https://` ou `localhost`. Num IP de rede via `http://`, o objeto
+simplesmente não existe, e o erro nativo — *"Cannot read properties of undefined
+(reading 'getUserMedia')"* — não diz nada sobre a causa.
+
+| Endereço | Microfone |
+|---|---|
+| `http://localhost:3000` | funciona (localhost é exceção da regra) |
+| `http://192.168.1.108:3000` | falha: `mediaDevices` indefinido |
+
+**Contorno em desenvolvimento:** liberar a origem em
+`chrome://flags/#unsafely-treat-insecure-origin-as-secure`. Mantém tudo em `http`/`ws`,
+sem precisar de TLS no Vite nem no LiveKit.
+
+**Por que não resolver com HTTPS agora:** exigiria certificado no Vite **e** no
+LiveKit (`wss://`, porque página `https` não abre `ws://` — bloqueio de conteúdo
+misto), mais confiar a autoridade certificadora no celular. Muito trabalho para um
+problema que desaparece sozinho: em produção o app é nativo (não tem essa regra) e a
+web fica atrás de HTTPS de verdade.
+
+O hook `useVoiceConnection` agora detecta a situação e explica o que fazer, em vez de
+deixar o erro críptico vazar.
