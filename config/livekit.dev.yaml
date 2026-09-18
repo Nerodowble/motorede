@@ -1,0 +1,28 @@
+# LiveKit — configuração de DESENVOLVIMENTO LOCAL
+#
+# Rodado pelo binário estático em tools/livekit (sem Docker).
+# Suba com: npm run livekit
+#
+# As chaves de API NÃO ficam aqui: entram pela variável de ambiente
+# LIVEKIT_KEYS, definida em scripts/livekit-dev.ps1.
+
+port: 7880
+
+# String vazia = escuta em todas as interfaces.
+# Necessário para o celular alcançar o servidor pela rede Wi-Fi local.
+bind_addresses:
+  - ''
+
+rtc:
+  tcp_port: 7881
+  # Faixa UDP para as trilhas de mídia. 100 portas sobram para testes locais;
+  # em produção essa faixa costuma ser bem maior.
+  port_range_start: 50000
+  port_range_end: 50100
+  # false = não tenta descobrir IP público. Em rede local é o que queremos.
+  use_external_ip: false
+
+logging:
+  level: info
+  # Deixa o log legível no terminal durante o desenvolvimento.
+  json: false

@@ -73,8 +73,8 @@ custo do projeto. Elas viram economia de verdade só no servidor próprio.
 **Status:** `decidido` para desenvolvimento · `descartado` para produção
 **Data:** 2026-09-18
 
-**Para desenvolver:** ótimo. LiveKit sobe em Docker num comando, e desenvolver contra
-ele não consome a cota da nuvem. Fazer.
+**Para desenvolver:** ótimo — e sem Docker, via binário estático (ver ideia 9). Desenvolver contra
+um servidor local não consome a cota da nuvem. Feito.
 
 **Para produção:** o obstáculo é **CGNAT** — a maioria das operadoras residenciais
 brasileiras não entrega IP público, então não existe porta para abrir; ninguém
@@ -169,3 +169,37 @@ diagnóstico, consulta o passaporte e vê o desgaste. Só a voz precisa de rede.
 **Preço a pagar:** conflito quando o mesmo usuário edita no celular e na web. Como
 cada piloto só mexe nos próprios dados, "última escrita vence" por campo resolve.
 Não usar CRDT aqui — canhão para matar mosquito.
+
+---
+
+## 9. Sem Docker — binário estático
+
+**Status:** `decidido` — vale para desenvolvimento **e** produção
+**Data:** 2026-09-18
+
+Docker foi descartado por peso: no Windows ele roda uma VM Linux inteira e consome
+uns 2 GB de RAM parado, inviável tanto na máquina de desenvolvimento quanto na de
+produção pretendida.
+
+**Não é necessário.** O LiveKit é escrito em Go e distribuído como **binário único e
+estático** — sem runtime, sem container, sem dependência. Ocioso fica em ~30–50 MB.
+
+Há binário oficial para todas as plataformas que o projeto precisa:
+
+| Plataforma | Uso |
+|---|---|
+| `windows_amd64` | desenvolvimento local |
+| `linux_arm64` | produção na Oracle (Ampere) |
+
+Montado em `scripts/livekit-dev.ps1` (baixa na primeira execução, depois só inicia)
+e `config/livekit.dev.yaml`. Sobe com `npm run livekit`. O binário fica em `tools/`,
+fora do versionamento.
+
+Em produção a mesma abordagem: baixar o binário `linux_arm64` e rodar sob systemd.
+Nada de Docker em lugar nenhum.
+
+**Armadilha encontrada na prática:** o LiveKit anuncia aos clientes o IP por onde a
+mídia deve chegar, e sozinho ele escolheu a interface do **Twingate (VPN)** em vez do
+Wi-Fi. O celular nunca alcançaria esse endereço, e o sintoma seria "conecta mas não
+tem áudio" — dor de cabeça clássica de WebRTC. Resolvido fixando `--node-ip` no IP da
+rede local, detectado pelo script.
