@@ -69,16 +69,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   return (
     <div className="space-y-4 pb-28 sm:pb-24 max-w-2xl mx-auto px-3 sm:px-4 py-4">
       {/* Ação principal: o comboio. É o que o piloto abre o app para fazer. */}
-      <div className="rounded-2xl bg-gradient-to-b from-slate-900 to-slate-950 border border-slate-800 p-5 shadow-xl">
+      <div className="rounded-2xl bg-gradient-to-b from-surface to-canvas border border-line p-5 shadow-xl">
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-11 h-11 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+          <div className="w-11 h-11 rounded-xl bg-brand/15 border border-brand/30 flex items-center justify-center text-brand-soft shrink-0">
             <Radio className="w-5 h-5" />
           </div>
           <div className="min-w-0">
-            <p className="text-[11px] text-slate-400 uppercase tracking-wider font-mono">
+            <p className="text-[11px] text-ink-muted uppercase tracking-wider font-mono">
               Seu comboio
             </p>
-            <p className="text-2xl font-extrabold text-amber-400 font-mono tracking-widest leading-tight">
+            <p className="text-2xl font-extrabold text-brand-soft font-mono tracking-widest leading-tight">
               {roomCode}
             </p>
           </div>
@@ -86,7 +86,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
         <button
           onClick={() => onNavigateTab('convoy')}
-          className="w-full py-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-base uppercase tracking-wide transition active:scale-95 shadow-lg"
+          className="w-full py-4 rounded-xl bg-brand hover:opacity-90 text-on-brand font-black text-base uppercase tracking-wide transition active:scale-95 shadow-lg"
         >
           Abrir comboio
         </button>
@@ -95,17 +95,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       {/* A moto em uma linha. Sem cadastro, um convite — e nunca acima do
           comboio: falta de moto não bloqueia a voz. */}
       {motorcycle ? (
-      <div className="rounded-2xl bg-slate-900/80 border border-slate-800 p-4">
+      <div className="rounded-2xl bg-surface/80 border border-line p-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-slate-400 shrink-0">
+          <div className="w-10 h-10 rounded-xl bg-elevated flex items-center justify-center text-ink-muted shrink-0">
             <Bike className="w-5 h-5" />
           </div>
 
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-bold text-slate-100 truncate">
+            <p className="text-sm font-bold text-ink truncate">
               {motorcycle!.brand} {motorcycle!.model}
             </p>
-            <p className="text-[11px] text-slate-400 font-mono">
+            <p className="text-[11px] text-ink-muted font-mono">
               {motorcycle!.currentKm.toLocaleString('pt-BR')} km
               {motorcycle!.licensePlate ? ` · ${motorcycle!.licensePlate}` : ''}
             </p>
@@ -113,16 +113,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
           <button
             onClick={() => setIsEditingKm(true)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition active:scale-95 shrink-0"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-elevated hover:bg-line-strong text-ink text-xs font-semibold border border-line-strong transition active:scale-95 shrink-0"
           >
-            <Gauge className="w-4 h-4 text-amber-400" />
+            <Gauge className="w-4 h-4 text-brand-soft" />
             KM
           </button>
 
           {onOpenEditMotorcycle && (
             <button
               onClick={onOpenEditMotorcycle}
-              className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition active:scale-95 shrink-0"
+              className="px-3 py-2 rounded-xl bg-elevated hover:bg-line-strong text-ink text-xs font-semibold border border-line-strong transition active:scale-95 shrink-0"
             >
               Ficha
             </button>
@@ -130,24 +130,24 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
 
         {isEditingKm && (
-          <form onSubmit={handleSaveKm} className="mt-3 pt-3 border-t border-slate-800 flex items-center gap-2">
+          <form onSubmit={handleSaveKm} className="mt-3 pt-3 border-t border-line flex items-center gap-2">
             <input
               type="number"
               value={kmInput}
               onChange={(e) => setKmInput(e.target.value)}
               autoFocus
-              className="flex-1 min-w-0 px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-slate-100 text-sm font-mono focus:outline-none focus:border-amber-500/60"
+              className="flex-1 min-w-0 px-3 py-2 rounded-xl bg-canvas border border-line-strong text-ink text-sm font-mono focus:outline-none focus:border-brand/60"
             />
             <button
               type="submit"
-              className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold transition active:scale-95"
+              className="px-4 py-2 rounded-xl bg-brand hover:opacity-90 text-on-brand text-xs font-bold transition active:scale-95"
             >
               Salvar
             </button>
             <button
               type="button"
               onClick={() => setIsEditingKm(false)}
-              className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-slate-700 transition"
+              className="px-3 py-2 rounded-xl bg-elevated hover:bg-line-strong text-ink-muted text-xs font-semibold border border-line-strong transition"
             >
               Cancelar
             </button>
@@ -162,23 +162,23 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       {needsAttention.length > 0 && (
         <button
           onClick={() => onNavigateTab('motorcycle')}
-          className="w-full rounded-2xl bg-slate-900/80 border border-slate-800 p-4 text-left hover:border-slate-700 transition active:scale-[0.99]"
+          className="w-full rounded-2xl bg-surface/80 border border-line p-4 text-left hover:border-line-strong transition active:scale-[0.99]"
         >
           <div className="flex items-center gap-2 mb-3">
-            <Wrench className="w-4 h-4 text-amber-500" />
-            <span className="text-xs font-bold text-slate-200 uppercase tracking-wider font-mono flex-1">
+            <Wrench className="w-4 h-4 text-brand" />
+            <span className="text-xs font-bold text-ink uppercase tracking-wider font-mono flex-1">
               Precisa de atenção ({needsAttention.length})
             </span>
-            <ChevronRight className="w-4 h-4 text-slate-500" />
+            <ChevronRight className="w-4 h-4 text-ink-faint" />
           </div>
 
           <div className="space-y-2">
             {needsAttention.slice(0, 3).map((m) => (
               <div key={m.category} className="flex items-center justify-between gap-3">
-                <span className="text-xs text-slate-300 truncate">{m.label}</span>
+                <span className="text-xs text-ink-muted truncate">{m.label}</span>
                 <span
                   className={`text-[11px] font-mono font-bold shrink-0 ${
-                    m.status === 'vencido' ? 'text-red-400' : 'text-amber-400'
+                    m.status === 'vencido' ? 'text-red-400' : 'text-brand-soft'
                   }`}
                 >
                   {m.status === 'vencido'

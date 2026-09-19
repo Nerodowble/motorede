@@ -49,22 +49,22 @@ const STATUS_STYLES: Record<
     borda: 'border-red-500/40',
   },
   proximo: {
-    barra: 'bg-amber-500',
-    texto: 'text-amber-400',
+    barra: 'bg-brand',
+    texto: 'text-brand-soft',
     rotulo: 'se aproximando',
-    borda: 'border-amber-500/40',
+    borda: 'border-brand/40',
   },
   ok: {
     barra: 'bg-emerald-500',
     texto: 'text-emerald-400',
     rotulo: 'em dia',
-    borda: 'border-slate-800',
+    borda: 'border-line',
   },
   'sem-registro': {
-    barra: 'bg-slate-700',
-    texto: 'text-slate-500',
+    barra: 'bg-line-strong',
+    texto: 'text-ink-faint',
     rotulo: '',
-    borda: 'border-slate-800',
+    borda: 'border-line',
   },
 };
 
@@ -145,13 +145,13 @@ export const MyMotorcycleView: React.FC<MyMotorcycleViewProps> = ({
   return (
     <div className="space-y-3 pb-28 sm:pb-24 max-w-2xl mx-auto px-3 sm:px-4 py-4">
       {/* Identidade da moto */}
-      <div className="rounded-2xl bg-gradient-to-b from-slate-900 to-slate-950 border border-slate-800 p-4">
+      <div className="rounded-2xl bg-gradient-to-b from-surface to-canvas border border-line p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h2 className="text-base font-extrabold text-white truncate">
+            <h2 className="text-base font-extrabold text-ink truncate">
               {motorcycle.brand} {motorcycle.model}
               {motorcycle.licensePlate && (
-                <span className="text-slate-500 font-mono text-xs ml-2">
+                <span className="text-ink-faint font-mono text-xs ml-2">
                   {motorcycle.licensePlate}
                 </span>
               )}
@@ -163,18 +163,18 @@ export const MyMotorcycleView: React.FC<MyMotorcycleViewProps> = ({
                   value={kmMoto}
                   onChange={(e) => setKmMoto(e.target.value)}
                   autoFocus
-                  className="w-28 px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-700 text-slate-100 text-sm font-mono focus:outline-none focus:border-amber-500/60"
+                  className="w-28 px-2.5 py-1.5 rounded-lg bg-canvas border border-line-strong text-ink text-sm font-mono focus:outline-none focus:border-brand/60"
                 />
                 <button
                   type="submit"
-                  className="px-3 py-1.5 rounded-lg bg-amber-500 text-slate-950 text-xs font-bold"
+                  className="px-3 py-1.5 rounded-lg bg-brand text-on-brand text-xs font-bold"
                 >
                   Salvar
                 </button>
                 <button
                   type="button"
                   onClick={() => setEditandoKm(false)}
-                  className="text-xs text-slate-400 px-2"
+                  className="text-xs text-ink-muted px-2"
                 >
                   Cancelar
                 </button>
@@ -185,7 +185,7 @@ export const MyMotorcycleView: React.FC<MyMotorcycleViewProps> = ({
                   setKmMoto(motorcycle.currentKm.toString());
                   setEditandoKm(true);
                 }}
-                className="text-sm font-mono text-amber-400 mt-1 flex items-center gap-1.5 hover:text-amber-300 transition"
+                className="text-sm font-mono text-brand-soft mt-1 flex items-center gap-1.5 hover:text-brand-soft transition"
               >
                 {motorcycle.currentKm.toLocaleString('pt-BR')} km
                 <Pencil className="w-3 h-3 opacity-60" />
@@ -196,7 +196,7 @@ export const MyMotorcycleView: React.FC<MyMotorcycleViewProps> = ({
           {onOpenEditMotorcycle && (
             <button
               onClick={onOpenEditMotorcycle}
-              className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-slate-700 transition active:scale-95 shrink-0"
+              className="px-3 py-2 rounded-xl bg-elevated hover:bg-line-strong text-ink-muted text-xs font-semibold border border-line-strong transition active:scale-95 shrink-0"
             >
               Editar
             </button>
@@ -216,10 +216,10 @@ export const MyMotorcycleView: React.FC<MyMotorcycleViewProps> = ({
         return (
           <div
             key={item.category}
-            className={`rounded-2xl bg-slate-900/80 border p-4 ${e.borda}`}
+            className={`rounded-2xl bg-surface/80 border p-4 ${e.borda}`}
           >
             <div className="flex items-center justify-between gap-2 mb-2">
-              <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider font-mono">
+              <h3 className="text-xs font-bold text-ink uppercase tracking-wider font-mono">
                 {item.label}
               </h3>
               {e.rotulo && (
@@ -230,10 +230,10 @@ export const MyMotorcycleView: React.FC<MyMotorcycleViewProps> = ({
             </div>
 
             {semRegistro ? (
-              <p className="text-[11px] text-slate-500 mb-3">Sem registro ainda.</p>
+              <p className="text-[11px] text-ink-faint mb-3">Sem registro ainda.</p>
             ) : (
               <>
-                <div className="h-1.5 rounded-full bg-slate-800 overflow-hidden mb-2">
+                <div className="h-1.5 rounded-full bg-elevated overflow-hidden mb-2">
                   <div
                     className={`h-full ${e.barra} transition-all`}
                     style={{ width: `${progresso}%` }}
@@ -241,7 +241,7 @@ export const MyMotorcycleView: React.FC<MyMotorcycleViewProps> = ({
                 </div>
 
                 {/* As duas metades da frase: o que passou e o que falta. */}
-                <p className="text-sm font-bold text-slate-100">
+                <p className="text-sm font-bold text-ink">
                   rodou {item.kmSinceLast!.toLocaleString('pt-BR')} km
                   <span className={`font-normal ${e.texto}`}>
                     {item.kmRemaining! > 0
@@ -250,7 +250,7 @@ export const MyMotorcycleView: React.FC<MyMotorcycleViewProps> = ({
                   </span>
                 </p>
 
-                <p className="text-[11px] text-slate-400 mt-1">
+                <p className="text-[11px] text-ink-muted mt-1">
                   última: {item.last!.km.toLocaleString('pt-BR')} km ·{' '}
                   {new Date(item.last!.date).toLocaleDateString('pt-BR', {
                     day: '2-digit',
@@ -259,7 +259,7 @@ export const MyMotorcycleView: React.FC<MyMotorcycleViewProps> = ({
                   {item.last!.product && ` · ${item.last!.product}`}
                 </p>
 
-                <p className="text-[10px] text-slate-500 mb-3">
+                <p className="text-[10px] text-ink-faint mb-3">
                   {describeIntervalSource(
                     item.intervalSource!,
                     item.intervalKm!,
@@ -271,9 +271,9 @@ export const MyMotorcycleView: React.FC<MyMotorcycleViewProps> = ({
 
             <button
               onClick={() => abrirRegistro(item.category)}
-              className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-700 transition active:scale-95 flex items-center justify-center gap-1.5"
+              className="w-full py-2.5 rounded-xl bg-elevated hover:bg-line-strong text-ink text-xs font-bold border border-line-strong transition active:scale-95 flex items-center justify-center gap-1.5"
             >
-              <Plus className="w-3.5 h-3.5 text-amber-400" />
+              <Plus className="w-3.5 h-3.5 text-brand-soft" />
               {semRegistro ? 'Registrar primeira' : `Troquei: ${item.label.toLowerCase()}`}
             </button>
           </div>
@@ -281,38 +281,38 @@ export const MyMotorcycleView: React.FC<MyMotorcycleViewProps> = ({
       })}
 
       {/* Histórico */}
-      <div className="rounded-2xl bg-slate-900/80 border border-slate-800 overflow-hidden">
+      <div className="rounded-2xl bg-surface/80 border border-line overflow-hidden">
         <button
           onClick={() => setHistoricoAberto(!historicoAberto)}
-          className="w-full p-4 flex items-center justify-between gap-2 hover:bg-slate-800/40 transition"
+          className="w-full p-4 flex items-center justify-between gap-2 hover:bg-elevated/40 transition"
         >
-          <span className="text-xs font-bold text-slate-300 uppercase tracking-wider font-mono">
+          <span className="text-xs font-bold text-ink-muted uppercase tracking-wider font-mono">
             Histórico completo ({records.length})
           </span>
           <ChevronDown
-            className={`w-4 h-4 text-slate-500 transition-transform ${historicoAberto ? 'rotate-180' : ''}`}
+            className={`w-4 h-4 text-ink-faint transition-transform ${historicoAberto ? 'rotate-180' : ''}`}
           />
         </button>
 
         {historicoAberto && (
           <div className="px-4 pb-4">
             {records.length === 0 ? (
-              <p className="text-[11px] text-slate-500">Nenhum registro ainda.</p>
+              <p className="text-[11px] text-ink-faint">Nenhum registro ainda.</p>
             ) : (
               <>
-                <div className="divide-y divide-slate-800/60">
+                <div className="divide-y divide-line/60">
                   {[...records]
                     .sort((a, b) => b.km - a.km)
                     .map((r) => (
                       <div key={r.id} className="py-2.5 flex items-center justify-between gap-3">
                         <div className="min-w-0">
-                          <p className="text-xs text-slate-200 truncate">{r.title}</p>
-                          <p className="text-[10px] text-slate-500 truncate">
+                          <p className="text-xs text-ink truncate">{r.title}</p>
+                          <p className="text-[10px] text-ink-faint truncate">
                             {new Date(r.date).toLocaleDateString('pt-BR')}
                             {r.product && ` · ${r.product}`}
                           </p>
                         </div>
-                        <span className="text-[11px] font-mono text-slate-400 shrink-0">
+                        <span className="text-[11px] font-mono text-ink-muted shrink-0">
                           {r.km.toLocaleString('pt-BR')} km
                         </span>
                       </div>
@@ -321,9 +321,9 @@ export const MyMotorcycleView: React.FC<MyMotorcycleViewProps> = ({
 
                 <button
                   onClick={() => window.print()}
-                  className="mt-3 w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-700 transition active:scale-95 flex items-center justify-center gap-1.5"
+                  className="mt-3 w-full py-2.5 rounded-xl bg-elevated hover:bg-line-strong text-ink text-xs font-bold border border-line-strong transition active:scale-95 flex items-center justify-center gap-1.5"
                 >
-                  <FileText className="w-3.5 h-3.5 text-amber-400" />
+                  <FileText className="w-3.5 h-3.5 text-brand-soft" />
                   Gerar relatório
                 </button>
               </>
@@ -333,16 +333,16 @@ export const MyMotorcycleView: React.FC<MyMotorcycleViewProps> = ({
       </div>
 
       {/* Dados técnicos */}
-      <div className="rounded-2xl bg-slate-900/80 border border-slate-800 overflow-hidden">
+      <div className="rounded-2xl bg-surface/80 border border-line overflow-hidden">
         <button
           onClick={() => setTecnicosAberto(!tecnicosAberto)}
-          className="w-full p-4 flex items-center justify-between gap-2 hover:bg-slate-800/40 transition"
+          className="w-full p-4 flex items-center justify-between gap-2 hover:bg-elevated/40 transition"
         >
-          <span className="text-xs font-bold text-slate-300 uppercase tracking-wider font-mono">
+          <span className="text-xs font-bold text-ink-muted uppercase tracking-wider font-mono">
             Dados técnicos e documento
           </span>
           <ChevronDown
-            className={`w-4 h-4 text-slate-500 transition-transform ${tecnicosAberto ? 'rotate-180' : ''}`}
+            className={`w-4 h-4 text-ink-faint transition-transform ${tecnicosAberto ? 'rotate-180' : ''}`}
           />
         </button>
 
@@ -358,15 +358,15 @@ export const MyMotorcycleView: React.FC<MyMotorcycleViewProps> = ({
               .filter(([, valor]) => Boolean(valor))
               .map(([rotulo, valor]) => (
                 <div key={rotulo as string} className="flex justify-between gap-3">
-                  <span className="text-slate-500">{rotulo}</span>
-                  <span className="text-slate-300 font-mono">{valor}</span>
+                  <span className="text-ink-faint">{rotulo}</span>
+                  <span className="text-ink-muted font-mono">{valor}</span>
                 </div>
               ))}
 
             {motorcycle.tankCapacityLiters && motorcycle.avgConsumptionKmL && (
-              <div className="flex justify-between gap-3 pt-2 border-t border-slate-800">
-                <span className="text-slate-500">Autonomia estimada</span>
-                <span className="text-amber-400 font-mono">
+              <div className="flex justify-between gap-3 pt-2 border-t border-line">
+                <span className="text-ink-faint">Autonomia estimada</span>
+                <span className="text-brand-soft font-mono">
                   {Math.round(
                     motorcycle.tankCapacityLiters * motorcycle.avgConsumptionKmL
                   )}{' '}
@@ -378,7 +378,7 @@ export const MyMotorcycleView: React.FC<MyMotorcycleViewProps> = ({
             {onOpenEditMotorcycle && (
               <button
                 onClick={onOpenEditMotorcycle}
-                className="w-full mt-2 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-slate-700 transition"
+                className="w-full mt-2 py-2 rounded-xl bg-elevated hover:bg-line-strong text-ink-muted text-xs font-semibold border border-line-strong transition"
               >
                 Editar dados
               </button>
@@ -392,23 +392,23 @@ export const MyMotorcycleView: React.FC<MyMotorcycleViewProps> = ({
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm">
           <form
             onSubmit={salvar}
-            className="w-full sm:max-w-sm bg-slate-900 border-t sm:border border-slate-800 sm:rounded-2xl p-5 space-y-4"
+            className="w-full sm:max-w-sm bg-surface border-t sm:border border-line sm:rounded-2xl p-5 space-y-4"
           >
             <div className="flex items-center justify-between gap-2">
-              <h3 className="text-sm font-extrabold text-white truncate">
+              <h3 className="text-sm font-extrabold text-ink truncate">
                 Troquei: {MAINTENANCE_LABELS[registrando].toLowerCase()}
               </h3>
               <button
                 type="button"
                 onClick={() => setRegistrando(null)}
-                className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 transition shrink-0"
+                className="p-1.5 rounded-lg hover:bg-elevated text-ink-muted transition shrink-0"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             <label className="block">
-              <span className="text-[11px] text-slate-400 mb-1.5 block">
+              <span className="text-[11px] text-ink-muted mb-1.5 block">
                 Quilometragem na troca
               </span>
               <input
@@ -417,12 +417,12 @@ export const MyMotorcycleView: React.FC<MyMotorcycleViewProps> = ({
                 onChange={(e) => setKm(e.target.value)}
                 required
                 autoFocus
-                className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-slate-100 text-sm font-mono focus:outline-none focus:border-amber-500/60"
+                className="w-full px-3 py-2.5 rounded-xl bg-canvas border border-line-strong text-ink text-sm font-mono focus:outline-none focus:border-brand/60"
               />
             </label>
 
             <label className="block">
-              <span className="text-[11px] text-slate-400 mb-1.5 block">
+              <span className="text-[11px] text-ink-muted mb-1.5 block">
                 Quando foi
               </span>
               <input
@@ -430,25 +430,25 @@ export const MyMotorcycleView: React.FC<MyMotorcycleViewProps> = ({
                 value={data}
                 onChange={(e) => setData(e.target.value)}
                 required
-                className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-slate-100 text-sm focus:outline-none focus:border-amber-500/60"
+                className="w-full px-3 py-2.5 rounded-xl bg-canvas border border-line-strong text-ink text-sm focus:outline-none focus:border-brand/60"
               />
             </label>
 
             <label className="block">
-              <span className="text-[11px] text-slate-400 mb-1.5 block">
-                Produto usado <span className="text-slate-600">(opcional)</span>
+              <span className="text-[11px] text-ink-muted mb-1.5 block">
+                Produto usado <span className="text-ink-faint">(opcional)</span>
               </span>
               <input
                 value={produto}
                 onChange={(e) => setProduto(e.target.value)}
                 placeholder="ex: Motul 5100 10W40"
-                className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-slate-100 text-sm placeholder:text-slate-600 focus:outline-none focus:border-amber-500/60"
+                className="w-full px-3 py-2.5 rounded-xl bg-canvas border border-line-strong text-ink text-sm placeholder:text-ink-faint focus:outline-none focus:border-brand/60"
               />
             </label>
 
             <button
               type="submit"
-              className="w-full py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-sm transition active:scale-95 flex items-center justify-center gap-2"
+              className="w-full py-3 rounded-xl bg-brand hover:opacity-90 text-on-brand font-bold text-sm transition active:scale-95 flex items-center justify-center gap-2"
             >
               <Check className="w-4 h-4" />
               Salvar

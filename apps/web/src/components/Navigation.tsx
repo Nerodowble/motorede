@@ -89,28 +89,28 @@ export const Navigation: React.FC<NavigationProps> = ({
     <>
       {/* Mobile "Mais" Bottom Sheet Drawer */}
       {isMoreMenuOpen && (
-        <div className="fixed inset-0 z-50 md:hidden flex flex-col justify-end bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-50 md:hidden flex flex-col justify-end bg-canvas/80 backdrop-blur-sm animate-in fade-in duration-150">
           <div
             className="fixed inset-0"
             onClick={() => setIsMoreMenuOpen(false)}
             aria-hidden="true"
           />
 
-          <div className="relative bg-slate-900 border-t border-slate-800 rounded-t-3xl p-5 shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto pb-safe">
+          <div className="relative bg-surface border-t border-line rounded-t-3xl p-5 shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto pb-safe">
             {/* Sheet Handle */}
-            <div className="w-12 h-1.5 bg-slate-700 rounded-full mx-auto -mt-1 mb-2" />
+            <div className="w-12 h-1.5 bg-line-strong rounded-full mx-auto -mt-1 mb-2" />
 
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+            <div className="flex items-center justify-between pb-3 border-b border-line">
               <div>
-                <h3 className="text-base font-bold text-white flex items-center gap-2">
-                  <Bike className="w-4 h-4 text-amber-400" />
+                <h3 className="text-base font-bold text-ink flex items-center gap-2">
+                  <Bike className="w-4 h-4 text-brand-soft" />
                   Módulos & Ferramentas MotoRede
                 </h3>
-                <p className="text-xs text-slate-400">Acesso rápido para pilotagem e manutenção</p>
+                <p className="text-xs text-ink-muted">Acesso rápido para pilotagem e manutenção</p>
               </div>
               <button
                 onClick={() => setIsMoreMenuOpen(false)}
-                className="p-1.5 rounded-full text-slate-400 hover:text-white bg-slate-800/80 active:scale-95"
+                className="p-1.5 rounded-full text-ink-muted hover:text-ink bg-elevated/80 active:scale-95"
                 title="Fechar"
               >
                 <X className="w-5 h-5" />
@@ -123,28 +123,28 @@ export const Navigation: React.FC<NavigationProps> = ({
                 onClick={() => handleMobileTabSelect('motorcycle')}
                 className={`w-full p-3.5 rounded-xl border flex items-center justify-between transition active:scale-98 ${
                   activeTab === 'motorcycle'
-                    ? 'bg-amber-500/15 border-amber-500/40 text-amber-400'
-                    : 'bg-slate-950/60 border-slate-800 text-slate-200 hover:bg-slate-800'
+                    ? 'bg-brand/15 border-brand/40 text-brand-soft'
+                    : 'bg-canvas/60 border-line text-ink hover:bg-elevated'
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shrink-0">
+                  <div className="w-9 h-9 rounded-lg bg-brand/10 border border-brand/20 flex items-center justify-center text-brand-soft shrink-0">
                     <BookOpenCheck className="w-5 h-5" />
                   </div>
                   <div className="text-left">
                     <p className="text-sm font-bold">Passaporte & Ficha da Moto</p>
-                    <p className="text-xs text-slate-400">Histórico de revisões e selo de procedência</p>
+                    <p className="text-xs text-ink-muted">Histórico de revisões e selo de procedência</p>
                   </div>
                 </div>
-                <ChevronRight className="w-4 h-4 text-slate-500" />
+                <ChevronRight className="w-4 h-4 text-ink-faint" />
               </button>
 
               <button
                 onClick={() => handleMobileTabSelect('diagnostic')}
                 className={`w-full p-3.5 rounded-xl border flex items-center justify-between transition active:scale-98 ${
                   activeTab === 'diagnostic'
-                    ? 'bg-amber-500/15 border-amber-500/40 text-amber-400'
-                    : 'bg-slate-950/60 border-slate-800 text-slate-200 hover:bg-slate-800'
+                    ? 'bg-brand/15 border-brand/40 text-brand-soft'
+                    : 'bg-canvas/60 border-line text-ink hover:bg-elevated'
                 }`}
               >
                 <div className="flex items-center gap-3">
@@ -153,10 +153,10 @@ export const Navigation: React.FC<NavigationProps> = ({
                   </div>
                   <div className="text-left">
                     <p className="text-sm font-bold">Diagnóstico Mecânico na Estrada</p>
-                    <p className="text-xs text-slate-400">Triagem de sintomas passo a passo</p>
+                    <p className="text-xs text-ink-muted">Triagem de sintomas passo a passo</p>
                   </div>
                 </div>
-                <ChevronRight className="w-4 h-4 text-slate-500" />
+                <ChevronRight className="w-4 h-4 text-ink-faint" />
               </button>
 
               {onOpenEditMotorcycle && (
@@ -165,18 +165,18 @@ export const Navigation: React.FC<NavigationProps> = ({
                     setIsMoreMenuOpen(false);
                     onOpenEditMotorcycle();
                   }}
-                  className="w-full p-3.5 rounded-xl border bg-slate-950/60 border-slate-800 text-slate-200 hover:bg-slate-800 flex items-center justify-between transition active:scale-98"
+                  className="w-full p-3.5 rounded-xl border bg-canvas/60 border-line text-ink hover:bg-elevated flex items-center justify-between transition active:scale-98"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center text-amber-400 shrink-0">
+                    <div className="w-9 h-9 rounded-lg bg-elevated border border-line-strong flex items-center justify-center text-brand-soft shrink-0">
                       <Settings2 className="w-5 h-5" />
                     </div>
                     <div className="text-left">
                       <p className="text-sm font-bold">Editar Ficha Técnica da Moto</p>
-                      <p className="text-xs text-slate-400">Cadastrar cilindrada, tanque, estilo e intervalos</p>
+                      <p className="text-xs text-ink-muted">Cadastrar cilindrada, tanque, estilo e intervalos</p>
                     </div>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-slate-500" />
+                  <ChevronRight className="w-4 h-4 text-ink-faint" />
                 </button>
               )}
 
@@ -186,18 +186,18 @@ export const Navigation: React.FC<NavigationProps> = ({
                     setIsMoreMenuOpen(false);
                     onOpenLockscreenModal();
                   }}
-                  className="w-full p-3.5 rounded-xl border bg-slate-950/60 border-slate-800 text-slate-200 hover:bg-slate-800 flex items-center justify-between transition active:scale-98"
+                  className="w-full p-3.5 rounded-xl border bg-canvas/60 border-line text-ink hover:bg-elevated flex items-center justify-between transition active:scale-98"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center text-emerald-400 shrink-0">
+                    <div className="w-9 h-9 rounded-lg bg-elevated border border-line-strong flex items-center justify-center text-emerald-400 shrink-0">
                       <Smartphone className="w-5 h-5" />
                     </div>
                     <div className="text-left">
                       <p className="text-sm font-bold">Simulador de Tela Bloqueada</p>
-                      <p className="text-xs text-slate-400">Testar áudio de rádio e atalhos em segundo plano</p>
+                      <p className="text-xs text-ink-muted">Testar áudio de rádio e atalhos em segundo plano</p>
                     </div>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-slate-500" />
+                  <ChevronRight className="w-4 h-4 text-ink-faint" />
                 </button>
               )}
             </div>
@@ -206,7 +206,7 @@ export const Navigation: React.FC<NavigationProps> = ({
       )}
 
       {/* Main Bottom Navigation Bar */}
-      <nav className="fixed bottom-0 left-0 right-0 z-30 bg-slate-950/95 backdrop-blur-lg border-t border-slate-800/90 pb-safe shadow-lg">
+      <nav className="fixed bottom-0 left-0 right-0 z-30 bg-canvas/95 backdrop-blur-lg border-t border-line/90 pb-safe shadow-lg">
         {/* DESKTOP BAR (md and above) - All Tabs visible */}
         <div className="hidden md:block max-w-4xl mx-auto px-4">
           <div className="flex items-center justify-around py-2">
@@ -220,8 +220,8 @@ export const Navigation: React.FC<NavigationProps> = ({
                   onClick={() => onTabChange(item.id)}
                   className={`relative flex flex-col items-center justify-center min-w-[72px] py-1.5 px-3 rounded-xl transition-all duration-150 active:scale-95 ${
                     isActive
-                      ? 'text-amber-400 font-semibold'
-                      : 'text-slate-400 hover:text-slate-200 font-medium'
+                      ? 'text-brand-soft font-semibold'
+                      : 'text-ink-muted hover:text-ink font-medium'
                   }`}
                 >
                   {item.badge !== undefined && item.badge > 0 && (
@@ -236,7 +236,7 @@ export const Navigation: React.FC<NavigationProps> = ({
 
                   <div
                     className={`p-1.5 rounded-lg transition ${
-                      isActive ? 'bg-amber-500/15 text-amber-400' : 'text-slate-400'
+                      isActive ? 'bg-brand/15 text-brand-soft' : 'text-ink-muted'
                     }`}
                   >
                     <Icon className={`w-5 h-5 ${isActive ? 'stroke-[2.5]' : 'stroke-2'}`} />
@@ -247,7 +247,7 @@ export const Navigation: React.FC<NavigationProps> = ({
                   </span>
 
                   {isActive && (
-                    <span className="absolute bottom-0 w-8 h-0.5 bg-amber-500 rounded-full" />
+                    <span className="absolute bottom-0 w-8 h-0.5 bg-brand rounded-full" />
                   )}
                 </button>
               );
@@ -263,19 +263,19 @@ export const Navigation: React.FC<NavigationProps> = ({
               <button
                 onClick={() => onTabChange('dashboard')}
                 className={`relative flex flex-col items-center justify-center py-1 rounded-xl transition active:scale-95 ${
-                  activeTab === 'dashboard' ? 'text-amber-400 font-bold' : 'text-slate-400'
+                  activeTab === 'dashboard' ? 'text-brand-soft font-bold' : 'text-ink-muted'
                 }`}
               >
                 <div
                   className={`p-1 rounded-lg ${
-                    activeTab === 'dashboard' ? 'bg-amber-500/15 text-amber-400' : 'text-slate-400'
+                    activeTab === 'dashboard' ? 'bg-brand/15 text-brand-soft' : 'text-ink-muted'
                   }`}
                 >
                   <LayoutDashboard className="w-5 h-5" />
                 </div>
                 <span className="text-[10px] tracking-tight leading-tight mt-0.5">Painel</span>
                 {activeTab === 'dashboard' && (
-                  <span className="absolute bottom-0 w-6 h-0.5 bg-amber-500 rounded-full" />
+                  <span className="absolute bottom-0 w-6 h-0.5 bg-brand rounded-full" />
                 )}
               </button>
 
@@ -283,7 +283,7 @@ export const Navigation: React.FC<NavigationProps> = ({
               <button
                 onClick={() => onTabChange('convoy')}
                 className={`relative flex flex-col items-center justify-center py-1 rounded-xl transition active:scale-95 ${
-                  activeTab === 'convoy' ? 'text-amber-400 font-bold' : 'text-slate-400'
+                  activeTab === 'convoy' ? 'text-brand-soft font-bold' : 'text-ink-muted'
                 }`}
               >
                 {isVoiceActive && (
@@ -291,14 +291,14 @@ export const Navigation: React.FC<NavigationProps> = ({
                 )}
                 <div
                   className={`p-1 rounded-lg ${
-                    activeTab === 'convoy' ? 'bg-amber-500/15 text-amber-400' : 'text-slate-400'
+                    activeTab === 'convoy' ? 'bg-brand/15 text-brand-soft' : 'text-ink-muted'
                   }`}
                 >
                   <Radio className="w-5 h-5" />
                 </div>
                 <span className="text-[10px] tracking-tight leading-tight mt-0.5">Comboio</span>
                 {activeTab === 'convoy' && (
-                  <span className="absolute bottom-0 w-6 h-0.5 bg-amber-500 rounded-full" />
+                  <span className="absolute bottom-0 w-6 h-0.5 bg-brand rounded-full" />
                 )}
               </button>
 
@@ -311,12 +311,12 @@ export const Navigation: React.FC<NavigationProps> = ({
                   className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg transition border ${
                     activeTab === 'sos'
                       ? 'bg-red-600 border-red-400 text-white shadow-red-900/60 ring-2 ring-red-500/40'
-                      : 'bg-red-950/90 border-red-700/60 text-red-400 shadow-slate-950'
+                      : 'bg-red-950/90 border-red-700/60 text-red-400 shadow-canvas'
                   }`}
                 >
                   <ShieldAlert className={`w-6 h-6 ${activeSOSCount > 0 ? 'animate-pulse' : ''}`} />
                   {activeSOSCount > 0 && (
-                    <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-white text-red-600 font-mono text-[10px] font-black flex items-center justify-center border-2 border-slate-950 shadow">
+                    <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-white text-red-600 font-mono text-[10px] font-black flex items-center justify-center border-2 border-canvas shadow">
                       {activeSOSCount}
                     </span>
                   )}
@@ -334,19 +334,19 @@ export const Navigation: React.FC<NavigationProps> = ({
               <button
                 onClick={() => onTabChange('motorcycle')}
                 className={`relative flex flex-col items-center justify-center py-1 rounded-xl transition active:scale-95 ${
-                  activeTab === 'motorcycle' ? 'text-amber-400 font-bold' : 'text-slate-400'
+                  activeTab === 'motorcycle' ? 'text-brand-soft font-bold' : 'text-ink-muted'
                 }`}
               >
                 <div
                   className={`p-1 rounded-lg ${
-                    activeTab === 'motorcycle' ? 'bg-amber-500/15 text-amber-400' : 'text-slate-400'
+                    activeTab === 'motorcycle' ? 'bg-brand/15 text-brand-soft' : 'text-ink-muted'
                   }`}
                 >
                   <Wrench className="w-5 h-5" />
                 </div>
                 <span className="text-[10px] tracking-tight leading-tight mt-0.5">Oficina</span>
                 {activeTab === 'motorcycle' && (
-                  <span className="absolute bottom-0 w-6 h-0.5 bg-amber-500 rounded-full" />
+                  <span className="absolute bottom-0 w-6 h-0.5 bg-brand rounded-full" />
                 )}
               </button>
 
@@ -354,15 +354,15 @@ export const Navigation: React.FC<NavigationProps> = ({
               <button
                 onClick={() => setIsMoreMenuOpen(true)}
                 className={`relative flex flex-col items-center justify-center py-1 rounded-xl transition active:scale-95 ${
-                  isMoreActive ? 'text-amber-400 font-bold' : 'text-slate-400'
+                  isMoreActive ? 'text-brand-soft font-bold' : 'text-ink-muted'
                 }`}
               >
                 {isMoreActive && (
-                  <span className="absolute top-1 right-3 w-2 h-2 rounded-full bg-amber-400" />
+                  <span className="absolute top-1 right-3 w-2 h-2 rounded-full bg-brand" />
                 )}
                 <div
                   className={`p-1 rounded-lg ${
-                    isMoreActive ? 'bg-amber-500/15 text-amber-400' : 'text-slate-400'
+                    isMoreActive ? 'bg-brand/15 text-brand-soft' : 'text-ink-muted'
                   }`}
                 >
                   <MoreHorizontal className="w-5 h-5" />
@@ -371,7 +371,7 @@ export const Navigation: React.FC<NavigationProps> = ({
                   {activeTab === 'motorcycle' ? 'Passaporte' : activeTab === 'diagnostic' ? 'Triagem' : 'Mais'}
                 </span>
                 {isMoreActive && (
-                  <span className="absolute bottom-0 w-6 h-0.5 bg-amber-500 rounded-full" />
+                  <span className="absolute bottom-0 w-6 h-0.5 bg-brand rounded-full" />
                 )}
               </button>
             </div>
@@ -387,7 +387,7 @@ export const Navigation: React.FC<NavigationProps> = ({
                     key={item.id}
                     onClick={() => onTabChange(item.id)}
                     className={`relative flex flex-col items-center justify-center min-w-[60px] py-1 px-1.5 rounded-xl transition active:scale-95 ${
-                      isActive ? 'text-amber-400 font-bold' : 'text-slate-400'
+                      isActive ? 'text-brand-soft font-bold' : 'text-ink-muted'
                     }`}
                   >
                     {item.badge !== undefined && item.badge > 0 && (
@@ -398,7 +398,7 @@ export const Navigation: React.FC<NavigationProps> = ({
 
                     <div
                       className={`p-1 rounded-lg ${
-                        isActive ? 'bg-amber-500/15 text-amber-400' : 'text-slate-400'
+                        isActive ? 'bg-brand/15 text-brand-soft' : 'text-ink-muted'
                       }`}
                     >
                       <Icon className="w-5 h-5" />
@@ -409,7 +409,7 @@ export const Navigation: React.FC<NavigationProps> = ({
                     </span>
 
                     {isActive && (
-                      <span className="absolute bottom-0 w-6 h-0.5 bg-amber-500 rounded-full" />
+                      <span className="absolute bottom-0 w-6 h-0.5 bg-brand rounded-full" />
                     )}
                   </button>
                 );

@@ -16,6 +16,8 @@ import { AuthModal } from './components/AuthModal';
 import { MotorcycleEditModal } from './components/MotorcycleEditModal';
 import { LoginScreen } from './components/LoginScreen';
 import { useGoogleAuth } from './hooks/useGoogleAuth';
+import { useTheme } from './hooks/useTheme';
+import { ThemeToggle } from './components/ThemeToggle';
 
 // Eagerly load primary Dashboard for instant first paint
 import { DashboardView } from './views/DashboardView';
@@ -33,6 +35,7 @@ export default function App() {
   // (ambiente sem credencial), o app segue funcionando com a sessão local —
   // caso contrário um deploy mal configurado deixaria o app inacessível.
   const auth = useGoogleAuth();
+  const theme = useTheme();
 
   // Authentication & Session State
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => storageService.getCurrentUser());
@@ -339,7 +342,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-amber-500 selection:text-slate-950">
+    <div className="min-h-screen bg-canvas text-ink flex flex-col font-sans selection:bg-brand selection:text-on-brand">
       {/* Convite para colocar na tela inicial. Sempre visível até ser
           dispensado: condicioná-lo à primeira conversa escondia o convite de
           quem queria instalar antes, e o navegador já tem regras próprias
@@ -356,6 +359,7 @@ export default function App() {
         onOpenLockscreenModal={() => setIsLockscreenOpen(true)}
         onSOSClick={() => setActiveTab('sos')}
         onOpenEditMotorcycle={() => setIsMotorcycleEditOpen(true)}
+        themeToggle={<ThemeToggle choice={theme.choice} onChange={theme.escolher} />}
       />
 
       {/* Main View Container */}
@@ -373,7 +377,7 @@ export default function App() {
 
         <Suspense
           fallback={
-            <div className="flex items-center justify-center p-12 text-slate-400 font-medium text-sm animate-pulse">
+            <div className="flex items-center justify-center p-12 text-ink-muted font-medium text-sm animate-pulse">
               Carregando módulo...
             </div>
           }

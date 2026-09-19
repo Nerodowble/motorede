@@ -1,5 +1,72 @@
 @import "tailwindcss";
 
+/**
+ * Cores por função, não por tom.
+ *
+ * Antes cada componente escrevia `bg-slate-900`, `text-slate-400` e assim por
+ * diante — cerca de 800 vezes em 17 arquivos. Trocar de tema exigiria editar
+ * todas, ou espalhar variantes `dark:` por toda parte.
+ *
+ * Aqui a cor é declarada pelo PAPEL que exerce: fundo da página, superfície de
+ * cartão, texto principal, texto secundário. Cada tema define os valores, e a
+ * interface não precisa saber qual está ativo.
+ *
+ * O `@theme` aponta para variáveis comuns em vez de valores fixos, e é isso
+ * que permite trocar de tema em tempo de execução: o Tailwind gera utilitários
+ * que resolvem a variável na hora, não na compilação.
+ */
+@theme {
+  --color-canvas: var(--mr-canvas);
+  --color-surface: var(--mr-surface);
+  --color-elevated: var(--mr-elevated);
+  --color-line: var(--mr-line);
+  --color-line-strong: var(--mr-line-strong);
+  --color-ink: var(--mr-ink);
+  --color-ink-muted: var(--mr-ink-muted);
+  --color-ink-faint: var(--mr-ink-faint);
+  --color-brand: var(--mr-brand);
+  --color-on-brand: var(--mr-on-brand);
+  --color-brand-soft: var(--mr-brand-soft);
+}
+
+/* Tema escuro: o padrão, pensado para uso noturno e na estrada. */
+:root,
+:root[data-theme='dark'] {
+  --mr-canvas: #020617;
+  --mr-surface: #0f172a;
+  --mr-elevated: #1e293b;
+  --mr-line: #1e293b;
+  --mr-line-strong: #334155;
+  --mr-ink: #f1f5f9;
+  --mr-ink-muted: #94a3b8;
+  --mr-ink-faint: #8296ad;
+  --mr-brand: #f59e0b;
+  --mr-on-brand: #020617;
+  --mr-brand-soft: #fbbf24;
+  color-scheme: dark;
+}
+
+/**
+ * Tema claro.
+ *
+ * O âmbar escurece um pouco: sobre fundo claro, o tom original não alcança
+ * contraste suficiente para texto pequeno.
+ */
+:root[data-theme='light'] {
+  --mr-canvas: #f1f5f9;
+  --mr-surface: #ffffff;
+  --mr-elevated: #f1f5f9;
+  --mr-line: #e2e8f0;
+  --mr-line-strong: #cbd5e1;
+  --mr-ink: #0f172a;
+  --mr-ink-muted: #475569;
+  --mr-ink-faint: #5b6472;
+  --mr-brand: #b45309;
+  --mr-on-brand: #ffffff;
+  --mr-brand-soft: #92400e;
+  color-scheme: light;
+}
+
 @layer base {
   html, body {
     /* `clip` em vez de `hidden`: os dois cortam o transbordo horizontal, mas
@@ -14,8 +81,10 @@
     overscroll-behavior-y: none;
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     -webkit-tap-highlight-color: transparent;
+    background-color: var(--mr-canvas);
+    color: var(--mr-ink);
   }
-  
+
   code, kbd, samp, pre {
     font-family: 'JetBrains Mono', monospace;
   }
@@ -27,6 +96,7 @@
     input[type="email"],
     input[type="password"],
     input[type="tel"],
+    input[type="date"],
     select,
     textarea {
       font-size: 16px !important;

@@ -26,19 +26,19 @@ export const MotorcycleEmptyState: React.FC<MotorcycleEmptyStateProps> = ({
   telaInteira = false,
 }) => {
   const conteudo = (
-    <div className="rounded-2xl bg-slate-900/80 border border-slate-800 p-5 text-center">
-      <div className="w-12 h-12 rounded-xl bg-slate-800 flex items-center justify-center text-slate-400 mx-auto mb-3">
+    <div className="rounded-2xl bg-surface/80 border border-line p-5 text-center">
+      <div className="w-12 h-12 rounded-xl bg-elevated flex items-center justify-center text-ink-muted mx-auto mb-3">
         <Bike className="w-6 h-6" />
       </div>
-      <p className="text-sm font-bold text-slate-100 mb-1">
+      <p className="text-sm font-bold text-ink mb-1">
         Você ainda não cadastrou a moto
       </p>
-      <p className="text-[11px] text-slate-400 leading-relaxed mb-4">{motivo}</p>
+      <p className="text-[11px] text-ink-muted leading-relaxed mb-4">{motivo}</p>
 
       {onCadastrar && (
         <button
           onClick={onCadastrar}
-          className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold transition active:scale-95"
+          className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-brand hover:opacity-90 text-on-brand text-xs font-bold transition active:scale-95"
         >
           <Plus className="w-4 h-4" />
           Cadastrar minha moto

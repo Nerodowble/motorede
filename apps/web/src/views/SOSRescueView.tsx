@@ -108,17 +108,17 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
   return (
     <div className="space-y-4 pb-28 sm:pb-24 max-w-4xl mx-auto px-3 sm:px-4 py-3">
       {/* High Visibility Emergency Trigger Banner */}
-      <div className="rounded-2xl bg-gradient-to-b from-red-950/80 via-slate-950 to-slate-950 border border-red-800/50 p-4 sm:p-5 shadow-2xl">
+      <div className="rounded-2xl bg-gradient-to-b from-red-500/10 via-surface to-surface border border-red-800/50 p-4 sm:p-5 shadow-2xl">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-xl bg-red-600/20 border border-red-500/40 flex items-center justify-center text-red-500 shrink-0">
               <ShieldAlert className="w-7 h-7 animate-pulse" />
             </div>
             <div>
-              <h2 className="text-base sm:text-lg font-black text-white tracking-tight flex items-center gap-2">
+              <h2 className="text-base sm:text-lg font-black text-ink tracking-tight flex items-center gap-2">
                 Rede Comunitária de Socorro SOS
               </h2>
-              <p className="text-xs text-slate-300 mt-0.5">
+              <p className="text-xs text-ink-muted mt-0.5">
                 Alerta instantâneo geolocalizado emitido para motociclistas num raio de até 25 km.
               </p>
             </div>
@@ -148,15 +148,15 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
                     onClick={() => setSelectedEmergencyType(item.type)}
                     className={`p-3 rounded-xl border text-left transition flex flex-col justify-between ${
                       selectedEmergencyType === item.type
-                        ? 'bg-red-600/25 border-red-500 text-white shadow-md'
-                        : 'bg-slate-900/80 border-slate-800 text-slate-300 hover:border-slate-700'
+                        ? 'bg-red-600/25 border-red-500 text-ink shadow-md'
+                        : 'bg-surface/80 border-line text-ink-muted hover:border-line-strong'
                     }`}
                   >
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-base">{item.icon}</span>
                       <span className="text-xs font-bold">{item.label}</span>
                     </div>
-                    <span className="text-[10px] text-slate-400 line-clamp-2">{item.desc}</span>
+                    <span className="text-[10px] text-ink-muted line-clamp-2">{item.desc}</span>
                   </button>
                 ))}
               </div>
@@ -165,8 +165,8 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
             {/* Radius and Coordinates */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1 font-mono">
-                  2. Raio Geográfico de Notificação: <span className="text-amber-400 font-bold">{radiusKm} km</span>
+                <label className="block text-xs font-bold text-ink-muted mb-1 font-mono">
+                  2. Raio Geográfico de Notificação: <span className="text-brand-soft font-bold">{radiusKm} km</span>
                 </label>
                 <div className="flex items-center gap-2">
                   {[5, 10, 15, 25].map((r) => (
@@ -176,8 +176,8 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
                       onClick={() => setRadiusKm(r)}
                       className={`flex-1 py-1.5 rounded-lg text-xs font-bold font-mono transition ${
                         radiusKm === r
-                          ? 'bg-amber-500 text-slate-950'
-                          : 'bg-slate-900 text-slate-400 border border-slate-800'
+                          ? 'bg-brand text-on-brand'
+                          : 'bg-surface text-ink-muted border border-line'
                       }`}
                     >
                       {r} km
@@ -187,15 +187,15 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1 font-mono">
+                <label className="block text-xs font-bold text-ink-muted mb-1 font-mono">
                   Sua Posição GPS Atual
                 </label>
-                <div className="bg-slate-900/90 border border-slate-800 rounded-lg p-2 flex items-center justify-between text-xs text-slate-300">
+                <div className="bg-surface/90 border border-line rounded-lg p-2 flex items-center justify-between text-xs text-ink-muted">
                   <span className="flex items-center gap-1.5 text-sky-400">
                     <Compass className="w-4 h-4" />
                     GPS Ativo:
                   </span>
-                  <span className="font-mono text-slate-200">
+                  <span className="font-mono text-ink">
                     {userCoords.lat.toFixed(4)}, {userCoords.lng.toFixed(4)}
                   </span>
                 </div>
@@ -209,13 +209,13 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
                 value={locationRefText}
                 onChange={(e) => setLocationRefText(e.target.value)}
                 placeholder="Ponto de Referência (Ex: Rodovia Imigrantes KM 28, sentido Litoral no acostamento)"
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-red-500"
+                className="w-full bg-surface border border-line-strong rounded-xl p-3 text-xs text-ink placeholder:text-ink-faint focus:outline-none focus:border-red-500"
               />
               <textarea
                 value={detailsText}
                 onChange={(e) => setDetailsText(e.target.value)}
                 placeholder="Detalhes adicionais (Ex: Cabo de embreagem partiu no manete, estou com ferramentas básicas)"
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-red-500 h-20 resize-none"
+                className="w-full bg-surface border border-line-strong rounded-xl p-3 text-xs text-ink placeholder:text-ink-faint focus:outline-none focus:border-red-500 h-20 resize-none"
               />
             </div>
 
@@ -233,12 +233,12 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
 
       {/* Temporary Rescue Channel (Dedicated Live Assistance) */}
       {activeChannelAlert && (
-        <div className="rounded-2xl bg-slate-900/90 border border-amber-500/40 p-4 shadow-xl">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
+        <div className="rounded-2xl bg-surface/90 border border-brand/40 p-4 shadow-xl">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-line">
             <div>
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
-                <h3 className="text-sm font-extrabold text-white">
+                <h3 className="text-sm font-extrabold text-ink">
                   Canal Temporário de Ajuda: {activeChannelAlert.petitionerName}
                 </h3>
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-red-600/20 text-red-300 font-bold">
@@ -249,7 +249,7 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
                     : 'Emergência'}
                 </span>
               </div>
-              <p className="text-xs text-slate-300 mt-1 flex items-center gap-1.5">
+              <p className="text-xs text-ink-muted mt-1 flex items-center gap-1.5">
                 <MapPin className="w-3.5 h-3.5 text-red-400" />
                 {activeChannelAlert.locationReference} • Veículo: {activeChannelAlert.motorcycleInfo}
               </p>
@@ -290,10 +290,10 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
           </div>
 
           {/* Volunteers status */}
-          <div className="py-2.5 flex items-center justify-between text-xs text-slate-400 border-b border-slate-800/80">
+          <div className="py-2.5 flex items-center justify-between text-xs text-ink-muted border-b border-line/80">
             <span className="flex items-center gap-1.5">
-              <Users className="w-4 h-4 text-amber-500" />
-              Voluntários no Resgate: <strong className="text-white">{activeChannelAlert.volunteers.length} motociclista(s)</strong>
+              <Users className="w-4 h-4 text-brand" />
+              Voluntários no Resgate: <strong className="text-ink">{activeChannelAlert.volunteers.length} motociclista(s)</strong>
             </span>
             <span className="text-[11px] font-mono text-emerald-400">Canal criptografado temporário</span>
           </div>
@@ -307,12 +307,12 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
                   msg.senderId === 'system'
                     ? 'bg-emerald-950/40 border border-emerald-800/40 text-emerald-300 text-center'
                     : msg.senderName.includes('Você') || msg.senderId.includes('user')
-                    ? 'bg-slate-800/90 text-slate-100 ml-6 border border-slate-700'
-                    : 'bg-slate-950 text-slate-200 mr-6 border border-slate-800'
+                    ? 'bg-elevated/90 text-ink ml-6 border border-line-strong'
+                    : 'bg-canvas text-ink mr-6 border border-line'
                 }`}
               >
-                <div className="flex items-center justify-between text-[10px] text-slate-400 mb-0.5">
-                  <span className="font-bold text-amber-400">{msg.senderName}</span>
+                <div className="flex items-center justify-between text-[10px] text-ink-muted mb-0.5">
+                  <span className="font-bold text-brand-soft">{msg.senderName}</span>
                   <span className="font-mono">{msg.timestamp}</span>
                 </div>
                 <p className="leading-relaxed">{msg.text}</p>
@@ -322,13 +322,13 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
 
           {/* Quick Motorcycle Rescue Phrases */}
           <div className="mb-2">
-            <p className="text-[10px] text-slate-400 font-mono uppercase mb-1">Respostas Rápidas em Trânsito:</p>
+            <p className="text-[10px] text-ink-muted font-mono uppercase mb-1">Respostas Rápidas em Trânsito:</p>
             <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
               {quickPhrases.map((phrase, idx) => (
                 <button
                   key={idx}
                   onClick={() => onSendMessage(activeChannelAlert.id, phrase)}
-                  className="px-2.5 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] whitespace-nowrap border border-slate-700 active:scale-95 transition"
+                  className="px-2.5 py-1 rounded-full bg-elevated hover:bg-line-strong text-ink-muted text-[11px] whitespace-nowrap border border-line-strong active:scale-95 transition"
                 >
                   {phrase}
                 </button>
@@ -352,11 +352,11 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
               placeholder="Digite uma mensagem para alinhar o resgate..."
-              className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
+              className="flex-1 bg-canvas border border-line-strong rounded-xl px-3 py-2 text-xs text-ink focus:outline-none focus:border-brand"
             />
             <button
               type="submit"
-              className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl flex items-center gap-1 active:scale-95"
+              className="px-4 py-2 bg-brand hover:opacity-90 text-on-brand font-bold text-xs rounded-xl flex items-center gap-1 active:scale-95"
             >
               <Send className="w-3.5 h-3.5" />
               Enviar
@@ -366,15 +366,15 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
       )}
 
       {/* Community Alerts Radar List */}
-      <div className="rounded-2xl bg-slate-900/80 border border-slate-800 p-4">
+      <div className="rounded-2xl bg-surface/80 border border-line p-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Radio className="w-4 h-4 text-red-500" />
-            <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider font-mono">
+            <h3 className="text-xs font-bold text-ink uppercase tracking-wider font-mono">
               Alertas Ativos na Região ({sosAlerts.length})
             </h3>
           </div>
-          <span className="text-[11px] text-slate-400 font-mono">Raio máximo: 25 km</span>
+          <span className="text-[11px] text-ink-muted font-mono">Raio máximo: 25 km</span>
         </div>
 
         <div className="space-y-2.5">
@@ -387,16 +387,16 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
                 key={alert.id}
                 className={`rounded-xl p-3.5 border transition ${
                   alert.id === activeChannelAlertId
-                    ? 'bg-slate-950 border-amber-500/60 shadow-md'
+                    ? 'bg-canvas border-brand/60 shadow-md'
                     : isResolved
-                    ? 'bg-slate-950/40 border-slate-800/60 opacity-70'
-                    : 'bg-slate-950/80 border-slate-800 hover:border-slate-700'
+                    ? 'bg-canvas/40 border-line/60 opacity-70'
+                    : 'bg-canvas/80 border-line hover:border-line-strong'
                 }`}
               >
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-white">{alert.petitionerName}</span>
+                      <span className="text-xs font-bold text-ink">{alert.petitionerName}</span>
                       <span className="text-[10px] px-2 py-0.5 rounded font-bold font-mono bg-red-600/20 text-red-300">
                         {alert.type === 'mechanical_breakdown'
                           ? 'Pane Mecânica'
@@ -408,13 +408,13 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
                           ? 'Bateria / Elétrica'
                           : 'Queda / Acidente'}
                       </span>
-                      <span className="text-[11px] text-amber-400 font-mono font-bold">
+                      <span className="text-[11px] text-brand-soft font-mono font-bold">
                         ~{formatDistance(distance)} de você
                       </span>
                     </div>
 
-                    <p className="text-xs text-slate-300 mt-1">{alert.details}</p>
-                    <p className="text-[11px] text-slate-400 mt-0.5 flex items-center gap-1">
+                    <p className="text-xs text-ink-muted mt-1">{alert.details}</p>
+                    <p className="text-[11px] text-ink-muted mt-0.5 flex items-center gap-1">
                       <MapPin className="w-3 h-3 text-red-400" />
                       {alert.locationReference} ({alert.motorcycleInfo})
                     </p>
@@ -426,7 +426,7 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
                         setActiveChannelAlertId(alert.id);
                         onRespondToSOS(alert.id);
                       }}
-                      className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition active:scale-95"
+                      className="px-3.5 py-2 rounded-xl bg-brand hover:opacity-90 text-on-brand font-bold text-xs flex items-center gap-1.5 transition active:scale-95"
                     >
                       <MessageSquare className="w-3.5 h-3.5" />
                       {alert.id === activeChannelAlertId ? 'Canal Aberto' : 'Prestar Socorro'}

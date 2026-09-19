@@ -48,22 +48,22 @@ export const DiagnosticView: React.FC<DiagnosticViewProps> = ({ onExportToSOS })
   return (
     <div className="space-y-4 pb-28 sm:pb-24 max-w-4xl mx-auto px-3 sm:px-4 py-3">
       {/* Top Header Card */}
-      <div className="rounded-2xl bg-gradient-to-b from-slate-900 to-slate-950 border border-slate-800 p-4 sm:p-5 shadow-xl">
+      <div className="rounded-2xl bg-gradient-to-b from-surface to-canvas border border-line p-4 sm:p-5 shadow-xl">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+            <div className="w-12 h-12 rounded-xl bg-brand/15 border border-brand/30 flex items-center justify-center text-brand-soft shrink-0">
               <Stethoscope className="w-6 h-6" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-base sm:text-lg font-extrabold text-white tracking-tight">
+                <h2 className="text-base sm:text-lg font-extrabold text-ink tracking-tight">
                   Triagem Mecânica na Estrada
                 </h2>
                 <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20 font-bold">
                   Árvore de Decisão
                 </span>
               </div>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <p className="text-xs text-ink-muted mt-0.5">
                 Diagnóstico guiado passo a passo para identificar a causa de falhas antes de acionar socorro.
               </p>
             </div>
@@ -73,7 +73,7 @@ export const DiagnosticView: React.FC<DiagnosticViewProps> = ({ onExportToSOS })
             {history.length > 0 && (
               <button
                 onClick={handleBack}
-                className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-slate-700 flex items-center gap-1.5 transition"
+                className="px-3 py-1.5 rounded-lg bg-elevated hover:bg-line-strong text-ink-muted text-xs font-semibold border border-line-strong flex items-center gap-1.5 transition"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
                 Voltar
@@ -81,7 +81,7 @@ export const DiagnosticView: React.FC<DiagnosticViewProps> = ({ onExportToSOS })
             )}
             <button
               onClick={handleReset}
-              className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-400 text-xs font-semibold border border-slate-700 flex items-center gap-1.5 transition"
+              className="px-3 py-1.5 rounded-lg bg-elevated hover:bg-line-strong text-brand-soft text-xs font-semibold border border-line-strong flex items-center gap-1.5 transition"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               Reiniciar
@@ -91,20 +91,20 @@ export const DiagnosticView: React.FC<DiagnosticViewProps> = ({ onExportToSOS })
       </div>
 
       {/* Decision Tree Card */}
-      <div className="rounded-2xl bg-slate-900/90 border border-slate-800 p-5 shadow-lg">
+      <div className="rounded-2xl bg-surface/90 border border-line p-5 shadow-lg">
         {/* Progress breadcrumbs */}
-        <div className="flex items-center gap-2 text-[11px] text-slate-400 font-mono mb-4 pb-2 border-b border-slate-800">
+        <div className="flex items-center gap-2 text-[11px] text-ink-muted font-mono mb-4 pb-2 border-b border-line">
           <span>Etapa {history.length + 1}</span>
           <span>•</span>
-          <span className="text-amber-400 font-semibold">{isLeaf ? 'Diagnóstico Concluído' : 'Em Avaliação'}</span>
+          <span className="text-brand-soft font-semibold">{isLeaf ? 'Diagnóstico Concluído' : 'Em Avaliação'}</span>
         </div>
 
         {/* Question or Conclusion Title */}
         <div className="mb-5">
-          <span className="text-[10px] uppercase tracking-wider font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-bold">
+          <span className="text-[10px] uppercase tracking-wider font-mono px-2 py-0.5 rounded bg-elevated text-ink-muted font-bold">
             {isLeaf ? 'Resultado e Recomendação' : 'Pergunta de Verificação'}
           </span>
-          <h3 className="text-base sm:text-lg font-extrabold text-white mt-2 leading-snug">
+          <h3 className="text-base sm:text-lg font-extrabold text-ink mt-2 leading-snug">
             {currentNode.question}
           </h3>
         </div>
@@ -116,12 +116,12 @@ export const DiagnosticView: React.FC<DiagnosticViewProps> = ({ onExportToSOS })
               <button
                 key={idx}
                 onClick={() => handleSelectOption(option.nextNodeId)}
-                className="w-full text-left p-4 rounded-xl bg-slate-950/80 hover:bg-slate-800 border border-slate-800 hover:border-amber-500/50 text-slate-200 transition active:scale-[0.99] flex items-center justify-between group shadow-sm"
+                className="w-full text-left p-4 rounded-xl bg-canvas/80 hover:bg-elevated border border-line hover:border-brand/50 text-ink transition active:scale-[0.99] flex items-center justify-between group shadow-sm"
               >
-                <span className="text-xs sm:text-sm font-semibold group-hover:text-amber-400 transition">
+                <span className="text-xs sm:text-sm font-semibold group-hover:text-brand-soft transition">
                   {option.label}
                 </span>
-                <span className="text-slate-500 group-hover:text-amber-400 transition text-sm">→</span>
+                <span className="text-ink-faint group-hover:text-brand-soft transition text-sm">→</span>
               </button>
             ))}
           </div>
@@ -135,7 +135,7 @@ export const DiagnosticView: React.FC<DiagnosticViewProps> = ({ onExportToSOS })
                 currentNode.severity === 'danger_stop'
                   ? 'bg-red-950/30 border-red-800/50'
                   : currentNode.severity === 'caution'
-                  ? 'bg-amber-950/30 border-amber-800/50'
+                  ? 'bg-brand/10 border-brand/40'
                   : 'bg-emerald-950/30 border-emerald-800/50'
               }`}
             >
@@ -143,7 +143,7 @@ export const DiagnosticView: React.FC<DiagnosticViewProps> = ({ onExportToSOS })
                 {currentNode.severity === 'danger_stop' ? (
                   <AlertTriangle className="w-5 h-5 text-red-400" />
                 ) : currentNode.severity === 'caution' ? (
-                  <AlertTriangle className="w-5 h-5 text-amber-400" />
+                  <AlertTriangle className="w-5 h-5 text-brand-soft" />
                 ) : (
                   <CheckCircle2 className="w-5 h-5 text-emerald-400" />
                 )}
@@ -152,7 +152,7 @@ export const DiagnosticView: React.FC<DiagnosticViewProps> = ({ onExportToSOS })
                     currentNode.severity === 'danger_stop'
                       ? 'text-red-400'
                       : currentNode.severity === 'caution'
-                      ? 'text-amber-400'
+                      ? 'text-brand-soft'
                       : 'text-emerald-400'
                   }`}
                 >
@@ -164,15 +164,15 @@ export const DiagnosticView: React.FC<DiagnosticViewProps> = ({ onExportToSOS })
                 </span>
               </div>
 
-              <h4 className="text-sm font-bold text-white mb-2">{currentNode.diagnosis}</h4>
-              <p className="text-xs text-slate-300 leading-relaxed">{currentNode.recommendation}</p>
+              <h4 className="text-sm font-bold text-ink mb-2">{currentNode.diagnosis}</h4>
+              <p className="text-xs text-ink-muted leading-relaxed">{currentNode.recommendation}</p>
             </div>
 
             {/* Quick action: Export result to SOS */}
-            <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="p-4 rounded-xl bg-canvas border border-line flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <p className="text-xs font-bold text-white">Não conseguiu resolver sozinho?</p>
-                <p className="text-[11px] text-slate-400">
+                <p className="text-xs font-bold text-ink">Não conseguiu resolver sozinho?</p>
+                <p className="text-[11px] text-ink-muted">
                   Exporte este resumo técnico automaticamente para o radar de socorro SOS da comunidade.
                 </p>
               </div>
@@ -195,10 +195,10 @@ export const DiagnosticView: React.FC<DiagnosticViewProps> = ({ onExportToSOS })
       </div>
 
       {/* Emergency road safety tips */}
-      <div className="rounded-xl bg-slate-900/60 border border-slate-800 p-3.5 text-xs text-slate-400 flex items-start gap-2.5">
-        <Wrench className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+      <div className="rounded-xl bg-surface/60 border border-line p-3.5 text-xs text-ink-muted flex items-start gap-2.5">
+        <Wrench className="w-4 h-4 text-brand-soft shrink-0 mt-0.5" />
         <div>
-          <span className="font-semibold text-slate-200">Segurança em primeiro lugar:</span>
+          <span className="font-semibold text-ink">Segurança em primeiro lugar:</span>
           <p className="mt-0.5 leading-relaxed">
             Se estiver em rodovia, posicione sua moto além da faixa de acostamento, ligue o pisca-alerta e nunca fique de costas para o tráfego enquanto realiza inspeções mecânicas.
           </p>

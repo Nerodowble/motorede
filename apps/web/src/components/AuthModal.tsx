@@ -169,26 +169,26 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   return (
     <div
       id="auth-modal-backdrop"
-      className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-slate-950/85 backdrop-blur-md overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-canvas/85 backdrop-blur-md overflow-y-auto"
     >
       <div
         id="auth-card-container"
-        className="relative w-full max-w-lg bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden my-auto max-h-[92vh] flex flex-col"
+        className="relative w-full max-w-lg bg-surface border border-line rounded-2xl shadow-2xl overflow-hidden my-auto max-h-[92vh] flex flex-col"
       >
         {/* Header Bar */}
-        <div className="bg-slate-950 px-4 sm:px-5 py-3.5 sm:py-4 border-b border-slate-800/80 flex items-center justify-between shrink-0">
+        <div className="bg-canvas px-4 sm:px-5 py-3.5 sm:py-4 border-b border-line/80 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-slate-950 font-black text-base shadow shrink-0">
+            <div className="w-8 h-8 rounded-xl bg-brand flex items-center justify-center text-on-brand font-black text-base shadow shrink-0">
               <span>M</span>
             </div>
             <div className="min-w-0">
-              <h2 className="font-bold text-slate-100 text-sm sm:text-base leading-tight flex items-center gap-2 truncate">
+              <h2 className="font-bold text-ink text-sm sm:text-base leading-tight flex items-center gap-2 truncate">
                 MotoRede
-                <span className="text-[10px] font-mono font-semibold px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0">
+                <span className="text-[10px] font-mono font-semibold px-1.5 py-0.2 rounded bg-brand/10 text-brand-soft border border-brand/20 shrink-0">
                   Acesso
                 </span>
               </h2>
-              <p className="text-[11px] sm:text-xs text-slate-400 truncate">
+              <p className="text-[11px] sm:text-xs text-ink-muted truncate">
                 {currentUser
                   ? `Conectado como: ${currentUser.name}`
                   : 'Identifique-se para acessar suas rotas e dados'}
@@ -199,7 +199,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           {isClosable && (
             <button
               onClick={onClose}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition shrink-0 ml-2"
+              className="p-1.5 rounded-lg text-ink-muted hover:text-ink hover:bg-elevated transition shrink-0 ml-2"
               title="Fechar"
             >
               <X className="w-5 h-5" />
@@ -208,7 +208,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         </div>
 
         {/* Tab Selection */}
-        <div className="flex border-b border-slate-800 bg-slate-950/50 p-1 shrink-0">
+        <div className="flex border-b border-line bg-canvas/50 p-1 shrink-0">
           <button
             type="button"
             onClick={() => {
@@ -217,8 +217,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             }}
             className={`flex-1 py-2 rounded-xl font-semibold text-xs flex items-center justify-center gap-1.5 transition ${
               activeTab === 'login'
-                ? 'bg-amber-500 text-slate-950 shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-brand text-on-brand shadow-sm'
+                : 'text-ink-muted hover:text-ink'
             }`}
           >
             <LogIn className="w-3.5 h-3.5" />
@@ -232,8 +232,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             }}
             className={`flex-1 py-2 rounded-xl font-semibold text-xs flex items-center justify-center gap-1.5 transition ${
               activeTab === 'register'
-                ? 'bg-amber-500 text-slate-950 shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-brand text-on-brand shadow-sm'
+                : 'text-ink-muted hover:text-ink'
             }`}
           >
             <UserPlus className="w-3.5 h-3.5" />
@@ -262,39 +262,39 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             /* LOGIN TAB */
             <form onSubmit={handleLogin} className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1">
+                <label className="block text-xs font-medium text-ink-muted mb-1">
                   E-mail ou Usuário
                 </label>
                 <div className="relative">
-                  <Mail className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Mail className="w-4 h-4 text-ink-faint absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
                     value={loginEmail}
                     onChange={(e) => setLoginEmail(e.target.value)}
                     placeholder="piloto@motorede.com.br"
-                    className="w-full pl-9 pr-3 py-2 bg-slate-950 border border-slate-700/80 rounded-xl text-slate-100 text-sm focus:outline-none focus:border-amber-500 placeholder:text-slate-600"
+                    className="w-full pl-9 pr-3 py-2 bg-canvas border border-line-strong/80 rounded-xl text-ink text-sm focus:outline-none focus:border-brand placeholder:text-ink-faint"
                     autoFocus
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1">
+                <label className="block text-xs font-medium text-ink-muted mb-1">
                   Senha
                 </label>
                 <div className="relative">
-                  <Lock className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Lock className="w-4 h-4 text-ink-faint absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     type={showPassword ? 'text' : 'password'}
                     value={loginPassword}
                     onChange={(e) => setLoginPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full pl-9 pr-10 py-2 bg-slate-950 border border-slate-700/80 rounded-xl text-slate-100 text-sm focus:outline-none focus:border-amber-500 placeholder:text-slate-600"
+                    className="w-full pl-9 pr-10 py-2 bg-canvas border border-line-strong/80 rounded-xl text-ink text-sm focus:outline-none focus:border-brand placeholder:text-ink-faint"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword((p) => !p)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink"
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -303,20 +303,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
               <button
                 type="submit"
-                className="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-sm flex items-center justify-center gap-2 transition active:scale-[0.98] shadow-md shadow-amber-950/30"
+                className="w-full py-2.5 rounded-xl bg-brand hover:opacity-90 text-on-brand font-bold text-sm flex items-center justify-center gap-2 transition active:scale-[0.98] shadow-md shadow-brand/20"
               >
                 <LogIn className="w-4 h-4" />
                 <span>Acessar Plataforma</span>
               </button>
 
               {/* Quick 1-Click Demo Profiles */}
-              <div className="pt-4 border-t border-slate-800">
+              <div className="pt-4 border-t border-line">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[11px] uppercase tracking-wider font-semibold text-slate-400 flex items-center gap-1.5">
-                    <Sparkles className="w-3 h-3 text-amber-400" />
+                  <span className="text-[11px] uppercase tracking-wider font-semibold text-ink-muted flex items-center gap-1.5">
+                    <Sparkles className="w-3 h-3 text-brand-soft" />
                     Acesso Rápido de Demonstração
                   </span>
-                  <span className="text-[10px] text-slate-500">1-Clique</span>
+                  <span className="text-[10px] text-ink-faint">1-Clique</span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -324,54 +324,54 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   <button
                     type="button"
                     onClick={() => handleQuickDemoLogin('piloto@motorede.com.br', '123')}
-                    className="p-2.5 rounded-xl bg-slate-950 hover:bg-slate-800/80 border border-slate-800 hover:border-amber-500/50 text-left transition group"
+                    className="p-2.5 rounded-xl bg-canvas hover:bg-elevated/80 border border-line hover:border-brand/50 text-left transition group"
                   >
                     <div className="flex items-center gap-2 mb-1">
-                      <div className="w-6 h-6 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center">
+                      <div className="w-6 h-6 rounded-lg bg-brand/10 text-brand-soft flex items-center justify-center">
                         <Bike className="w-3.5 h-3.5" />
                       </div>
-                      <span className="font-bold text-xs text-slate-200 group-hover:text-amber-400">
+                      <span className="font-bold text-xs text-ink group-hover:text-brand-soft">
                         Piloto
                       </span>
                     </div>
-                    <p className="text-[10px] text-slate-400 truncate">Carlos Mendonça</p>
-                    <p className="text-[9px] text-slate-500 font-mono">Honda CB 500X</p>
+                    <p className="text-[10px] text-ink-muted truncate">Carlos Mendonça</p>
+                    <p className="text-[9px] text-ink-faint font-mono">Honda CB 500X</p>
                   </button>
 
                   {/* Demo Oficina */}
                   <button
                     type="button"
                     onClick={() => handleQuickDemoLogin('oficina@motovila.com.br', '123')}
-                    className="p-2.5 rounded-xl bg-slate-950 hover:bg-slate-800/80 border border-slate-800 hover:border-amber-500/50 text-left transition group"
+                    className="p-2.5 rounded-xl bg-canvas hover:bg-elevated/80 border border-line hover:border-brand/50 text-left transition group"
                   >
                     <div className="flex items-center gap-2 mb-1">
                       <div className="w-6 h-6 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center">
                         <Wrench className="w-3.5 h-3.5" />
                       </div>
-                      <span className="font-bold text-xs text-slate-200 group-hover:text-blue-400">
+                      <span className="font-bold text-xs text-ink group-hover:text-blue-400">
                         Oficina
                       </span>
                     </div>
-                    <p className="text-[10px] text-slate-400 truncate">MotoTech Garage</p>
-                    <p className="text-[9px] text-slate-500 font-mono">Validação de Cupons</p>
+                    <p className="text-[10px] text-ink-muted truncate">MotoTech Garage</p>
+                    <p className="text-[9px] text-ink-faint font-mono">Validação de Cupons</p>
                   </button>
 
                   {/* Demo Admin */}
                   <button
                     type="button"
                     onClick={() => handleQuickDemoLogin('admin@motorede.com.br', 'admin')}
-                    className="p-2.5 rounded-xl bg-slate-950 hover:bg-slate-800/80 border border-slate-800 hover:border-amber-500/50 text-left transition group"
+                    className="p-2.5 rounded-xl bg-canvas hover:bg-elevated/80 border border-line hover:border-brand/50 text-left transition group"
                   >
                     <div className="flex items-center gap-2 mb-1">
                       <div className="w-6 h-6 rounded-lg bg-red-500/10 text-red-400 flex items-center justify-center">
                         <Shield className="w-3.5 h-3.5" />
                       </div>
-                      <span className="font-bold text-xs text-slate-200 group-hover:text-red-400">
+                      <span className="font-bold text-xs text-ink group-hover:text-red-400">
                         Admin
                       </span>
                     </div>
-                    <p className="text-[10px] text-slate-400 truncate">Coordenação</p>
-                    <p className="text-[9px] text-slate-500 font-mono">Supervisão Geral</p>
+                    <p className="text-[10px] text-ink-muted truncate">Coordenação</p>
+                    <p className="text-[9px] text-ink-faint font-mono">Supervisão Geral</p>
                   </button>
                 </div>
               </div>
@@ -381,7 +381,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             <form onSubmit={handleRegister} className="space-y-4">
               {/* Select Role */}
               <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                <label className="block text-xs font-medium text-ink-muted mb-1.5">
                   Tipo de Acesso (Perfil)
                 </label>
                 <div className="grid grid-cols-3 gap-2">
@@ -390,8 +390,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     onClick={() => setRegRole('rider')}
                     className={`p-2 rounded-xl border flex flex-col items-center gap-1 text-center transition ${
                       regRole === 'rider'
-                        ? 'bg-amber-500/15 border-amber-500 text-amber-400 font-bold'
-                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
+                        ? 'bg-brand/15 border-brand text-brand-soft font-bold'
+                        : 'bg-canvas border-line text-ink-muted hover:text-ink'
                     }`}
                   >
                     <Bike className="w-4 h-4" />
@@ -403,8 +403,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     onClick={() => setRegRole('partner_shop')}
                     className={`p-2 rounded-xl border flex flex-col items-center gap-1 text-center transition ${
                       regRole === 'partner_shop'
-                        ? 'bg-amber-500/15 border-amber-500 text-amber-400 font-bold'
-                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
+                        ? 'bg-brand/15 border-brand text-brand-soft font-bold'
+                        : 'bg-canvas border-line text-ink-muted hover:text-ink'
                     }`}
                   >
                     <Store className="w-4 h-4" />
@@ -416,8 +416,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     onClick={() => setRegRole('admin')}
                     className={`p-2 rounded-xl border flex flex-col items-center gap-1 text-center transition ${
                       regRole === 'admin'
-                        ? 'bg-amber-500/15 border-amber-500 text-amber-400 font-bold'
-                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
+                        ? 'bg-brand/15 border-brand text-brand-soft font-bold'
+                        : 'bg-canvas border-line text-ink-muted hover:text-ink'
                     }`}
                   >
                     <Shield className="w-4 h-4" />
@@ -429,7 +429,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               {/* Personal Info */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1">
+                  <label className="block text-xs font-medium text-ink-muted mb-1">
                     Nome Completo *
                   </label>
                   <input
@@ -438,12 +438,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     value={regName}
                     onChange={(e) => setRegName(e.target.value)}
                     placeholder={regRole === 'partner_shop' ? 'Nome do Proprietário' : 'Seu Nome'}
-                    className="w-full px-3 py-2 bg-slate-950 border border-slate-700/80 rounded-xl text-slate-100 text-sm focus:outline-none focus:border-amber-500"
+                    className="w-full px-3 py-2 bg-canvas border border-line-strong/80 rounded-xl text-ink text-sm focus:outline-none focus:border-brand"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1">
+                  <label className="block text-xs font-medium text-ink-muted mb-1">
                     WhatsApp / Celular
                   </label>
                   <input
@@ -451,14 +451,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     value={regPhone}
                     onChange={(e) => setRegPhone(e.target.value)}
                     placeholder="(11) 98765-4321"
-                    className="w-full px-3 py-2 bg-slate-950 border border-slate-700/80 rounded-xl text-slate-100 text-sm focus:outline-none focus:border-amber-500"
+                    className="w-full px-3 py-2 bg-canvas border border-line-strong/80 rounded-xl text-ink text-sm focus:outline-none focus:border-brand"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1">
+                  <label className="block text-xs font-medium text-ink-muted mb-1">
                     E-mail de Login *
                   </label>
                   <input
@@ -467,12 +467,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     value={regEmail}
                     onChange={(e) => setRegEmail(e.target.value)}
                     placeholder="seu.email@exemplo.com"
-                    className="w-full px-3 py-2 bg-slate-950 border border-slate-700/80 rounded-xl text-slate-100 text-sm focus:outline-none focus:border-amber-500"
+                    className="w-full px-3 py-2 bg-canvas border border-line-strong/80 rounded-xl text-ink text-sm focus:outline-none focus:border-brand"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1">
+                  <label className="block text-xs font-medium text-ink-muted mb-1">
                     Criar Senha *
                   </label>
                   <input
@@ -481,26 +481,26 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     value={regPassword}
                     onChange={(e) => setRegPassword(e.target.value)}
                     placeholder="Mínimo 3 caracteres"
-                    className="w-full px-3 py-2 bg-slate-950 border border-slate-700/80 rounded-xl text-slate-100 text-sm focus:outline-none focus:border-amber-500"
+                    className="w-full px-3 py-2 bg-canvas border border-line-strong/80 rounded-xl text-ink text-sm focus:outline-none focus:border-brand"
                   />
                 </div>
               </div>
 
               {/* Conditional: Rider Motorcycle Fields */}
               {regRole === 'rider' && (
-                <div className="pt-3 border-t border-slate-800 space-y-3">
-                  <div className="flex items-center gap-1.5 text-amber-400 font-semibold text-xs">
+                <div className="pt-3 border-t border-line space-y-3">
+                  <div className="flex items-center gap-1.5 text-brand-soft font-semibold text-xs">
                     <Bike className="w-3.5 h-3.5" />
                     <span>Dados da Sua Motocicleta Principal</span>
                   </div>
 
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     <div>
-                      <label className="block text-[11px] text-slate-400 mb-0.5">Marca</label>
+                      <label className="block text-[11px] text-ink-muted mb-0.5">Marca</label>
                       <select
                         value={bikeBrand}
                         onChange={(e) => setBikeBrand(e.target.value)}
-                        className="w-full px-2 py-1.5 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-amber-500"
+                        className="w-full px-2 py-1.5 bg-canvas border border-line-strong rounded-lg text-xs text-ink focus:outline-none focus:border-brand"
                       >
                         <option value="Honda">Honda</option>
                         <option value="Yamaha">Yamaha</option>
@@ -516,48 +516,48 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     </div>
 
                     <div>
-                      <label className="block text-[11px] text-slate-400 mb-0.5">Modelo *</label>
+                      <label className="block text-[11px] text-ink-muted mb-0.5">Modelo *</label>
                       <input
                         type="text"
                         required
                         value={bikeModel}
                         onChange={(e) => setBikeModel(e.target.value)}
                         placeholder="Ex: CB 500X / MT-03"
-                        className="w-full px-2 py-1.5 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-amber-500"
+                        className="w-full px-2 py-1.5 bg-canvas border border-line-strong rounded-lg text-xs text-ink focus:outline-none focus:border-brand"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-[11px] text-slate-400 mb-0.5">Placa</label>
+                      <label className="block text-[11px] text-ink-muted mb-0.5">Placa</label>
                       <input
                         type="text"
                         value={bikePlate}
                         onChange={(e) => setBikePlate(e.target.value)}
                         placeholder="BRA-5X92"
-                        className="w-full px-2 py-1.5 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-200 uppercase focus:outline-none focus:border-amber-500"
+                        className="w-full px-2 py-1.5 bg-canvas border border-line-strong rounded-lg text-xs text-ink uppercase focus:outline-none focus:border-brand"
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block text-[11px] text-slate-400 mb-0.5">Ano</label>
+                      <label className="block text-[11px] text-ink-muted mb-0.5">Ano</label>
                       <input
                         type="number"
                         value={bikeYear}
                         onChange={(e) => setBikeYear(Number(e.target.value))}
-                        className="w-full px-2 py-1.5 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-amber-500"
+                        className="w-full px-2 py-1.5 bg-canvas border border-line-strong rounded-lg text-xs text-ink focus:outline-none focus:border-brand"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-[11px] text-slate-400 mb-0.5">KM Atual</label>
+                      <label className="block text-[11px] text-ink-muted mb-0.5">KM Atual</label>
                       <input
                         type="number"
                         value={bikeKm}
                         onChange={(e) => setBikeKm(Number(e.target.value))}
                         placeholder="Ex: 15400"
-                        className="w-full px-2 py-1.5 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-amber-500"
+                        className="w-full px-2 py-1.5 bg-canvas border border-line-strong rounded-lg text-xs text-ink focus:outline-none focus:border-brand"
                       />
                     </div>
                   </div>
@@ -566,14 +566,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
               {/* Conditional: Partner Shop Fields */}
               {regRole === 'partner_shop' && (
-                <div className="pt-3 border-t border-slate-800 space-y-3">
-                  <div className="flex items-center gap-1.5 text-amber-400 font-semibold text-xs">
+                <div className="pt-3 border-t border-line space-y-3">
+                  <div className="flex items-center gap-1.5 text-brand-soft font-semibold text-xs">
                     <Store className="w-3.5 h-3.5" />
                     <span>Dados do Estabelecimento / Oficina</span>
                   </div>
 
                   <div>
-                    <label className="block text-[11px] text-slate-400 mb-0.5">
+                    <label className="block text-[11px] text-ink-muted mb-0.5">
                       Nome Comercial da Oficina *
                     </label>
                     <input
@@ -582,24 +582,24 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       value={shopName}
                       onChange={(e) => setShopName(e.target.value)}
                       placeholder="Ex: Garage MotoCenter"
-                      className="w-full px-3 py-1.5 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-amber-500"
+                      className="w-full px-3 py-1.5 bg-canvas border border-line-strong rounded-lg text-xs text-ink focus:outline-none focus:border-brand"
                     />
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <div>
-                      <label className="block text-[11px] text-slate-400 mb-0.5">CNPJ</label>
+                      <label className="block text-[11px] text-ink-muted mb-0.5">CNPJ</label>
                       <input
                         type="text"
                         value={shopCnpj}
                         onChange={(e) => setShopCnpj(e.target.value)}
                         placeholder="00.000.000/0001-00"
-                        className="w-full px-3 py-1.5 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-amber-500"
+                        className="w-full px-3 py-1.5 bg-canvas border border-line-strong rounded-lg text-xs text-ink focus:outline-none focus:border-brand"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-[11px] text-slate-400 mb-0.5">
+                      <label className="block text-[11px] text-ink-muted mb-0.5">
                         Cidade e Estado
                       </label>
                       <input
@@ -607,13 +607,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                         value={shopCity}
                         onChange={(e) => setShopCity(e.target.value)}
                         placeholder="São Paulo - SP"
-                        className="w-full px-3 py-1.5 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-amber-500"
+                        className="w-full px-3 py-1.5 bg-canvas border border-line-strong rounded-lg text-xs text-ink focus:outline-none focus:border-brand"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-[11px] text-slate-400 mb-1">
+                    <label className="block text-[11px] text-ink-muted mb-1">
                       Especialidades Oferecidas
                     </label>
                     <div className="flex flex-wrap gap-1.5">
@@ -634,8 +634,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                             onClick={() => toggleSpecialty(spec)}
                             className={`px-2 py-1 rounded-lg text-[10px] font-medium border transition ${
                               isSelected
-                                ? 'bg-amber-500/20 border-amber-500/60 text-amber-300'
-                                : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-300'
+                                ? 'bg-brand/20 border-brand/60 text-brand-soft'
+                                : 'bg-canvas border-line text-ink-muted hover:text-ink-muted'
                             }`}
                           >
                             {spec}
@@ -649,12 +649,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
               {/* Conditional: Admin Key */}
               {regRole === 'admin' && (
-                <div className="pt-3 border-t border-slate-800 space-y-2">
+                <div className="pt-3 border-t border-line space-y-2">
                   <div className="flex items-center gap-1.5 text-red-400 font-semibold text-xs">
                     <Shield className="w-3.5 h-3.5" />
                     <span>Nível de Acesso: Supervisão e Gestão Central</span>
                   </div>
-                  <p className="text-[11px] text-slate-400 leading-relaxed">
+                  <p className="text-[11px] text-ink-muted leading-relaxed">
                     O perfil Administrador possui controle sobre homologação de oficinas parceiras,
                     auditoria de emergências SOS e moderação comunitária.
                   </p>
@@ -663,7 +663,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
               <button
                 type="submit"
-                className="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-sm flex items-center justify-center gap-2 transition active:scale-[0.98] shadow-md shadow-amber-950/30"
+                className="w-full py-2.5 rounded-xl bg-brand hover:opacity-90 text-on-brand font-bold text-sm flex items-center justify-center gap-2 transition active:scale-[0.98] shadow-md shadow-brand/20"
               >
                 <UserPlus className="w-4 h-4" />
                 <span>Finalizar Cadastro e Entrar</span>

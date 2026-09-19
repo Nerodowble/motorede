@@ -15,11 +15,28 @@
     <meta name="apple-mobile-web-app-title" content="MotoRede" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <script>
+      (function () {
+        try {
+          var salvo = localStorage.getItem('motorede_theme');
+          var escuro =
+            salvo === 'dark' ||
+            (salvo !== 'light' &&
+              window.matchMedia('(prefers-color-scheme: dark)').matches);
+          document.documentElement.setAttribute('data-theme', escuro ? 'dark' : 'light');
+          document
+            .querySelector('meta[name="theme-color"]')
+            .setAttribute('content', escuro ? '#020617' : '#f1f5f9');
+        } catch (e) {
+          document.documentElement.setAttribute('data-theme', 'dark');
+        }
+      })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
   </head>
-  <body class="bg-slate-950 text-slate-100 antialiased selection:bg-amber-500 selection:text-slate-950">
+  <body class="bg-canvas text-ink antialiased selection:bg-brand selection:text-on-brand">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
