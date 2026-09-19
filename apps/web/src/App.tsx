@@ -358,13 +358,9 @@ export default function App() {
           <DashboardView
             motorcycle={motorcycle}
             consumables={consumables}
-            sosAlerts={sosAlerts}
             voiceRoom={voiceRoom}
-            userCoords={userCoords}
-            isBackgroundAudioActive={isBackgroundAudioActive}
             onNavigateTab={(tab) => setActiveTab(tab)}
             onUpdateKm={handleUpdateKm}
-            onOpenLockscreenModal={() => setIsLockscreenOpen(true)}
             onOpenEditMotorcycle={() => setIsMotorcycleEditOpen(true)}
           />
         )}
