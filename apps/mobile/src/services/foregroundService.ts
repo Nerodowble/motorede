@@ -16,6 +16,32 @@ import ReactNativeForegroundService from '@supersami/rn-foreground-service';
 
 const NOTIFICATION_ID = 1;
 
+/**
+ * Tipos de serviço aceitos pelo pacote, conforme o `switch` em
+ * `ForegroundService.java`. O `index.d.ts` do pacote está desatualizado e não
+ * declara `ServiceType`, embora o código nativo o exija desde o Android 14 —
+ * foi assim que o app compilou e mesmo assim quebrou em execução com
+ * "ServiceType is required". Declaramos o contrato real aqui.
+ */
+type ForegroundServiceType =
+  | 'camera'
+  | 'connectedDevice'
+  | 'dataSync'
+  | 'health'
+  | 'location'
+  | 'mediaPlayback'
+  | 'mediaProjection'
+  | 'microphone'
+  | 'phoneCall'
+  | 'remoteMessaging'
+  | 'shortService'
+  | 'specialUse'
+  | 'systemExempted';
+
+type StartOptions = Parameters<typeof ReactNativeForegroundService.start>[0] & {
+  ServiceType: ForegroundServiceType;
+};
+
 let isRegistered = false;
 let isRunning = false;
 
@@ -38,16 +64,25 @@ export async function startVoiceForegroundService(roomCode: string): Promise<voi
 
   ensureRegistered();
 
-  await ReactNativeForegroundService.start({
+  const options: StartOptions = {
     id: NOTIFICATION_ID,
     title: 'Comboio ativo',
     message: `Canal ${roomCode} · voz em segundo plano`,
+    // Obrigatório a partir do Android 14, e o pacote aceita um único valor.
+    // Escolhemos 'microphone' porque é a captura que o sistema bloqueia em
+    // segundo plano; a reprodução do áudio dos outros pilotos não é barrada
+    // pelo tipo do serviço — basta o processo continuar vivo, que é o que
+    // este serviço garante. Precisa ser um dos tipos declarados no manifesto
+    // por plugins/withVoiceForegroundService.js.
+    ServiceType: 'microphone',
     icon: 'ic_launcher',
     importance: 'low', // sem som nem vibração a cada atualização
     visibility: 'public',
     color: '#f59e0b',
     setOnlyAlertOnce: 'true',
-  });
+  };
+
+  await ReactNativeForegroundService.start(options);
 
   isRunning = true;
 }
