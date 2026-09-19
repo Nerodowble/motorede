@@ -310,3 +310,58 @@ resolvida, reinserindo em `permissions` justamente o que estava em
 `blockedPermissions`. Conferir o arquivo depois de rodar.
 
 No iOS o equivalente é `UIBackgroundModes: ["audio", "voip"]`, já configurado.
+
+---
+
+## 13. Tese central confirmada: voz sobrevive à tela bloqueada
+
+**Status:** `decidido` — validado em aparelho real
+**Data:** 2026-09-18
+
+Testado no app nativo com o servidor LiveKit local: entrou no canal, bloqueou a
+tela do celular, **o áudio continuou**. É o mesmo cenário em que o navegador
+falhava ([ideia 11](#11-confirmado-na-prática-web-não-sustenta-voz-em-segundo-plano)).
+
+Com isso fecha a cadeia inteira de hipóteses do projeto:
+
+| Hipótese | Resultado |
+|---|---|
+| Voz em grupo funciona pelo nosso servidor | ✅ medido |
+| Navegador não sustenta com a tela bloqueada | ✅ medido |
+| App nativo sustenta | ✅ medido |
+
+**O que faltou para chegar aqui**, na ordem em que apareceu:
+1. `FOREGROUND_SERVICE_MICROPHONE` + `FOREGROUND_SERVICE_MEDIA_PLAYBACK`
+2. Serviço em primeiro plano de verdade (nenhum pacote do LiveKit fornece)
+3. Declaração do serviço via plugin de configuração, não pelo `postinstall`
+4. Serviço iniciado **antes** de conectar, com o app ainda visível
+5. `ServiceType: 'microphone'` na chamada — obrigatório no Android 14 e ausente
+   do `index.d.ts` do pacote, então o TypeScript não acusou
+
+Daqui para frente o trabalho é conhecido: não há mais incógnita de plataforma na
+funcionalidade principal.
+
+---
+
+## 14. Contexto seguro impede terceiros de testarem pela web
+
+**Status:** `em aberto` — resolve com o deploy da fase amigos
+**Data:** 2026-09-18
+
+Ao tentar testar num segundo aparelho, esbarramos de novo na
+[ideia 10](#10-contexto-seguro-e-o-microfone-em-desenvolvimento): pelo IP da rede
+em `http`, o microfone não existe. O contorno via `chrome://flags` serve para a
+máquina do desenvolvedor, **não para convidar outra pessoa** — ninguém vai mexer
+em flags do navegador para testar um app.
+
+**Desbloqueio:** HTTPS real. E como página `https` não abre `ws://`, o LiveKit
+também precisa de TLS. Isso é exatamente a fase amigos já planejada:
+
+| Peça | Onde | Por quê |
+|---|---|---|
+| SFU | LiveKit Cloud (grátis) | já vem com `wss` e TURN |
+| App web + endpoint de token | Vercel (grátis) | dá `https` e domínio público |
+
+Alternativa para teste em moto de verdade: build **preview** (não `development`)
+embute o JavaScript e roda sem Metro — os amigos instalam o app nativo, que é o
+produto real. Mas também depende do endpoint de token ser público.
