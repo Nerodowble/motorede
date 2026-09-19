@@ -3,3 +3,4 @@ export * from './domain/consumables';
 export * from './domain/diagnostics';
 export * from './domain/voice';
 export * from './domain/rooms';
+export * from './domain/convoy';

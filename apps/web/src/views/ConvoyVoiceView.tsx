@@ -17,7 +17,7 @@ import {
   Headphones,
   Signal,
   Smartphone,
-  Sparkles,
+  Compass,
 } from 'lucide-react';
 import {
   VoiceRoom,
@@ -31,6 +31,7 @@ import { getGoogleMapsNavigationUrl, getWazeNavigationUrl } from '../services/ge
 import QRCode from 'qrcode';
 import { useVoiceConnection } from '../hooks/useVoiceConnection';
 import { useGoogleAuth } from '../hooks/useGoogleAuth';
+import { ConvoyBrowser } from '../components/ConvoyBrowser';
 
 interface ConvoyVoiceViewProps {
   voiceRoom: VoiceRoom;
@@ -70,6 +71,8 @@ export const ConvoyVoiceView: React.FC<ConvoyVoiceViewProps> = ({
   const [codeInput, setCodeInput] = useState('');
   const [codeError, setCodeError] = useState<string | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  const [showBrowser, setShowBrowser] = useState(false);
+  const [phone, setPhone] = useState(() => storageService.getPhone());
 
   const inviteUrl = `${window.location.origin}/?sala=${activeRoomCode}`;
 
@@ -116,6 +119,20 @@ export const ConvoyVoiceView: React.FC<ConvoyVoiceViewProps> = ({
     setCodeError(null);
   };
 
+  const handleJoinFromBrowser = async (code: string) => {
+    // Nunca duas chamadas ao mesmo tempo: sai de uma para entrar na outra.
+    if (isLive) await voice.disconnect();
+    enterRoom(code);
+    setShowBrowser(false);
+    await voice.connect({
+      roomCode: code,
+      identity: `piloto-${Math.random().toString(36).slice(2, 8)}`,
+      displayName: auth.user?.name || 'Você (Piloto)',
+      idToken: auth.getIdToken(),
+      phone: phone || undefined,
+    });
+  };
+
   const handleCreateRoom = () => {
     enterRoom(generateRoomCode());
   };
@@ -140,6 +157,7 @@ export const ConvoyVoiceView: React.FC<ConvoyVoiceViewProps> = ({
       identity: `piloto-${Math.random().toString(36).slice(2, 8)}`,
       displayName: auth.user?.name || 'Você (Piloto)',
       idToken: auth.getIdToken(),
+      phone: phone || undefined,
     });
   };
 
@@ -282,6 +300,14 @@ export const ConvoyVoiceView: React.FC<ConvoyVoiceViewProps> = ({
               </div>
               <div className="flex items-center gap-2">
                 <button
+                  onClick={() => setShowBrowser(true)}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition active:scale-95"
+                  title="Ver comboios ativos e achar um piloto"
+                >
+                  <Compass className="w-4 h-4 text-amber-400" />
+                  Comboios
+                </button>
+                <button
                   onClick={() => setShowQRModal(true)}
                   className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition active:scale-95"
                   title="Exibir QR Code do convite"
@@ -335,6 +361,25 @@ export const ConvoyVoiceView: React.FC<ConvoyVoiceViewProps> = ({
             </form>
 
             {codeError && <p className="text-[11px] text-red-400">{codeError}</p>}
+
+            {/* Telefone: fica só neste aparelho. Serve para um amigo que já tem
+                o seu número conseguir te achar entre os comboios do evento. */}
+            <div>
+              <input
+                value={phone}
+                onChange={(e) => {
+                  setPhone(e.target.value);
+                  storageService.savePhone(e.target.value);
+                }}
+                placeholder="Seu telefone (opcional, para amigos te acharem)"
+                inputMode="tel"
+                className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-slate-100 text-sm placeholder:text-slate-500 focus:outline-none focus:border-amber-500/60"
+              />
+              <p className="text-[10px] text-slate-500 mt-1.5 leading-relaxed">
+                Guardado só neste aparelho. Quem já tem seu número consegue te
+                encontrar; ninguém consegue ler telefones.
+              </p>
+            </div>
 
             {/* Quem abriu o convite no celular provavelmente quer o app, que é
                 onde a voz sobrevive à tela bloqueada. Só aparece em celular:
@@ -556,6 +601,14 @@ export const ConvoyVoiceView: React.FC<ConvoyVoiceViewProps> = ({
           </div>
         </div>
       </div>
+
+      <ConvoyBrowser
+        isOpen={showBrowser}
+        onClose={() => setShowBrowser(false)}
+        activeRoomCode={activeRoomCode}
+        onJoinConvoy={handleJoinFromBrowser}
+        idToken={auth.getIdToken()}
+      />
 
       {/* QR Code Modal */}
       {showQRModal && (

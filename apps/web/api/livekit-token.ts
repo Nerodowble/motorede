@@ -1,29 +1,20 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { AccessToken } from 'livekit-server-sdk';
-import { OAuth2Client } from 'google-auth-library';
+import { canJoinConvoy, CONVOY_MAX, normalizePhone } from '@motorede/shared';
+import {
+  countParticipants,
+  encodeMetadata,
+  phoneFingerprint,
+  roomService,
+  verifyGoogleUser,
+} from './_livekit';
 
 /**
- * Emissão de token do LiveKit — versão de produção (função serverless).
+ * Emissão de token do LiveKit.
  *
- * Espelha o contrato do plugin de desenvolvimento
- * (`vite/livekit-token-plugin.ts`): mesmo corpo de requisição, mesma resposta.
- * O cliente só troca a URL, sem saber qual dos dois está atendendo.
- *
- * O segredo da API do LiveKit nunca chega ao navegador: a assinatura acontece
- * aqui.
- *
- * IDENTIDADE
- * Quando o cliente envia `idToken` (o token assinado pelo Google), a identidade
- * vem de lá: `sub` para identificar e `name` para exibir. O piloto aparece com
- * o nome real em vez de "Piloto (app)", e ninguém consegue se passar por outro,
- * porque a assinatura é verificada contra as chaves públicas do Google.
- *
- * REQUIRE_AUTH
- * Enquanto o app nativo ainda não tem login, aceitar pedidos sem `idToken`
- * mantém os dois clientes funcionando. Quando o app tiver login, basta definir
- * REQUIRE_AUTH=true nas variáveis de ambiente para fechar a porta — sem novo
- * deploy de código. Um modo de transição explícito é melhor que uma exceção
- * escondida no meio da lógica.
+ * Além de assinar o acesso, é aqui que a lotação do comboio é verificada — no
+ * servidor, antes de liberar a entrada. Fazer isso no cliente seria decorativo:
+ * bastaria alguém chamar o endpoint direto para furar o limite.
  *
  * ASSINATURA DO HANDLER
  * Usa o formato (req, res) do runtime Node da Vercel. O padrão Web
@@ -35,48 +26,13 @@ interface TokenRequest {
   room?: string;
   identity?: string;
   name?: string;
-  /** Token do Google (JWT). Opcional enquanto REQUIRE_AUTH não estiver ligado. */
   idToken?: string;
+  /** Telefone do piloto, só para gerar a impressão digital. Não é guardado. */
+  phone?: string;
 }
 
-/** Aceita apenas o formato de código de sala que o app gera. */
 const ROOM_CODE_PATTERN = /^[A-Z0-9-]{3,32}$/i;
 const IDENTITY_PATTERN = /^[a-zA-Z0-9_-]{3,64}$/;
-
-const googleClientId = process.env.GOOGLE_CLIENT_ID;
-const googleClient = googleClientId ? new OAuth2Client(googleClientId) : null;
-
-interface VerifiedUser {
-  identity: string;
-  name: string;
-}
-
-/**
- * Valida o token do Google e extrai quem é a pessoa.
- *
- * Retorna null quando o token é inválido, expirado ou foi emitido para outro
- * aplicativo — a biblioteca confere a assinatura, o emissor e o `aud`.
- */
-async function verifyGoogleUser(idToken: string): Promise<VerifiedUser | null> {
-  if (!googleClient || !googleClientId) return null;
-
-  try {
-    const ticket = await googleClient.verifyIdToken({
-      idToken,
-      audience: googleClientId,
-    });
-    const payload = ticket.getPayload();
-    if (!payload?.sub) return null;
-
-    return {
-      // Prefixo para o identificador nunca colidir com os anônimos.
-      identity: `g-${payload.sub}`,
-      name: payload.name || payload.email || 'Piloto',
-    };
-  } catch {
-    return null;
-  }
-}
 
 export default async function handler(
   req: VercelRequest,
@@ -92,14 +48,10 @@ export default async function handler(
   const livekitUrl = process.env.LIVEKIT_URL;
 
   if (!apiKey || !apiSecret || !livekitUrl) {
-    // Falha explícita: sem isso o app conectaria em lugar nenhum e o erro
-    // apareceria lá na frente, difícil de rastrear.
     res.status(500).json({ error: 'servidor de voz não configurado' });
     return;
   }
 
-  // A Vercel já entrega o corpo desserializado quando o content-type é JSON,
-  // mas aceita string quando não é — tratamos os dois casos.
   let body: TokenRequest;
   try {
     body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body ?? {});
@@ -137,6 +89,7 @@ export default async function handler(
   // impede alguém de assumir o identificador de outro piloto.
   let identity: string;
   let name: string;
+  const isAdmin = verified?.isAdmin ?? false;
 
   if (verified) {
     identity = verified.identity;
@@ -150,11 +103,41 @@ export default async function handler(
     name = body.name || body.identity;
   }
 
+  // Lotação: consulta quem já está na sala antes de assinar.
+  const service = roomService();
+  if (service) {
+    try {
+      const participants = await service.listParticipants(room);
+
+      // Reconexão do mesmo piloto não ocupa vaga nova.
+      const alreadyIn = participants.some((p) => p.identity === identity);
+
+      if (!alreadyIn) {
+        const { riders, total } = countParticipants(participants);
+        const decision = canJoinConvoy(riders, total, isAdmin);
+        if (!decision.allowed) {
+          res.status(409).json({ error: decision.reason, full: true });
+          return;
+        }
+      }
+    } catch {
+      // Sala inexistente é o caso normal do primeiro a entrar: segue adiante.
+      // Uma falha real da API não deve impedir a conversa — o limite é uma
+      // regra de qualidade, não de segurança.
+    }
+  }
+
+  const phone = body.phone ? normalizePhone(body.phone) : '';
+
   try {
     const at = new AccessToken(apiKey, apiSecret, {
       identity,
       name: name.slice(0, 64),
       ttl: '1h',
+      metadata: encodeMetadata({
+        ph: phoneFingerprint(phone) ?? undefined,
+        adm: isAdmin || undefined,
+      }),
     });
 
     at.addGrant({
@@ -162,13 +145,15 @@ export default async function handler(
       room,
       canPublish: true,
       canSubscribe: true,
-      canUpdateOwnMetadata: true,
+      canUpdateOwnMetadata: false, // metadados são definidos aqui, não pelo cliente
     });
 
     res.status(200).json({
       token: await at.toJwt(),
       url: livekitUrl,
       authenticated: Boolean(verified),
+      isAdmin,
+      maxParticipants: CONVOY_MAX,
     });
   } catch {
     res.status(500).json({ error: 'falha ao emitir token' });

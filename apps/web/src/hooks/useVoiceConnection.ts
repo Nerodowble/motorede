@@ -32,6 +32,8 @@ interface ConnectOptions {
   displayName: string;
   /** Token do Google, quando houver login. O servidor usa ele como identidade. */
   idToken?: string | null;
+  /** Telefone, só para o servidor derivar a impressão digital da busca. */
+  phone?: string;
 }
 
 interface UseVoiceConnection {
@@ -105,7 +107,7 @@ export function useVoiceConnection(): UseVoiceConnection {
   }, []);
 
   const connect = useCallback(
-    async ({ roomCode, identity, displayName, idToken }: ConnectOptions) => {
+    async ({ roomCode, identity, displayName, idToken, phone }: ConnectOptions) => {
       if (roomRef.current) return;
 
       setStatus('connecting');
@@ -128,7 +130,7 @@ export function useVoiceConnection(): UseVoiceConnection {
         const response = await fetch('/api/livekit-token', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ room: roomCode, identity, name: displayName, idToken }),
+          body: JSON.stringify({ room: roomCode, identity, name: displayName, idToken, phone }),
         });
 
         if (!response.ok) {

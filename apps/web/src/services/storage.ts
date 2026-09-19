@@ -35,6 +35,8 @@ const STORAGE_KEYS = {
   MY_COUPONS: 'motorede_my_coupons',
   CONSUMABLES_CUSTOM: 'motorede_consumables_custom',
   LAST_ROOM_CODE: 'motorede_last_room_code',
+  PHONE: 'motorede_phone',
+  FAVORITE_ROOMS: 'motorede_favorite_rooms',
 };
 
 // Seed Motorcycle: Honda CB 500X 2022
@@ -461,6 +463,46 @@ export { DIAGNOSTIC_DECISION_TREE, calculateConsumablesStatus } from '@motorede/
  * Storage Service Helper
  */
 export const storageService = {
+  /**
+   * Telefone do piloto, guardado só neste aparelho.
+   *
+   * Nunca é gravado em servidor: viaja no pedido de entrada apenas para o
+   * servidor derivar uma impressão digital, que é o que permite um amigo
+   * encontrar o piloto sem que ninguém consiga ler telefones.
+   */
+  getPhone(): string {
+    if (typeof window === 'undefined') return '';
+    return localStorage.getItem(STORAGE_KEYS.PHONE) || '';
+  },
+
+  savePhone(phone: string): void {
+    if (typeof window === 'undefined') return;
+    if (phone) localStorage.setItem(STORAGE_KEYS.PHONE, phone);
+    else localStorage.removeItem(STORAGE_KEYS.PHONE);
+  },
+
+  /** Comboios marcados como favoritos, para o admin voltar rápido. */
+  getFavoriteRooms(): string[] {
+    if (typeof window === 'undefined') return [];
+    try {
+      const raw = localStorage.getItem(STORAGE_KEYS.FAVORITE_ROOMS);
+      return raw ? (JSON.parse(raw) as string[]) : [];
+    } catch {
+      return [];
+    }
+  },
+
+  toggleFavoriteRoom(code: string): string[] {
+    const atuais = this.getFavoriteRooms();
+    const proximos = atuais.includes(code)
+      ? atuais.filter((c) => c !== code)
+      : [...atuais, code];
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(STORAGE_KEYS.FAVORITE_ROOMS, JSON.stringify(proximos));
+    }
+    return proximos;
+  },
+
   /** Último comboio em que o piloto entrou, para reabrir direto nele. */
   getLastRoomCode(): string | null {
     if (typeof window === 'undefined') return null;
