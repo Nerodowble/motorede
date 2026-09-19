@@ -676,3 +676,86 @@ escuro a cada carregamento.
 **A escolha vive fora do React,** num módulo só. O seletor aparece na tela de
 entrada e no cabeçalho de dentro do app; com estado separado, trocar num
 deixaria o outro mostrando o botão errado.
+
+---
+
+## 22. Socorro: push por raio, sem banco de dados
+
+**Decidido e no ar.** O SOS era inteiramente ficção — zero chamadas de rede,
+tudo no `localStorage`, e cinco afirmações falsas na tela (telefone inventado
+fixo no código, "localização transmitida com sucesso", "canal criptografado",
+mensagem escrita em nome de quem clicava, dois alertas de pessoas que não
+existem gravados no aparelho na primeira leitura).
+
+**A pior parte não era a ficção, era um padrão:** `DEFAULT_USER_COORDS` = Av.
+Paulista, usada em silêncio sempre que o GPS falhava, era negado, ou ainda não
+tinha respondido. Alguém parado numa rodovia de Minas dispararia um alerta
+apontando para São Paulo — e a tela ainda diria "GPS Ativo" com números
+plausíveis. Ninguém teria como desconfiar.
+
+### O que o servidor guarda
+
+A discussão foi "por que precisa de banco?". A resposta honesta: **não precisa
+de banco, precisa da lista de quem chamar.** Push não é transmissão aberta — é
+entrega endereçada, e sem os tokens não há para onde enviar. Quem pede socorro
+não sabe quem está por perto; só o servidor sabe.
+
+Então ele guarda três coisas, todas com prazo:
+
+```
+mr:geo        célula de ~1 km de cada aparelho
+mr:tok:<id>   endereço de push             45 min
+mr:req:<id>   para onde devolver a resposta   2 h
+```
+
+Não há alerta, conversa, histórico, perfil nem moto. **O pedido em si nunca
+chega ao servidor** — ele só entrega recados e esquece. Tudo expira sozinho, e
+a limpeza do conjunto geográfico acontece durante a própria busca (a ausência
+do token é o sinal de que o aparelho sumiu), sem tarefa agendada.
+
+### Quem enxerga o endereço exato
+
+O push leva **a célula, nunca o ponto**. Um pedido de socorro diz "estou
+sozinho, parado, sem como sair daqui, e este é meu endereço" — exatamente o que
+um assaltante quer. Num raio de 25 km isso não é rede de ajuda, é lista de
+alvos.
+
+Medido: erro máximo 0,71 km, e 22% dos pontos de um quadrado de 2 km caem na
+mesma célula. A célula identifica uma área, não uma pessoa. O endereço exato vai
+depois, do pedinte para quem ele aceitar, um a um.
+
+**Grade fixa, não deslocamento aleatório.** Sortear um desvio a cada pedido
+parece mais seguro e é o contrário: a média de vários sorteios converge para a
+posição verdadeira. A grade é estável — repetir o pedido não revela nada novo.
+
+**O arredondamento acontece no servidor também**, não só no app. O app já manda
+a célula, mas quem garante isso é código rodando no aparelho de outra pessoa,
+que pode ser trocado.
+
+### Confiabilidade: o que dá e o que não dá
+
+Não existe forma gratuita de provar que um desconhecido é bem-intencionado. Quem
+tenta usa documento, antecedentes e seguro. O que dá é diminuir o que um
+mal-intencionado ganha e aumentar o que arrisca: célula em vez de ponto, aviso
+primeiro a quem já andou em comboio junto (queda/acidente abre tudo na hora),
+quem se oferece aparece de cara limpa, e histórico factual — *"ajudou 2 vezes,
+confirmadas por quem pediu"* — nunca nota inventada.
+
+**Socorro e apoio são coisas separadas**, em canais diferentes. Se a maioria dos
+alertas vermelhos for "alguém pega esse pacote?", as pessoas param de reagir ao
+vermelho, e no dia do acidente ninguém olha.
+
+### Dois bugs que a medição pegou
+
+1. O passo da longitude saía da latitude **bruta** de cada ponto, então cada
+   ponto usava uma grade própria e duas pessoas lado a lado caíam em células
+   diferentes — a célula voltava a identificar uma pessoa só. Agora o passo sai
+   da latitude já encaixada.
+2. O código lia só `UPSTASH_REDIS_*` e `KV_*`, mas a integração da Vercel deixa
+   o usuário **escolher o prefixo** no formulário. Agora procura qualquer par
+   `*_REST_API_URL` / `*_REST_API_TOKEN`. `KV_URL` é ignorada de propósito:
+   apesar do nome, é string `redis://` e não serve para a API REST.
+
+**Testado nos dois níveis:** `npm run test:socorro` (21 verificações contra um
+Redis de mentira) e fumaça contra o Upstash real em produção — 15 km encontrou
+2, 50 km encontrou 3, e depois da limpeza, 0.
