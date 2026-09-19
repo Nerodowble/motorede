@@ -44,8 +44,17 @@ export const GOOGLE_CLIENT_ID_WEB =
   process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_WEB ||
   '689939201177-223qqg566f4ina9rsmrjpqf5c11psvde.apps.googleusercontent.com';
 
-export const GOOGLE_CLIENT_ID_ANDROID =
-  process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_ANDROID || '';
+/**
+ * Escrito direto no código, não em variável de ambiente, de propósito.
+ *
+ * Variável com prefixo EXPO_PUBLIC_ é embutida no momento do BUILD — trocá-la
+ * exigiria um APK novo. Como constante, ela viaja nas atualizações pela
+ * internet, e uma correção de credencial chega sem reinstalação.
+ *
+ * É seguro: Client ID é público por natureza. O que nunca pode entrar aqui é o
+ * Client Secret, porque qualquer um abre um APK e o lê.
+ */
+export const GOOGLE_CLIENT_ID_ANDROID = '';
 
 /** Comboio inicial. O piloto troca pela tela; serve só como ponto de partida. */
 export const DEV_ROOM_CODE = 'SERRA-88';

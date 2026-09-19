@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import * as AuthSession from 'expo-auth-session';
+import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { GOOGLE_CLIENT_ID_ANDROID, GOOGLE_CLIENT_ID_WEB } from '../config';
@@ -11,19 +11,22 @@ import { GOOGLE_CLIENT_ID_ANDROID, GOOGLE_CLIENT_ID_WEB } from '../config';
  * sessão. Nada é guardado em servidor, e cada pedido de entrada no comboio leva
  * a prova de identidade junto, verificada contra as chaves públicas do Google.
  *
- * A diferença em relação à web é só o mecanismo: lá o Google Identity Services
- * desenha um botão; aqui o fluxo abre o navegador do sistema e volta pelo
- * scheme `motorede://`, que já está registrado no app.
+ * POR QUE O PROVEDOR OFICIAL, E NÃO UM AuthRequest CRU
+ *
+ * A primeira versão montava o pedido à mão e mandava o Google redirecionar
+ * para `motorede://`. O Google recusou com `400 invalid_request`, e a causa é
+ * estrutural: o Client ID que tínhamos é do tipo **Web**, e esse tipo só aceita
+ * redirecionamento `https://`. Esquema próprio exige um Client ID do tipo
+ * **Android**, vinculado ao pacote e à assinatura do app.
+ *
+ * O provedor oficial conhece essas convenções — inclusive o formato de
+ * redirecionamento que cada tipo de credencial espera — em vez de a gente
+ * adivinhar.
  */
 
 WebBrowser.maybeCompleteAuthSession();
 
 const STORAGE_KEY = 'motorede_google_credential';
-
-const DISCOVERY = {
-  authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
-  tokenEndpoint: 'https://oauth2.googleapis.com/token',
-};
 
 export interface GoogleUser {
   name: string;
@@ -72,8 +75,17 @@ export function useGoogleAuth(): UseGoogleAuth {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const clientId = GOOGLE_CLIENT_ID_ANDROID || GOOGLE_CLIENT_ID_WEB;
-  const isConfigured = Boolean(clientId);
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    androidClientId: GOOGLE_CLIENT_ID_ANDROID || undefined,
+    webClientId: GOOGLE_CLIENT_ID_WEB || undefined,
+    // `id_token` é o que o servidor verifica, e dispensa segredo de cliente —
+    // que não poderia morar dentro de um APK, já que qualquer um o abre.
+    responseType: 'id_token',
+    scopes: ['openid', 'profile', 'email'],
+  });
+
+  // Sem credencial de Android, o Google recusa o esquema motorede:// com 400.
+  const isConfigured = Boolean(GOOGLE_CLIENT_ID_ANDROID);
 
   // Retoma a sessão anterior, se ainda válida.
   useEffect(() => {
@@ -94,53 +106,42 @@ export function useGoogleAuth(): UseGoogleAuth {
     })();
   }, []);
 
-  const signIn = useCallback(async () => {
-    if (!clientId) {
-      setError('Login não configurado neste build.');
+  // O resultado do fluxo chega por aqui, não pelo retorno de promptAsync.
+  useEffect(() => {
+    if (!response) return;
+
+    if (response.type === 'error') {
+      setError('O Google recusou o login. Verifique a credencial do app.');
       return;
     }
 
-    setError(null);
+    if (response.type !== 'success') return;
 
-    try {
-      const redirectUri = AuthSession.makeRedirectUri({ scheme: 'motorede' });
-
-      // `id_token` direto no fluxo implícito: é o que o servidor verifica, e
-      // evita guardar segredo de cliente dentro do app — que seria inseguro,
-      // já que qualquer um pode abrir um APK.
-      const request = new AuthSession.AuthRequest({
-        clientId,
-        redirectUri,
-        responseType: AuthSession.ResponseType.IdToken,
-        scopes: ['openid', 'profile', 'email'],
-        extraParams: { nonce: String(Date.now()) },
-      });
-
-      const resultado = await request.promptAsync(DISCOVERY);
-
-      if (resultado.type !== 'success') {
-        if (resultado.type === 'error') setError('Não foi possível entrar.');
-        return;
-      }
-
-      const idToken = resultado.params.id_token;
-      if (!idToken) {
-        setError('O Google não devolveu a identificação.');
-        return;
-      }
-
-      const proximo = decodeIdToken(idToken);
-      if (!proximo) {
-        setError('Identificação inválida.');
-        return;
-      }
-
-      setUser(proximo);
-      await AsyncStorage.setItem(STORAGE_KEY, idToken);
-    } catch {
-      setError('Falha ao entrar com o Google.');
+    const idToken = response.params?.id_token;
+    if (!idToken) {
+      setError('O Google não devolveu a identificação.');
+      return;
     }
-  }, [clientId]);
+
+    const proximo = decodeIdToken(idToken);
+    if (!proximo) {
+      setError('Identificação inválida.');
+      return;
+    }
+
+    setUser(proximo);
+    setError(null);
+    void AsyncStorage.setItem(STORAGE_KEY, idToken);
+  }, [response]);
+
+  const signIn = useCallback(async () => {
+    if (!request) {
+      setError('Login ainda não está pronto. Tente de novo em instantes.');
+      return;
+    }
+    setError(null);
+    await promptAsync();
+  }, [request, promptAsync]);
 
   const signOut = useCallback(async () => {
     await AsyncStorage.removeItem(STORAGE_KEY);
