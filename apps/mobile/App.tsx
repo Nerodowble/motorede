@@ -161,6 +161,12 @@ export default function App() {
             )}
           </View>
 
+          {voice.serverHost && (
+            <Text style={styles.serverLine} numberOfLines={1}>
+              servidor: {voice.serverHost}
+            </Text>
+          )}
+
           {voice.error && <Text style={styles.error}>{voice.error}</Text>}
 
           {permissionDenied && (
@@ -315,6 +321,7 @@ const styles = StyleSheet.create({
   dot: { width: 10, height: 10, borderRadius: 5 },
   statusText: { color: COLORS.text, fontSize: 14, fontWeight: '700', flex: 1 },
   error: { color: COLORS.danger, fontSize: 12, lineHeight: 17 },
+  serverLine: { color: COLORS.muted, fontSize: 10, marginTop: -6 },
   roomRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   roomInfo: { flex: 1 },
   roomLabel: { color: COLORS.muted, fontSize: 10, fontWeight: '700', letterSpacing: 1.5 },

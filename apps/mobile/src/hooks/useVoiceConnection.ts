@@ -36,6 +36,9 @@ interface UseVoiceConnection {
   error: string | null;
   participants: VoiceParticipant[];
   isMuted: boolean;
+  /** Host do servidor de voz em uso. Exibido para que uma divergência entre
+   *  app e web (servidores diferentes) seja vista, e não silenciosa. */
+  serverHost: string | null;
   connect: (options: ConnectOptions) => Promise<void>;
   disconnect: () => Promise<void>;
   setMuted: (muted: boolean) => Promise<void>;
@@ -60,6 +63,7 @@ export function useVoiceConnection(tokenEndpoint: string): UseVoiceConnection {
   const [error, setError] = useState<string | null>(null);
   const [participants, setParticipants] = useState<VoiceParticipant[]>([]);
   const [isMuted, setIsMuted] = useState(false);
+  const [serverHost, setServerHost] = useState<string | null>(null);
 
   const syncParticipants = useCallback(() => {
     const room = roomRef.current;
@@ -90,6 +94,7 @@ export function useVoiceConnection(tokenEndpoint: string): UseVoiceConnection {
         }
 
         const { token, url } = (await response.json()) as { token: string; url: string };
+        setServerHost(url.replace(/^wss?:\/\//, '').split('/')[0]);
 
         // Sobe o serviço em primeiro plano ANTES de conectar. O Android exige
         // que ele seja iniciado enquanto o app ainda está visível; começar
@@ -177,5 +182,5 @@ export function useVoiceConnection(tokenEndpoint: string): UseVoiceConnection {
     };
   }, []);
 
-  return { status, error, participants, isMuted, connect, disconnect, setMuted };
+  return { status, error, participants, isMuted, serverHost, connect, disconnect, setMuted };
 }

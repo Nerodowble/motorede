@@ -8,7 +8,8 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "prebuild": "expo prebuild --clean",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "start:local": "cross-env-shell EXPO_PUBLIC_TOKEN_ENDPOINT=http://192.168.1.108:3000/api/livekit-token expo start --dev-client"
   },
   "dependencies": {
     "@livekit/react-native": "^2.12.0",
@@ -28,6 +29,7 @@
     "@config-plugins/react-native-webrtc": "^15.0.2",
     "@livekit/react-native-expo-plugin": "^1.0.2",
     "@types/react": "~19.2.2",
+    "cross-env": "^10.1.0",
     "typescript": "~6.0.3"
   }
 }

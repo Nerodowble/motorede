@@ -39,6 +39,9 @@ interface UseVoiceConnection {
   isMuted: boolean;
   /** true quando o navegador bloqueou o áudio e falta um gesto do usuário. */
   needsAudioUnlock: boolean;
+  /** Host do servidor de voz em uso. Exibido para que uma divergência entre
+   *  app e web (servidores diferentes) seja vista, e não silenciosa. */
+  serverHost: string | null;
   connect: (options: ConnectOptions) => Promise<void>;
   disconnect: () => Promise<void>;
   setMuted: (muted: boolean) => Promise<void>;
@@ -62,6 +65,7 @@ export function useVoiceConnection(): UseVoiceConnection {
   const [participants, setParticipants] = useState<VoiceParticipant[]>([]);
   const [isMuted, setIsMuted] = useState(false);
   const [needsAudioUnlock, setNeedsAudioUnlock] = useState(false);
+  const [serverHost, setServerHost] = useState<string | null>(null);
 
   // Contêiner oculto onde os elementos <audio> dos outros pilotos são anexados.
   useEffect(() => {
@@ -126,6 +130,7 @@ export function useVoiceConnection(): UseVoiceConnection {
         }
 
         const { token, url } = (await response.json()) as { token: string; url: string };
+        setServerHost(url.replace(/^wss?:\/\//, '').split('/')[0]);
 
         const room = new Room({
           adaptiveStream: true,
@@ -225,6 +230,7 @@ export function useVoiceConnection(): UseVoiceConnection {
     participants,
     isMuted,
     needsAudioUnlock,
+    serverHost,
     connect,
     disconnect,
     setMuted,

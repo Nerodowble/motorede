@@ -261,7 +261,7 @@ export const ConvoyVoiceView: React.FC<ConvoyVoiceViewProps> = ({
                 {voice.error
                   ? voice.error
                   : isLive
-                    ? `Canal ${activeRoomCode} • microfone ${voice.isMuted ? 'mudo' : 'aberto'}`
+                    ? `Canal ${activeRoomCode} • microfone ${voice.isMuted ? 'mudo' : 'aberto'}${voice.serverHost ? ` • ${voice.serverHost}` : ''}`
                     : 'Lista abaixo em modo demonstração até conectar.'}
               </p>
             </div>
