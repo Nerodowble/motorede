@@ -6,7 +6,7 @@
 import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react';
 import { UserRole, UserProfile, Motorcycle, SOSAlert, SOSVolunteer, VoiceRoom, Coupon, MaintenanceRecord, EmergencyType, summarizeMaintenance } from '@motorede/shared';
 import { storageService } from './services/storage';
-import { GeoPoint, geolocationService, calculateDistanceKm, DEFAULT_USER_COORDS } from './services/geolocation';
+import { GeoPoint, geolocationService, calculateDistanceKm } from './services/geolocation';
 import { audioEngine } from './services/audioEngine';
 import { Header } from './components/Header';
 import { Navigation, ActiveTab } from './components/Navigation';
@@ -76,8 +76,9 @@ export default function App() {
   const [isLockscreenOpen, setIsLockscreenOpen] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
 
-  // Geolocation State - initialized immediately with default without waiting for GPS
-  const [userCoords, setUserCoords] = useState<GeoPoint>(DEFAULT_USER_COORDS);
+  // `null` até o GPS responder. Antes começava na Av. Paulista, e um socorro
+  // pedido antes do GPS responder saía apontando para lá.
+  const [userCoords, setUserCoords] = useState<GeoPoint | null>(null);
 
   // A identidade do Google vira o perfil do app. Sem isso o cabeçalho
   // continuaria mostrando o piloto fictício do protótipo.
@@ -105,8 +106,10 @@ export default function App() {
       (point) => {
         setUserCoords(point);
       },
-      (err) => {
-        // Fallback coordinates kept silently
+      () => {
+        // Sem posição é `null`, e a tela diz isso. Inventar uma coordenada aqui
+        // foi o bug mais perigoso que este arquivo já teve.
+        setUserCoords(null);
       }
     );
 
@@ -146,15 +149,15 @@ export default function App() {
   ) => {
     const newAlert: SOSAlert = {
       id: `sos-${Date.now()}`,
-      petitionerId: 'user-current',
-      petitionerName: 'Você (Piloto)',
-      petitionerPhone: '(11) 98765-4321',
+      petitionerId: currentUser?.id || 'user-current',
+      petitionerName: currentUser?.name || 'Piloto',
+      petitionerPhone: currentUser?.phone || '',
       motorcycleInfo: motorcycle
         ? `${motorcycle.brand} ${motorcycle.model} (${motorcycle.licensePlate})`
         : 'Moto não informada',
       type,
-      lat: userCoords.lat,
-      lng: userCoords.lng,
+      lat: userCoords?.lat ?? 0,
+      lng: userCoords?.lng ?? 0,
       locationReference: reference,
       radiusKm,
       status: 'active',
@@ -163,15 +166,10 @@ export default function App() {
       timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
       volunteers: [],
 
-      chatMessages: [
-        {
-          id: `msg-${Date.now()}-0`,
-          senderId: 'system',
-          senderName: 'Central SOS',
-          text: `Alerta emitido para motociclistas num raio de ${radiusKm} km. Localização GPS transmitida com sucesso.`,
-          timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-        },
-      ],
+      // Sem mensagem de "Central SOS": não existe central, e o texto anterior
+      // afirmava que a localização havia sido transmitida com sucesso quando
+      // nada sai deste aparelho. O aviso honesto está na própria tela.
+      chatMessages: [],
     };
 
     const updated = [newAlert, ...sosAlerts];
@@ -192,9 +190,11 @@ export default function App() {
           id: 'user-current',
           name: 'Você (Voluntário)',
           motorcycle: motorcycle ? `${motorcycle.brand} ${motorcycle.model}` : 'Moto não informada',
-          lat: userCoords.lat,
-          lng: userCoords.lng,
-          distanceKm: calculateDistanceKm(userCoords.lat, userCoords.lng, alert.lat, alert.lng),
+          lat: userCoords?.lat ?? 0,
+          lng: userCoords?.lng ?? 0,
+          distanceKm: userCoords
+            ? calculateDistanceKm(userCoords.lat, userCoords.lng, alert.lat, alert.lng)
+            : 0,
           status: 'en_route',
           joinedAt: new Date().toISOString(),
         };
@@ -203,16 +203,10 @@ export default function App() {
           ...alert,
           status: 'in_progress' as const,
           volunteers: [...alert.volunteers, volunteer],
-          chatMessages: [
-            ...alert.chatMessages,
-            {
-              id: `msg-${Date.now()}`,
-              senderId: 'user-current',
-              senderName: 'Você (Voluntário)',
-              text: 'Acabei de responder ao chamado e já estou a caminho para prestar apoio!',
-              timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-            },
-          ],
+          // Sem mensagem automática. Antes o app escrevia "já estou a caminho"
+          // em nome de quem clicou, e quem pediu socorro lia isso como promessa
+          // de uma pessoa — mas ninguém tinha dito nada.
+          chatMessages: alert.chatMessages,
         };
       }
       return alert;

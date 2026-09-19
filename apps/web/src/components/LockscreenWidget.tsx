@@ -8,7 +8,7 @@ interface LockscreenWidgetProps {
   isOpen: boolean;
   onClose: () => void;
   voiceRoom: VoiceRoom;
-  userCoords: GeoPoint;
+  userCoords: GeoPoint | null;
   isMuted: boolean;
   onToggleMute: () => void;
   onTriggerSOS: () => void;
@@ -121,7 +121,9 @@ export const LockscreenWidget: React.FC<LockscreenWidgetProps> = ({
               <span>GPS 2º Plano:</span>
             </div>
             <span className="font-mono text-ink-muted text-[11px]">
-              {userCoords.lat.toFixed(4)}, {userCoords.lng.toFixed(4)}
+              {userCoords
+                ? `${userCoords.lat.toFixed(4)}, ${userCoords.lng.toFixed(4)}`
+                : 'sem GPS'}
             </span>
           </div>
         </div>

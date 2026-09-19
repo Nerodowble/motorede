@@ -166,78 +166,11 @@ const DEFAULT_RECORDS: MaintenanceRecord[] = [
   },
 ];
 
-// Seed SOS Alerts in user region
-const DEFAULT_SOS_ALERTS: SOSAlert[] = [
-  {
-    id: 'sos-01',
-    petitionerId: 'user-lucas-77',
-    petitionerName: 'Lucas Andrade',
-    petitionerPhone: '(11) 98722-4155',
-    motorcycleInfo: 'Yamaha MT-07 Cinza (Placa GHK-3190)',
-    type: 'mechanical_breakdown',
-    details: 'Cabo de embreagem estourou subindo a serra. Estou no acostamento seguro após a praça de pedágio.',
-    lat: -23.5912,
-    lng: -46.6821,
-    locationReference: 'Rodovia dos Imigrantes KM 26 - Sentido Litoral',
-    radiusKm: 15,
-    createdAt: new Date(Date.now() - 18 * 60 * 1000).toISOString(), // 18 mins ago
-    status: 'in_progress',
-    volunteers: [
-      {
-        id: 'vol-01',
-        name: 'Carlos Mendes (Tiger 900)',
-        motorcycle: 'Triumph Tiger 900',
-        phone: '(11) 99182-3021',
-        lat: -23.5855,
-        lng: -46.6710,
-        distanceKm: 2.3,
-        status: 'en_route',
-        joinedAt: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
-      },
-    ],
-    chatMessages: [
-      {
-        id: 'msg-01',
-        senderId: 'user-lucas-77',
-        senderName: 'Lucas Andrade',
-        text: 'Pessoal, rompeu bem no manete. Se alguém tiver um quebra-galho ou alicate de pressão ajuda muito!',
-        timestamp: '15:42',
-      },
-      {
-        id: 'msg-02',
-        senderId: 'vol-01',
-        senderName: 'Carlos Mendes',
-        text: 'Lucas, estou com kit de emenda de cabo na mala da moto. Chego em 8 minutos, aguenta aí!',
-        timestamp: '15:45',
-      },
-    ],
-  },
-  {
-    id: 'sos-02',
-    petitionerId: 'user-felipe-12',
-    petitionerName: 'Felipe Santana',
-    petitionerPhone: '(11) 97103-9988',
-    motorcycleInfo: 'BMW G310 GS Vermelha',
-    type: 'flat_tire',
-    details: 'Pneu traseiro furou com parafuso. Preciso de kit macarrão e bombinha de CO2 ou compressor portátil.',
-    lat: -23.5430,
-    lng: -46.6390,
-    locationReference: 'Av. 23 de Maio - Próximo ao Viaduto Santa Ifigênia',
-    radiusKm: 10,
-    createdAt: new Date(Date.now() - 35 * 60 * 1000).toISOString(),
-    status: 'active',
-    volunteers: [],
-    chatMessages: [
-      {
-        id: 'msg-f1',
-        senderId: 'user-felipe-12',
-        senderName: 'Felipe Santana',
-        text: 'Estou encostado embaixo do viaduto com pisca alerta ligado. Algum irmão motociclista por perto com kit reparo?',
-        timestamp: '15:30',
-      },
-    ],
-  },
-];
+// Sem alertas de exemplo. Os dois que existiam aqui traziam nome, placa e
+// telefone de pessoas inventadas, e eram GRAVADOS no aparelho na primeira
+// leitura — viravam dado do usuário, como a CB 500X de presente que já
+// removemos. Lista vazia é a verdade: ninguém pediu socorro perto de você.
+const DEFAULT_SOS_ALERTS: SOSAlert[] = [];
 
 // Seed Voice Room (Comboio)
 const DEFAULT_VOICE_ROOM: VoiceRoom = {

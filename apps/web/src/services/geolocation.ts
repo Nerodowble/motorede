@@ -9,11 +9,18 @@ export interface GeoPoint {
 }
 
 
-// Default base coordinates (São Paulo - Av. Paulista / Rod. dos Imigrantes corridor)
-export const DEFAULT_USER_COORDS: GeoPoint = {
-  lat: -23.561684,
-  lng: -46.655981,
-};
+/**
+ * NÃO existe coordenada padrão, de propósito.
+ *
+ * Antes havia uma — a Av. Paulista — usada sempre que o GPS falhava ou era
+ * negado. Num pedido de socorro isso é pior que não ter localização nenhuma:
+ * alguém parado numa rodovia de Minas dispararia um alerta apontando para São
+ * Paulo, e nem quem pede nem quem atende teria como desconfiar, porque a tela
+ * dizia "GPS Ativo" com números plausíveis.
+ *
+ * Posição desconhecida agora é `null`, e quem consome precisa decidir o que
+ * fazer com isso.
+ */
 
 /**
  * Calculates distance between two coordinates using the Haversine formula
@@ -62,10 +69,10 @@ export function getGoogleMapsNavigationUrl(lat: number, lng: number): string {
 /**
  * Requests device current position with fallback to default
  */
-export function getCurrentPositionAsync(): Promise<GeoPoint> {
+export function getCurrentPositionAsync(): Promise<GeoPoint | null> {
   return new Promise((resolve) => {
     if (!navigator.geolocation) {
-      resolve(DEFAULT_USER_COORDS);
+      resolve(null);
       return;
     }
 
@@ -74,11 +81,12 @@ export function getCurrentPositionAsync(): Promise<GeoPoint> {
         resolve({
           lat: position.coords.latitude,
           lng: position.coords.longitude,
+          accuracy: position.coords.accuracy,
         });
       },
       (error) => {
         console.warn('Geolocation error or permission denied:', error.message);
-        resolve(DEFAULT_USER_COORDS);
+        resolve(null);
       },
       {
         enableHighAccuracy: true,
@@ -96,7 +104,6 @@ export const geolocationService = {
     onError?: (err: GeolocationPositionError) => void
   ): () => void {
     if (typeof window === 'undefined' || !navigator.geolocation) {
-      onSuccess(DEFAULT_USER_COORDS);
       return () => {};
     }
 

@@ -22,7 +22,7 @@ import { GeoPoint, calculateDistanceKm, formatDistance, getGoogleMapsNavigationU
 import { storageService } from '../services/storage';
 
 interface SOSRescueViewProps {
-  userCoords: GeoPoint;
+  userCoords: GeoPoint | null;
   motorcycleInfo: string;
   sosAlerts: SOSAlert[];
   onTriggerSOS: (type: EmergencyType, details: string, reference: string, radiusKm: number) => void;
@@ -94,10 +94,14 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
 
   const handleStartTriggerSOS = (e: React.FormEvent) => {
     e.preventDefault();
-    const ref = locationRefText.trim() || 'Coordenadas GPS automáticas via celular';
-    const det = detailsText.trim() || 'Preciso de apoio mecânico de algum motociclista próximo.';
+    const ref = locationRefText.trim();
+    const det = detailsText.trim();
+    // Antes, campos vazios viravam "Coordenadas GPS automáticas via celular" —
+    // uma referência que não ajuda ninguém a te achar. Quem vai socorrer chega
+    // pelo "km 230, depois do posto", não pela quarta casa decimal.
+    if (ref.length < 6) return;
 
-    onTriggerSOS(selectedEmergencyType, det, ref, radiusKm);
+    onTriggerSOS(selectedEmergencyType, det || 'Sem detalhes informados.', ref, radiusKm);
     setIsTriggering(false);
     setDetailsText('');
     setLocationRefText('');
@@ -119,7 +123,8 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
                 Rede Comunitária de Socorro SOS
               </h2>
               <p className="text-xs text-ink-muted mt-0.5">
-                Alerta instantâneo geolocalizado emitido para motociclistas num raio de até 25 km.
+                Em construção: por enquanto o pedido fica só neste aparelho e
+                ninguém é avisado. Para emergência de verdade, 190 ou 192.
               </p>
             </div>
           </div>
@@ -191,13 +196,22 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
                   Sua Posição GPS Atual
                 </label>
                 <div className="bg-surface/90 border border-line rounded-lg p-2 flex items-center justify-between text-xs text-ink-muted">
-                  <span className="flex items-center gap-1.5 text-sky-400">
-                    <Compass className="w-4 h-4" />
-                    GPS Ativo:
-                  </span>
-                  <span className="font-mono text-ink">
-                    {userCoords.lat.toFixed(4)}, {userCoords.lng.toFixed(4)}
-                  </span>
+                  {userCoords ? (
+                    <>
+                      <span className="flex items-center gap-1.5 text-sky-400">
+                        <Compass className="w-4 h-4" />
+                        GPS ativo:
+                      </span>
+                      <span className="font-mono text-ink">
+                        {userCoords.lat.toFixed(4)}, {userCoords.lng.toFixed(4)}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="flex items-center gap-1.5 text-red-400">
+                      <Compass className="w-4 h-4 shrink-0" />
+                      Sem GPS — escreva bem o ponto de referência abaixo
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -208,7 +222,8 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
                 type="text"
                 value={locationRefText}
                 onChange={(e) => setLocationRefText(e.target.value)}
-                placeholder="Ponto de Referência (Ex: Rodovia Imigrantes KM 28, sentido Litoral no acostamento)"
+                required
+                placeholder="Onde você está, com palavras (Ex: Imigrantes km 28, sentido litoral, acostamento)"
                 className="w-full bg-surface border border-line-strong rounded-xl p-3 text-xs text-ink placeholder:text-ink-faint focus:outline-none focus:border-red-500"
               />
               <textarea
@@ -295,7 +310,7 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
               <Users className="w-4 h-4 text-brand" />
               Voluntários no Resgate: <strong className="text-ink">{activeChannelAlert.volunteers.length} motociclista(s)</strong>
             </span>
-            <span className="text-[11px] font-mono text-emerald-400">Canal criptografado temporário</span>
+            <span className="text-[11px] font-mono text-ink-faint">Conversa salva só neste aparelho</span>
           </div>
 
           {/* Chat Messages */}
@@ -374,12 +389,14 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
               Alertas Ativos na Região ({sosAlerts.length})
             </h3>
           </div>
-          <span className="text-[11px] text-ink-muted font-mono">Raio máximo: 25 km</span>
+          <span className="text-[11px] text-ink-muted font-mono">Só deste aparelho</span>
         </div>
 
         <div className="space-y-2.5">
           {sosAlerts.map((alert) => {
-            const distance = calculateDistanceKm(userCoords.lat, userCoords.lng, alert.lat, alert.lng);
+            const distance = userCoords
+              ? calculateDistanceKm(userCoords.lat, userCoords.lng, alert.lat, alert.lng)
+              : null;
             const isResolved = alert.status === 'resolved';
 
             return (
@@ -408,9 +425,11 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
                           ? 'Bateria / Elétrica'
                           : 'Queda / Acidente'}
                       </span>
-                      <span className="text-[11px] text-brand-soft font-mono font-bold">
-                        ~{formatDistance(distance)} de você
-                      </span>
+                      {distance !== null && (
+                        <span className="text-[11px] text-brand-soft font-mono font-bold">
+                          ~{formatDistance(distance)} de você
+                        </span>
+                      )}
                     </div>
 
                     <p className="text-xs text-ink-muted mt-1">{alert.details}</p>
