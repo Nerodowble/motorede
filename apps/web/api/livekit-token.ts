@@ -1,3 +1,4 @@
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { AccessToken } from 'livekit-server-sdk';
 
 /**
@@ -9,6 +10,13 @@ import { AccessToken } from 'livekit-server-sdk';
  *
  * O segredo da API nunca chega ao navegador: a assinatura acontece aqui.
  *
+ * ASSINATURA DO HANDLER
+ * Usa o formato (req, res) do runtime Node da Vercel. A primeira versão deste
+ * arquivo usava o padrão Web (Request/Response), que é do runtime Edge: a
+ * função executava, devolvia um Response e ninguém escrevia em `res`, então a
+ * requisição ficava pendurada até expirar. O sintoma era o pior tipo de falha
+ * — sem erro, sem log, só um tempo de espera infinito.
+ *
  * NOTA SOBRE AUTENTICAÇÃO
  * Hoje qualquer pessoa com o endereço consegue um token para qualquer sala.
  * É aceitável na fase de testes com amigos, e é exatamente o que muda quando
@@ -17,8 +25,8 @@ import { AccessToken } from 'livekit-server-sdk';
  */
 
 interface TokenRequest {
-  room: string;
-  identity: string;
+  room?: string;
+  identity?: string;
   name?: string;
 }
 
@@ -26,11 +34,13 @@ interface TokenRequest {
 const ROOM_CODE_PATTERN = /^[A-Z0-9-]{3,32}$/i;
 const IDENTITY_PATTERN = /^[a-zA-Z0-9_-]{3,64}$/;
 
-export const config = { runtime: 'nodejs' };
-
-export default async function handler(request: Request): Promise<Response> {
-  if (request.method !== 'POST') {
-    return json({ error: 'Method Not Allowed' }, 405);
+export default async function handler(
+  req: VercelRequest,
+  res: VercelResponse
+): Promise<void> {
+  if (req.method !== 'POST') {
+    res.status(405).json({ error: 'Method Not Allowed' });
+    return;
   }
 
   const apiKey = process.env.LIVEKIT_API_KEY;
@@ -40,28 +50,35 @@ export default async function handler(request: Request): Promise<Response> {
   if (!apiKey || !apiSecret || !livekitUrl) {
     // Falha explícita: sem isso o app conectaria em lugar nenhum e o erro
     // apareceria lá na frente, difícil de rastrear.
-    return json({ error: 'servidor de voz não configurado' }, 500);
+    res.status(500).json({ error: 'servidor de voz não configurado' });
+    return;
   }
 
+  // A Vercel já entrega o corpo desserializado quando o content-type é JSON,
+  // mas aceita string quando não é — tratamos os dois casos.
   let body: TokenRequest;
   try {
-    body = (await request.json()) as TokenRequest;
+    body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body ?? {});
   } catch {
-    return json({ error: 'corpo inválido' }, 400);
+    res.status(400).json({ error: 'corpo inválido' });
+    return;
   }
 
   const { room, identity, name } = body;
 
   if (!room || !identity) {
-    return json({ error: 'room e identity são obrigatórios' }, 400);
+    res.status(400).json({ error: 'room e identity são obrigatórios' });
+    return;
   }
 
   // Validação de fronteira: esses valores viram parte de um token assinado.
   if (!ROOM_CODE_PATTERN.test(room)) {
-    return json({ error: 'código de sala inválido' }, 400);
+    res.status(400).json({ error: 'código de sala inválido' });
+    return;
   }
   if (!IDENTITY_PATTERN.test(identity)) {
-    return json({ error: 'identidade inválida' }, 400);
+    res.status(400).json({ error: 'identidade inválida' });
+    return;
   }
 
   try {
@@ -79,15 +96,8 @@ export default async function handler(request: Request): Promise<Response> {
       canUpdateOwnMetadata: true,
     });
 
-    return json({ token: await at.toJwt(), url: livekitUrl });
+    res.status(200).json({ token: await at.toJwt(), url: livekitUrl });
   } catch {
-    return json({ error: 'falha ao emitir token' }, 500);
+    res.status(500).json({ error: 'falha ao emitir token' });
   }
-}
-
-function json(payload: unknown, status = 200): Response {
-  return new Response(JSON.stringify(payload), {
-    status,
-    headers: { 'Content-Type': 'application/json' },
-  });
 }
