@@ -29,6 +29,8 @@ import { ProfileSetupScreen } from './src/screens/ProfileSetupScreen';
 import { ConvoyScreen } from './src/screens/ConvoyScreen';
 import { MyMotorcycleScreen } from './src/screens/MyMotorcycleScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
+import { SocorroScreen } from './src/screens/SocorroScreen';
+import { useSocorro } from './src/hooks/useSocorro';
 import { storage } from './src/services/storage';
 import { DEV_ROOM_CODE } from './src/config';
 import { COLORS } from './src/theme';
@@ -37,11 +39,12 @@ import { COLORS } from './src/theme';
 // antes de qualquer uso do LiveKit.
 registerGlobals();
 
-type Aba = 'comboio' | 'moto' | 'ajustes';
+type Aba = 'comboio' | 'socorro' | 'moto' | 'ajustes';
 
 const ABAS: Array<[Aba, string]> = [
   ['comboio', 'Comboio'],
-  ['moto', 'Minha moto'],
+  ['socorro', 'Socorro'],
+  ['moto', 'Moto'],
   ['ajustes', 'Ajustes'],
 ];
 
@@ -80,6 +83,7 @@ function Aplicativo() {
   // aparecia atrás dos botões do celular. Estas medidas vêm do sistema e valem
   // nos dois.
   const insets = useSafeAreaInsets();
+  const socorro = useSocorro();
 
   const [aba, setAba] = useState<Aba>('comboio');
   const [roomCode, setRoomCode] = useState(DEV_ROOM_CODE);
@@ -237,6 +241,21 @@ function Aplicativo() {
             idToken={auth.getIdToken()}
           />
         )}
+        {aba === 'socorro' && (
+          <SocorroScreen
+            profile={profile}
+            motoInfo={motorcycle ? `${motorcycle.brand} ${motorcycle.model}` : ''}
+            rede={socorro.rede}
+            entrando={socorro.entrando}
+            posicao={socorro.posicao}
+            chamados={socorro.chamados}
+            respostas={socorro.respostas}
+            onEntrar={socorro.entrar}
+            onSair={socorro.sair}
+            onRespondido={socorro.marcarRespondido}
+            onDispensar={socorro.dispensarChamado}
+          />
+        )}
         {aba === 'moto' && (
           <MyMotorcycleScreen
             motorcycle={motorcycle}
@@ -266,7 +285,9 @@ function Aplicativo() {
               style={styles.item}
             >
               {ativa && <View style={styles.indicador} />}
-              <Text style={[styles.itemTexto, ativa && styles.itemAtivo]}>{rotulo}</Text>
+              <Text numberOfLines={1} style={[styles.itemTexto, ativa && styles.itemAtivo]}>
+                {rotulo}
+              </Text>
             </Pressable>
           );
         })}

@@ -29,6 +29,16 @@ export const TOKEN_ENDPOINT =
 export const CONVOYS_ENDPOINT = `${WEB_APP_URL}/api/comboios`;
 
 /**
+ * Raiz da API, derivada do endpoint do token em vez de `WEB_APP_URL`.
+ *
+ * Assim `npm run start:local` leva a rede de socorro junto para o servidor
+ * local. Apontar para produção aqui repetiria o erro que este arquivo já
+ * documenta acima: metade do app falando com uma máquina e metade com outra,
+ * sem erro visível em lugar nenhum.
+ */
+export const API_BASE = TOKEN_ENDPOINT.replace(/\/api\/.*$/, '/api');
+
+/**
  * Credenciais do Google.
  *
  * Só o Client ID, que é público por natureza. O Client Secret NÃO entra aqui:

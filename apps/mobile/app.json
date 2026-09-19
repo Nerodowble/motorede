@@ -2,7 +2,7 @@
   "expo": {
     "name": "MotoRede",
     "slug": "motorede",
-    "version": "0.2.0",
+    "version": "0.3.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "motorede",
@@ -13,7 +13,7 @@
       "bundleIdentifier": "br.com.motorede.app",
       "infoPlist": {
         "NSMicrophoneUsageDescription": "O MotoRede usa o microfone para a conversa por voz do comboio.",
-        "NSLocationWhenInUseUsageDescription": "A localização mostra a distância entre os pilotos do comboio e é enviada num pedido de socorro.",
+        "NSLocationWhenInUseUsageDescription": "O MotoRede usa sua localização para avisar pilotos próximos quando você pede socorro, e para te avisar de quem precisa de ajuda perto de você.",
         "UIBackgroundModes": [
           "audio",
           "voip",
@@ -76,7 +76,19 @@
         }
       ],
       "./plugins/withVoiceForegroundService",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "O MotoRede usa sua localização para avisar pilotos próximos quando você pede socorro, e para te avisar de quem precisa de ajuda perto de você."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#f59e0b"
+        }
+      ]
     ],
     "web": {
       "favicon": "./assets/favicon.png"
