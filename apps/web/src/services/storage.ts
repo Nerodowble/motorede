@@ -493,12 +493,15 @@ export const storageService = {
   },
 
   getCurrentUser(): UserProfile | null {
-    if (typeof window === 'undefined') return DEFAULT_USERS[0];
+    // Ninguém é ninguém até entrar. Esta função GRAVAVA o piloto de exemplo
+    // (`Carlos Mendonça`, telefone `(11) 98765-4321`) no navegador de quem
+    // abrisse o site pela primeira vez, e a partir dali aquilo era dado do
+    // usuário: mesmo padrão da CB 500X de presente e dos alertas de socorro
+    // inventados, que já removemos. O telefone falso importa em especial
+    // porque a busca de piloto entre comboios procura justamente por telefone.
+    if (typeof window === 'undefined') return null;
     const raw = localStorage.getItem(STORAGE_KEYS.CURRENT_USER);
-    if (!raw) {
-      localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(DEFAULT_USERS[0]));
-      return DEFAULT_USERS[0];
-    }
+    if (!raw) return null;
     try {
       return JSON.parse(raw);
     } catch {
@@ -606,13 +609,15 @@ export const storageService = {
       email: cleanEmail,
       password: data.password.trim(),
       role: data.role,
-      phone: data.phone.trim() || '(11) 98765-4321',
+      // Sem telefone é sem telefone. Preencher com um número de mentira faz o
+      // piloto aparecer na busca por telefone com um contato que não é dele.
+      phone: data.phone.trim(),
       createdAt: new Date().toISOString(),
       motorcycle: userMotorcycle,
       shopName: data.shopName?.trim(),
       cnpj: data.cnpj?.trim(),
       address: data.address?.trim(),
-      city: data.city?.trim() || 'São Paulo - SP',
+      city: data.city?.trim() || '',
       specialties: data.specialties || ['Mecânica Geral', 'Injeção Eletrônica'],
       department: data.role === 'admin' ? 'Supervisão Geral de Segurança' : undefined,
     };
