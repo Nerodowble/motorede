@@ -18,8 +18,8 @@ config.resolver.nodeModulesPaths = [
   path.resolve(workspaceRoot, 'node_modules'),
 ];
 
-// Evita que o Metro suba a árvore sozinho e acabe carregando duas cópias da
-// mesma biblioteca — causa clássica de "dois Reacts" em monorepo.
-config.resolver.disableHierarchicalLookup = true;
+// Nota: não desativar `resolver.disableHierarchicalLookup`. O expo doctor
+// acusa divergência, e a duplicação de pacotes em monorepo se resolve
+// alinhando as versões no package.json, não escondendo a busca do Metro.
 
 module.exports = config;

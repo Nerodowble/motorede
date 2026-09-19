@@ -12,5 +12,9 @@
     "dev:web": "npm run dev --workspace @motorede/web",
     "build:web": "npm run build --workspace @motorede/web",
     "lint": "npm run lint --workspaces --if-present"
+  },
+  "overrides": {
+    "react": "19.2.3",
+    "react-dom": "19.2.3"
   }
 }

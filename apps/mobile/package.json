@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@livekit/react-native": "^2.12.0",
-    "@livekit/react-native-webrtc": "^144.2.0",
+    "@livekit/react-native-webrtc": "144.1.2",
     "@motorede/shared": "*",
     "expo": "~57.0.24",
     "expo-build-properties": "~57.0.21",

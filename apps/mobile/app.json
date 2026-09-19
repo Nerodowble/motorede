@@ -8,7 +8,6 @@
     "scheme": "motorede",
     "userInterfaceStyle": "dark",
     "backgroundColor": "#020617",
-    "newArchEnabled": true,
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "br.com.motorede.app",
