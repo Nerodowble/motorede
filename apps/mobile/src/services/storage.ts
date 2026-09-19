@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { MaintenanceRecord, Motorcycle } from '@motorede/shared';
+import type { MaintenanceRecord, Motorcycle, RiderProfile } from '@motorede/shared';
 
 /**
  * Persistência local do app.
@@ -14,6 +14,7 @@ import type { MaintenanceRecord, Motorcycle } from '@motorede/shared';
  */
 
 const CHAVES = {
+  PROFILE: 'motorede_profile',
   MOTORCYCLE: 'motorede_motorcycle',
   RECORDS: 'motorede_maintenance_records',
   LAST_ROOM: 'motorede_last_room_code',
@@ -39,6 +40,17 @@ async function gravar(chave: string, valor: unknown): Promise<void> {
 }
 
 export const storage = {
+  /** Perfil do piloto, ou null se ainda não cadastrou. */
+  getProfile: () => ler<RiderProfile>(CHAVES.PROFILE),
+  saveProfile: (perfil: RiderProfile) => gravar(CHAVES.PROFILE, perfil),
+  clearProfile: async () => {
+    try {
+      await AsyncStorage.removeItem(CHAVES.PROFILE);
+    } catch {
+      // segue com o perfil em memória
+    }
+  },
+
   /** A moto do piloto, ou null se ainda não cadastrou. */
   getMotorcycle: () => ler<Motorcycle>(CHAVES.MOTORCYCLE),
   saveMotorcycle: (moto: Motorcycle) => gravar(CHAVES.MOTORCYCLE, moto),

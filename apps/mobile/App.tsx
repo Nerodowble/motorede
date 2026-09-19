@@ -15,12 +15,14 @@ import { registerGlobals } from '@livekit/react-native';
 import {
   isJoinableRoomCode,
   normalizeRoomCode,
+  profileFromGoogle,
   summarizeMaintenance,
   type MaintenanceRecord,
   type Motorcycle,
+  type RiderProfile,
 } from '@motorede/shared';
 import { useGoogleAuth } from './src/hooks/useGoogleAuth';
-import { LoginScreen } from './src/screens/LoginScreen';
+import { ProfileSetupScreen } from './src/screens/ProfileSetupScreen';
 import { ConvoyScreen } from './src/screens/ConvoyScreen';
 import { MyMotorcycleScreen } from './src/screens/MyMotorcycleScreen';
 import { storage } from './src/services/storage';
@@ -51,6 +53,7 @@ export default function App() {
 
   const [aba, setAba] = useState<Aba>('comboio');
   const [roomCode, setRoomCode] = useState(DEV_ROOM_CODE);
+  const [profile, setProfile] = useState<RiderProfile | null>(null);
   const [motorcycle, setMotorcycle] = useState<Motorcycle | null>(null);
   const [records, setRecords] = useState<MaintenanceRecord[]>([]);
   const [carregando, setCarregando] = useState(true);
@@ -68,11 +71,13 @@ export default function App() {
 
   useEffect(() => {
     void (async () => {
-      const [moto, regs, sala] = await Promise.all([
+      const [perfil, moto, regs, sala] = await Promise.all([
+        storage.getProfile(),
         storage.getMotorcycle(),
         storage.getRecords(),
         storage.getLastRoom(),
       ]);
+      setProfile(perfil);
       setMotorcycle(moto);
       setRecords(regs);
       if (sala) setRoomCode(sala);
@@ -94,6 +99,36 @@ export default function App() {
     const sub = Linking.addEventListener('url', ({ url }) => aplicar(url));
     return () => sub.remove();
   }, [trocarSala]);
+
+  // Entrar com o Google substitui o perfil local por um verificado: é o mesmo
+  // piloto, agora com identidade que o servidor consegue conferir.
+  useEffect(() => {
+    if (!auth.user) return;
+    const verificado = profileFromGoogle({
+      sub: auth.user.idToken.split('.')[1],
+      name: auth.user.name,
+      email: auth.user.email,
+    });
+    setProfile((anterior) => {
+      if (anterior?.source === 'google' && anterior.email === verificado.email) {
+        return anterior;
+      }
+      const combinado = { ...verificado, phone: anterior?.phone ?? '' };
+      void storage.saveProfile(combinado);
+      return combinado;
+    });
+  }, [auth.user]);
+
+  const salvarPerfil = useCallback((perfil: RiderProfile) => {
+    setProfile(perfil);
+    void storage.saveProfile(perfil);
+  }, []);
+
+  const sair = useCallback(() => {
+    void auth.signOut();
+    void storage.clearProfile();
+    setProfile(null);
+  }, [auth]);
 
   const salvarMoto = useCallback((moto: Motorcycle) => {
     setMotorcycle(moto);
@@ -129,13 +164,19 @@ export default function App() {
     );
   }
 
-  // Porta de entrada. Se o login não estiver configurado neste build, o app
-  // segue sem identidade em vez de ficar inacessível.
-  if (auth.isConfigured && !auth.user) {
+  // Porta de entrada: um perfil, que pode ser local ou verificado pelo Google.
+  // Perfil local não autentica nada, e não finge autenticar — serve para os
+  // outros pilotos reconhecerem quem fala.
+  if (!profile) {
     return (
       <>
         <StatusBar style="light" />
-        <LoginScreen onSignIn={auth.signIn} error={auth.error} isLoading={false} />
+        <ProfileSetupScreen
+          onSalvar={salvarPerfil}
+          onEntrarComGoogle={auth.signIn}
+          googleDisponivel={auth.isConfigured}
+          erroGoogle={auth.error}
+        />
       </>
     );
   }
@@ -147,13 +188,14 @@ export default function App() {
       <View style={styles.cabecalho}>
         <View style={{ flex: 1 }}>
           <Text style={styles.marca}>MotoRede</Text>
-          {auth.user && <Text style={styles.usuario}>{auth.user.name}</Text>}
+          <Text style={styles.usuario}>
+            {profile.name}
+            {profile.source === 'google' ? ' · verificado' : ''}
+          </Text>
         </View>
-        {auth.user && (
-          <Pressable onPress={auth.signOut}>
-            <Text style={styles.sair}>Sair</Text>
-          </Pressable>
-        )}
+        <Pressable onPress={sair}>
+          <Text style={styles.sair}>Sair</Text>
+        </Pressable>
       </View>
 
       <View style={{ flex: 1 }}>
@@ -161,7 +203,7 @@ export default function App() {
           <ConvoyScreen
             roomCode={roomCode}
             onChangeRoom={trocarSala}
-            displayName={auth.user?.name ?? 'Piloto'}
+            displayName={profile.name}
             idToken={auth.getIdToken()}
           />
         ) : (
