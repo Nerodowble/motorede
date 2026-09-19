@@ -37,6 +37,7 @@ const STORAGE_KEYS = {
   LAST_ROOM_CODE: 'motorede_last_room_code',
   PHONE: 'motorede_phone',
   FAVORITE_ROOMS: 'motorede_favorite_rooms',
+  LOCK_WARNING_DISMISSED: 'motorede_lock_warning_dismissed',
 };
 
 // Seed Motorcycle: Honda CB 500X 2022
@@ -479,6 +480,22 @@ export const storageService = {
     if (typeof window === 'undefined') return;
     if (phone) localStorage.setItem(STORAGE_KEYS.PHONE, phone);
     else localStorage.removeItem(STORAGE_KEYS.PHONE);
+  },
+
+  /**
+   * Se o piloto já dispensou o aviso sobre tela bloqueada no navegador.
+   *
+   * Guardado para não reaparecer a cada visita: é informação que se aprende
+   * uma vez, e repetir vira ruído.
+   */
+  isLockWarningDismissed(): boolean {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem(STORAGE_KEYS.LOCK_WARNING_DISMISSED) === 'true';
+  },
+
+  dismissLockWarning(): void {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(STORAGE_KEYS.LOCK_WARNING_DISMISSED, 'true');
   },
 
   /** Comboios marcados como favoritos, para o admin voltar rápido. */

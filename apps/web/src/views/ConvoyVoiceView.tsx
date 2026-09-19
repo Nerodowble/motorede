@@ -18,6 +18,8 @@ import {
   Signal,
   Smartphone,
   Compass,
+  Lock,
+  X,
 } from 'lucide-react';
 import {
   VoiceRoom,
@@ -75,6 +77,9 @@ export const ConvoyVoiceView: React.FC<ConvoyVoiceViewProps> = ({
   const isPttHeld = useRef(false);
   const mutedBeforePtt = useRef(true);
   const [phone, setPhone] = useState(() => storageService.getPhone());
+  const [showLockWarning, setShowLockWarning] = useState(
+    () => !storageService.isLockWarningDismissed()
+  );
 
   const inviteUrl = `${window.location.origin}/?sala=${activeRoomCode}`;
 
@@ -234,6 +239,46 @@ ${inviteUrl}`;
 
   return (
     <div className="space-y-4 pb-28 sm:pb-24 max-w-4xl mx-auto px-3 sm:px-4 py-3">
+      {/* Aviso sobre tela bloqueada.
+          Só no celular e só na web, que é onde o problema existe: o navegador
+          sustenta a REPRODUÇÃO em segundo plano, nunca a CAPTURA. Sem esse
+          aviso o piloto bloqueia a tela, continua ouvindo todo mundo, e conclui
+          que o app está quebrado quando ninguém responde. */}
+      {isMobileDevice && showLockWarning && (
+        <div className="rounded-2xl bg-amber-500/10 border border-amber-500/30 p-4">
+          <div className="flex items-start gap-3">
+            <Lock className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-bold text-amber-300 mb-1">
+                No navegador, fale com a tela ligada
+              </p>
+              <p className="text-[11px] text-slate-300 leading-relaxed">
+                Ao bloquear o celular você <strong>continua ouvindo</strong> o comboio,
+                mas <strong>para de transmitir</strong> — é limite do navegador, não do
+                MotoRede. Para falar com o celular no bolso, use o aplicativo.
+              </p>
+              <a
+                href={`motorede://sala/${activeRoomCode}`}
+                className="inline-flex items-center gap-1.5 mt-2.5 px-3 py-1.5 rounded-lg bg-amber-500 text-slate-950 text-[11px] font-bold transition active:scale-95"
+              >
+                <Smartphone className="w-3.5 h-3.5" />
+                Abrir no app
+              </a>
+            </div>
+            <button
+              onClick={() => {
+                storageService.dismissLockWarning();
+                setShowLockWarning(false);
+              }}
+              className="p-1 rounded-lg hover:bg-amber-500/20 text-amber-400/70 shrink-0 transition"
+              aria-label="Dispensar aviso"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Identificação do piloto. Só aparece se o login estiver configurado,
           para o app não quebrar em ambiente sem a credencial do Google. */}
       {auth.isConfigured && (
