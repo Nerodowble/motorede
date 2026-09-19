@@ -633,3 +633,46 @@ usado). A categoria vem do cartão, então o formulário nunca pergunta *o quê*
 
 Cartões ordenados por urgência: vencido, se aproximando, em dia, sem registro.
 A ordem fixa por categoria fazia um item vencido aparecer em sexto lugar.
+
+---
+
+## 21. Tema claro e escuro, escolhidos pelo usuário
+
+**Decidido e implementado.** O app nasceu só escuro, com a cor escrita direto em
+cada componente — cerca de 800 classes `bg-slate-900`, `text-slate-400` e afins
+em 17 arquivos.
+
+**A cor passou a ser declarada pelo papel, não pelo tom:** fundo de página,
+superfície de cartão, linha, texto principal, texto secundário. Cada tema define
+os valores num só lugar e a interface não precisa saber qual está ativo. É o que
+torna a troca possível em tempo de execução sem espalhar variantes `dark:`.
+
+**Três estados, não dois.** Além de claro e escuro existe *sistema*, que é o
+padrão e acompanha o aparelho quando ele alterna sozinho ao anoitecer. Um botão
+que apenas alterna não teria como voltar a essa opção depois da primeira
+escolha — por isso o seletor tem três posições, não uma chave.
+
+**O tema é aplicado antes da primeira pintura**, por um trecho solto no
+`index.html`. Se esperasse o React montar, quem escolhe claro veria o app piscar
+escuro a cada carregamento.
+
+### O que só apareceu no tema claro
+
+1. **Texto sobre fundo colorido.** A troca em massa converteu `text-white` em
+   `text-ink` também nos botões vermelhos do SOS e no verde do microfone aberto.
+   No escuro não deu diferença — o texto principal já é quase branco. No claro o
+   botão de socorro virava preto sobre vermelho. Esses fundos são fixos nos dois
+   temas, então o texto sobre eles também precisa ser.
+2. **O âmbar da marca** (`#f59e0b`) não alcança contraste para texto pequeno
+   sobre fundo claro. No tema claro ele escurece para `#b45309`.
+3. **O tom mais apagado** dava 3,75:1 no escuro e 2,56:1 no claro contra o
+   cartão — justamente no texto de 10-11px, o que mais precisa de contraste.
+   Ajustado para passar de 4,5:1 nos dois.
+4. **O corpo da página** tinha `bg-slate-950` preso na marcação: qualquer área
+   não coberta pela interface ficava preta.
+5. **`hover:bg-slate-750` nunca existiu no Tailwind.** Aquele hover não fazia
+   nada desde o começo, e só foi notado ao revisar cor por cor.
+
+**A escolha vive fora do React,** num módulo só. O seletor aparece na tela de
+entrada e no cabeçalho de dentro do app; com estado separado, trocar num
+deixaria o outro mostrando o botão errado.
