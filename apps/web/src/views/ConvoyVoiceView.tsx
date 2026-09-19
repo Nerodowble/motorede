@@ -31,6 +31,7 @@ import { audioEngine } from '../services/audioEngine';
 import { getGoogleMapsNavigationUrl, getWazeNavigationUrl } from '../services/geolocation';
 import QRCode from 'qrcode';
 import { useVoiceConnection } from '../hooks/useVoiceConnection';
+import { useGoogleAuth } from '../hooks/useGoogleAuth';
 
 interface ConvoyVoiceViewProps {
   voiceRoom: VoiceRoom;
@@ -58,6 +59,8 @@ export const ConvoyVoiceView: React.FC<ConvoyVoiceViewProps> = ({
 
   // Conexão de voz real contra o servidor LiveKit.
   const voice = useVoiceConnection();
+  const auth = useGoogleAuth();
+  const googleButtonRef = useRef<HTMLDivElement | null>(null);
   const isLive = voice.status === 'connected' || voice.status === 'reconnecting';
 
   // Código do comboio ativo. A ordem de precedência importa: um link de convite
@@ -103,6 +106,10 @@ export const ConvoyVoiceView: React.FC<ConvoyVoiceViewProps> = ({
     };
   }, [showQRModal, inviteUrl]);
 
+  useEffect(() => {
+    if (!auth.user) auth.renderButton(googleButtonRef.current);
+  }, [auth.isReady, auth.user, auth.renderButton]);
+
   // Enquanto não há conexão real, a tela segue mostrando os participantes de
   // demonstração. Conectado, passa a refletir quem está de fato na sala.
   const displayParticipants: VoiceParticipant[] = isLive
@@ -138,7 +145,8 @@ export const ConvoyVoiceView: React.FC<ConvoyVoiceViewProps> = ({
     await voice.connect({
       roomCode: activeRoomCode,
       identity: `piloto-${Math.random().toString(36).slice(2, 8)}`,
-      displayName: 'Você (Piloto)',
+      displayName: auth.user?.name || 'Você (Piloto)',
+      idToken: auth.getIdToken(),
     });
   };
 
@@ -234,6 +242,48 @@ export const ConvoyVoiceView: React.FC<ConvoyVoiceViewProps> = ({
 
   return (
     <div className="space-y-4 pb-28 sm:pb-24 max-w-4xl mx-auto px-3 sm:px-4 py-3">
+      {/* Identificação do piloto. Só aparece se o login estiver configurado,
+          para o app não quebrar em ambiente sem a credencial do Google. */}
+      {auth.isConfigured && (
+        <div className="rounded-2xl bg-slate-900/80 border border-slate-800 p-4">
+          {auth.user ? (
+            <div className="flex items-center gap-3">
+              {auth.user.picture && (
+                <img
+                  src={auth.user.picture}
+                  alt=""
+                  className="w-9 h-9 rounded-xl border border-slate-700"
+                />
+              )}
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-bold text-slate-100 truncate">
+                  {auth.user.name}
+                </p>
+                <p className="text-[11px] text-slate-400 truncate">{auth.user.email}</p>
+              </div>
+              <button
+                onClick={auth.signOut}
+                className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-slate-700 transition active:scale-95"
+              >
+                Sair
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-bold text-slate-200">
+                  Entre para aparecer com seu nome
+                </p>
+                <p className="text-[11px] text-slate-400">
+                  Sem login você entra como piloto anônimo.
+                </p>
+              </div>
+              <div ref={googleButtonRef} className="shrink-0" />
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Conexão de voz real (LiveKit) */}
       <div className="rounded-2xl bg-slate-900/80 border border-slate-800 p-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
