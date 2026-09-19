@@ -74,8 +74,6 @@ export const ConvoyVoiceView: React.FC<ConvoyVoiceViewProps> = ({
   const [codeError, setCodeError] = useState<string | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [showBrowser, setShowBrowser] = useState(false);
-  const isPttHeld = useRef(false);
-  const mutedBeforePtt = useRef(true);
   const [phone, setPhone] = useState(() => storageService.getPhone());
   const [showLockWarning, setShowLockWarning] = useState(
     () => !storageService.isLockWarningDismissed()
@@ -85,6 +83,7 @@ export const ConvoyVoiceView: React.FC<ConvoyVoiceViewProps> = ({
 
   // Detecção simples de celular: basta para decidir se vale oferecer o app.
   const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
 
   // Gera o QR de verdade quando o modal abre ou o comboio muda.
   useEffect(() => {
@@ -181,32 +180,6 @@ export const ConvoyVoiceView: React.FC<ConvoyVoiceViewProps> = ({
    * WhatsApp — que é por onde um convite de comboio realmente circula. Onde
    * isso não existe, copia o link.
    */
-  /**
-   * Segure para falar.
-   *
-   * A primeira versão usava `onPointerLeave` para fechar o microfone, e isso
-   * estava errado: `pointerleave` dispara quando o ponteiro apenas PASSA por
-   * cima e sai, sem clique nenhum. Bastava o mouse cruzar o botão para o
-   * microfone fechar sozinho.
-   *
-   * Agora só reage a um toque que de fato começou aqui (`isPttHeld`), captura
-   * o ponteiro para não perder o evento de soltar, e restaura o estado que o
-   * microfone tinha antes — quem estava transmitindo continua transmitindo ao
-   * soltar, em vez de ser silenciado por um atalho que nem usou.
-   */
-  const handlePttStart = (e: React.PointerEvent<HTMLButtonElement>) => {
-    e.currentTarget.setPointerCapture?.(e.pointerId);
-    isPttHeld.current = true;
-    mutedBeforePtt.current = voice.isMuted;
-    void voice.setMuted(false);
-  };
-
-  const handlePttEnd = () => {
-    if (!isPttHeld.current) return;
-    isPttHeld.current = false;
-    void voice.setMuted(mutedBeforePtt.current);
-  };
-
   const handleShareConvoy = async () => {
     const texto = `Entra no meu comboio no MotoRede
 
@@ -240,22 +213,29 @@ ${inviteUrl}`;
   return (
     <div className="space-y-4 pb-28 sm:pb-24 max-w-4xl mx-auto px-3 sm:px-4 py-3">
       {/* Aviso sobre tela bloqueada.
-          Só no celular e só na web, que é onde o problema existe: o navegador
-          sustenta a REPRODUÇÃO em segundo plano, nunca a CAPTURA. Sem esse
-          aviso o piloto bloqueia a tela, continua ouvindo todo mundo, e conclui
-          que o app está quebrado quando ninguém responde. */}
+          Sem ele o piloto bloqueia a tela, continua ouvindo todo mundo, e
+          conclui que o app quebrou quando ninguém responde — o sintoma esconde
+          a causa, porque a direção que falha é a que ele não percebe.
+
+          Mostrado em todo celular, de propósito. Medimos um iPhone 15 em que as
+          duas direções sobrevivem ao bloqueio e um Samsung A07 em que não; um
+          aparelho de cada não sustenta uma regra por sistema operacional. Um
+          aviso ocasionalmente desnecessário custa menos que alguém falhando em
+          silêncio na estrada. */}
       {isMobileDevice && showLockWarning && (
         <div className="rounded-2xl bg-amber-500/10 border border-amber-500/30 p-4">
           <div className="flex items-start gap-3">
             <Lock className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
             <div className="min-w-0 flex-1">
               <p className="text-xs font-bold text-amber-300 mb-1">
-                No navegador, fale com a tela ligada
+                No celular, fale com a tela ligada
               </p>
               <p className="text-[11px] text-slate-300 leading-relaxed">
-                Ao bloquear o celular você <strong>continua ouvindo</strong> o comboio,
-                mas <strong>para de transmitir</strong> — é limite do navegador, não do
-                MotoRede. Para falar com o celular no bolso, use o aplicativo.
+                Ao bloquear a tela, em boa parte dos aparelhos você{' '}
+                <strong>continua ouvindo</strong> o comboio mas{' '}
+                <strong>para de transmitir</strong>. Depende do modelo, e é limite do
+                navegador, não do MotoRede. Para não depender disso, mantenha a tela
+                ligada ou use o aplicativo.
               </p>
               <a
                 href={`motorede://sala/${activeRoomCode}`}
@@ -511,11 +491,11 @@ ${inviteUrl}`;
           impressão de tela quebrada. */}
       {isLive && (
         <div className="rounded-2xl bg-gradient-to-b from-slate-900 to-slate-950 border border-slate-800 p-4 sm:p-5 shadow-xl space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {/* Mudo — agora atua na conexão real, não no simulador */}
+          <div>
+            {/* Mudo — atua na conexão real, não no simulador */}
             <button
               onClick={() => voice.setMuted(!voice.isMuted)}
-              className={`py-5 px-4 rounded-2xl flex flex-col items-center justify-center gap-2 transition-all active:scale-95 shadow-lg ${
+              className={`w-full py-5 px-4 rounded-2xl flex flex-col items-center justify-center gap-2 transition-all active:scale-95 shadow-lg ${
                 voice.isMuted
                   ? 'bg-slate-900 border-2 border-amber-500/40 text-slate-200'
                   : 'bg-gradient-to-br from-emerald-600 to-emerald-700 text-white shadow-emerald-950/50'
@@ -536,24 +516,6 @@ ${inviteUrl}`;
               </span>
             </button>
 
-            {/* Segure para falar: abre o microfone enquanto pressionado e
-                fecha ao soltar. Útil para quem prefere manter tudo mudo. */}
-            <button
-              onPointerDown={handlePttStart}
-              onPointerUp={handlePttEnd}
-              onPointerCancel={handlePttEnd}
-              className="py-5 px-4 rounded-2xl flex flex-col items-center justify-center gap-2 transition-all select-none active:scale-95 shadow-lg bg-slate-900 border border-slate-800 text-slate-200 hover:border-amber-500/40 active:bg-amber-500 active:text-slate-950"
-            >
-              <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
-                <Radio className="w-7 h-7 text-amber-400" />
-              </div>
-              <span className="text-sm font-black uppercase tracking-wider text-center">
-                Segure para falar
-              </span>
-              <span className="text-[11px] text-slate-400 font-mono text-center">
-                Solte para fechar o canal
-              </span>
-            </button>
           </div>
 
           {/* Convidar. Antes isto vivia só na seleção de comboio, que some ao

@@ -424,6 +424,28 @@ nada.
 Isso reforça, e não enfraquece, a decisão pelo app nativo: é lá que o serviço em
 primeiro plano mantém a captura viva ([ideia 12](#12-o-que-o-android-exige-para-voz-em-segundo-plano)).
 
+### Complemento: varia por aparelho (2026-09-19)
+
+Testes em dois aparelhos, mesma web em produção, tela bloqueada:
+
+| Aparelho | Ouvir | Falar |
+|---|---|---|
+| iPhone 15 | funciona | **funciona** |
+| Samsung A07 | funciona | não funciona |
+
+Contraintuitivo: o iOS costuma ser mais restritivo que o Android, não menos. O
+Samsung pode estar aplicando gerenciamento agressivo de bateria, que é conhecido
+na marca — então nem isso é seguro atribuir ao "Android" em geral.
+
+**Um aparelho de cada não sustenta uma regra por sistema operacional.** O aviso
+na interface ficou universal em celular, de propósito: um aviso ocasionalmente
+desnecessário custa menos que um piloto descobrindo na estrada que ninguém o
+ouve.
+
+**E é exatamente por isso que o app nativo continua sendo o produto.** "Funciona
+em alguns celulares" não é uma promessa que dá para fazer a quem vai usar isso
+a 90 km/h.
+
 ---
 
 ## 16. Comboio de 8 e trânsito do admin
