@@ -78,10 +78,15 @@ export function useGoogleAuth(): UseGoogleAuth {
   const [request, response, promptAsync] = Google.useAuthRequest({
     androidClientId: GOOGLE_CLIENT_ID_ANDROID || undefined,
     webClientId: GOOGLE_CLIENT_ID_WEB || undefined,
-    // `id_token` é o que o servidor verifica, e dispensa segredo de cliente —
-    // que não poderia morar dentro de um APK, já que qualquer um o abre.
-    responseType: 'id_token',
     scopes: ['openid', 'profile', 'email'],
+    // Sem responseType fixo, de propósito.
+    //
+    // A versão anterior forçava 'id_token', que é o formato do cliente Web.
+    // Cliente do tipo Android NÃO aceita fluxo implícito: ele exige fluxo de
+    // código com PKCE, e o Google recusa a combinação com 400 invalid_request.
+    //
+    // Deixando o provedor escolher, ele usa o fluxo certo para cada tipo de
+    // credencial. O id_token chega no resultado de qualquer um dos dois.
   });
 
   // Sem credencial de Android, o Google recusa o esquema motorede:// com 400.
@@ -117,7 +122,11 @@ export function useGoogleAuth(): UseGoogleAuth {
 
     if (response.type !== 'success') return;
 
-    const idToken = response.params?.id_token;
+    // O fluxo implícito devolve em params; o de código, em authentication.
+    const idToken =
+      response.params?.id_token ??
+      (response.authentication as { idToken?: string } | undefined)?.idToken;
+
     if (!idToken) {
       setError('O Google não devolveu a identificação.');
       return;
