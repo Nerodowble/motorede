@@ -72,6 +72,8 @@ export const ConvoyVoiceView: React.FC<ConvoyVoiceViewProps> = ({
   const [codeError, setCodeError] = useState<string | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [showBrowser, setShowBrowser] = useState(false);
+  const isPttHeld = useRef(false);
+  const mutedBeforePtt = useRef(true);
   const [phone, setPhone] = useState(() => storageService.getPhone());
 
   const inviteUrl = `${window.location.origin}/?sala=${activeRoomCode}`;
@@ -174,6 +176,32 @@ export const ConvoyVoiceView: React.FC<ConvoyVoiceViewProps> = ({
    * WhatsApp — que é por onde um convite de comboio realmente circula. Onde
    * isso não existe, copia o link.
    */
+  /**
+   * Segure para falar.
+   *
+   * A primeira versão usava `onPointerLeave` para fechar o microfone, e isso
+   * estava errado: `pointerleave` dispara quando o ponteiro apenas PASSA por
+   * cima e sai, sem clique nenhum. Bastava o mouse cruzar o botão para o
+   * microfone fechar sozinho.
+   *
+   * Agora só reage a um toque que de fato começou aqui (`isPttHeld`), captura
+   * o ponteiro para não perder o evento de soltar, e restaura o estado que o
+   * microfone tinha antes — quem estava transmitindo continua transmitindo ao
+   * soltar, em vez de ser silenciado por um atalho que nem usou.
+   */
+  const handlePttStart = (e: React.PointerEvent<HTMLButtonElement>) => {
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+    isPttHeld.current = true;
+    mutedBeforePtt.current = voice.isMuted;
+    void voice.setMuted(false);
+  };
+
+  const handlePttEnd = () => {
+    if (!isPttHeld.current) return;
+    isPttHeld.current = false;
+    void voice.setMuted(mutedBeforePtt.current);
+  };
+
   const handleShareConvoy = async () => {
     const texto = `Entra no meu comboio no MotoRede
 
@@ -466,9 +494,9 @@ ${inviteUrl}`;
             {/* Segure para falar: abre o microfone enquanto pressionado e
                 fecha ao soltar. Útil para quem prefere manter tudo mudo. */}
             <button
-              onPointerDown={() => voice.setMuted(false)}
-              onPointerUp={() => voice.setMuted(true)}
-              onPointerLeave={() => voice.isMuted || voice.setMuted(true)}
+              onPointerDown={handlePttStart}
+              onPointerUp={handlePttEnd}
+              onPointerCancel={handlePttEnd}
               className="py-5 px-4 rounded-2xl flex flex-col items-center justify-center gap-2 transition-all select-none active:scale-95 shadow-lg bg-slate-900 border border-slate-800 text-slate-200 hover:border-amber-500/40 active:bg-amber-500 active:text-slate-950"
             >
               <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">

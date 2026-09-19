@@ -402,6 +402,28 @@ que só quer experimentar. Vale como porta de entrada, não como produto.
 diferentes, com tempo controlado (5+ minutos) e verificando as duas direções do
 áudio separadamente — falar e ouvir se comportam de formas distintas.
 
+### RESOLVIDO (2026-09-19)
+
+O teste separando as direções foi feito, e o resultado confirma a
+[ideia 11](#11-confirmado-na-prática-web-não-sustenta-voz-em-segundo-plano):
+
+| Com a tela bloqueada, na web | Resultado |
+|---|---|
+| **Ouvir** os outros pilotos | funciona |
+| **Falar** | não funciona — o microfone fecha |
+
+Ao desbloquear, volta a transmitir. É exatamente o comportamento previsto: o
+truque de áudio silencioso com MediaSession sustenta a **reprodução**, nunca a
+**captura**.
+
+A medição anterior, que parecia contradizer, media só a direção que funciona.
+A lição de método: ao testar áudio bidirecional, as duas direções precisam ser
+verificadas separadamente — um "funcionou" sem dizer qual direção não significa
+nada.
+
+Isso reforça, e não enfraquece, a decisão pelo app nativo: é lá que o serviço em
+primeiro plano mantém a captura viva ([ideia 12](#12-o-que-o-android-exige-para-voz-em-segundo-plano)).
+
 ---
 
 ## 16. Comboio de 8 e trânsito do admin
