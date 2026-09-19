@@ -1,6 +1,5 @@
 import {
   Motorcycle,
-  ConsumableStatus,
   MaintenanceRecord,
   SOSAlert,
   VoiceRoom,
@@ -13,7 +12,6 @@ import {
   SOSVolunteer,
   DiagnosticNode,
 } from '@motorede/shared';
-import { calculateConsumablesStatus } from '@motorede/shared';
 import { calculateDistanceKm } from './geolocation';
 
 export interface StoredUser extends UserProfile {
@@ -33,7 +31,6 @@ const STORAGE_KEYS = {
   COUPONS: 'motorede_coupons',
   COMMUNITY_SYMPTOMS: 'motorede_community_symptoms',
   MY_COUPONS: 'motorede_my_coupons',
-  CONSUMABLES_CUSTOM: 'motorede_consumables_custom',
   LAST_ROOM_CODE: 'motorede_last_room_code',
   PHONE: 'motorede_phone',
   FAVORITE_ROOMS: 'motorede_favorite_rooms',
@@ -458,7 +455,7 @@ const DEFAULT_COMMUNITY_SYMPTOMS: CommunitySymptom[] = [
 // A árvore de diagnóstico e o cálculo de desgaste vivem em @motorede/shared,
 // para serem reaproveitados pelo app mobile e pelo backend.
 // Reexportados aqui para não quebrar quem já importava de services/storage.
-export { DIAGNOSTIC_DECISION_TREE, calculateConsumablesStatus } from '@motorede/shared';
+export { DIAGNOSTIC_DECISION_TREE } from '@motorede/shared';
 
 /**
  * Storage Service Helper
@@ -750,32 +747,6 @@ export const storageService = {
       window.dispatchEvent(new CustomEvent('motorede:motorcycle_updated', { detail: updated }));
     }
     return updated;
-  },
-
-  updateConsumableItem(
-    category: ConsumableCategory,
-    details: { lastChangedKm?: number; lastChangedDate?: string; intervalKm?: number }
-  ): void {
-    if (typeof window === 'undefined') return;
-    try {
-      const raw = localStorage.getItem(STORAGE_KEYS.CONSUMABLES_CUSTOM);
-      const current = raw ? JSON.parse(raw) : {};
-      current[category] = { ...(current[category] || {}), ...details };
-      localStorage.setItem(STORAGE_KEYS.CONSUMABLES_CUSTOM, JSON.stringify(current));
-      window.dispatchEvent(new CustomEvent('motorede:consumables_updated', { detail: current }));
-    } catch {
-      // fallback
-    }
-  },
-
-  getCustomConsumables(): Record<string, { intervalKm?: number; lastChangedKm?: number; lastChangedDate?: string }> {
-    if (typeof window === 'undefined') return {};
-    try {
-      const raw = localStorage.getItem(STORAGE_KEYS.CONSUMABLES_CUSTOM);
-      return raw ? JSON.parse(raw) : {};
-    } catch {
-      return {};
-    }
   },
 
   getMaintenanceRecords(): MaintenanceRecord[] {
@@ -1070,20 +1041,6 @@ export const storageService = {
     if (typeof window !== 'undefined') {
       localStorage.setItem(STORAGE_KEYS.MOTORCYCLE, JSON.stringify(bike));
     }
-  },
-
-  getConsumables(currentKm?: number): ConsumableStatus[] {
-    const bike = this.getMotorcycle();
-    if (currentKm !== undefined) {
-      bike.currentKm = currentKm;
-    }
-    return calculateConsumablesStatus(bike, this.getCustomConsumables());
-  },
-
-  calculateConsumablesWear(km: number): ConsumableStatus[] {
-    const bike = this.getMotorcycle();
-    bike.currentKm = km;
-    return calculateConsumablesStatus(bike, this.getCustomConsumables());
   },
 
   saveSOSAlerts(alerts: SOSAlert[]): void {

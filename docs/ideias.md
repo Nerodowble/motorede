@@ -30,7 +30,7 @@ dedicada. E é exatamente o que um app genérico nunca vai construir.
 
 ## 2. Passaporte alimentando o cálculo de desgaste
 
-**Status:** `em aberto` — implementar quando o passaporte for para o backend
+**Status:** `decidido` — implementado em 2026-09-19, ver [ideia 18](#18-manutenção-como-etiqueta-de-troca-de-óleo)
 **Data:** 2026-09-18
 
 Hoje `calculateConsumablesStatus` usa datas fixas de seed
@@ -504,3 +504,48 @@ Google resolveram sem), mas eventos precisam.
 
 **Também justifica o cadastro de telefone:** associar um contato à conta faz
 sentido no contexto de evento e de socorro — não como dado solto no perfil.
+
+---
+
+## 18. Manutenção como etiqueta de troca de óleo
+
+**Status:** `decidido` — implementado
+**Data:** 2026-09-19
+
+Inversão do modelo: **em vez de pedir estado, derivar de eventos.**
+
+O modelo mental é o adesivo que a oficina cola no vidro. Registra-se o que foi
+feito, com qual produto, em que quilometragem. Nada mais. É um hábito que já
+existe — e por isso tem chance de ser mantido.
+
+**Por que o modelo anterior nunca funcionaria:** pedia que o piloto mantivesse
+intervalos e datas de seis consumíveis sempre atualizados. Ninguém faz isso. A
+prova está no próprio protótipo: ele precisou preencher tudo com valores
+fictícios, porque não havia de onde tirar valores reais.
+
+**O que cada registro passa a permitir:**
+
+| Registros | O que dá para afirmar |
+|---|---|
+| 1 | lembrete: o que trocou, quando, com qual produto |
+| 2 | primeiro intervalo observado |
+| 3+ | intervalo REAL do piloto e ritmo em km/mês |
+
+**Toda previsão diz de onde veio**, porque a diferença importa para o piloto
+confiar no app:
+
+- **medido** — "você troca a cada ~4.000 km (3 registros)"
+- **declarado** — "você definiu 5.000 km"
+- **padrão** — "recomendação típica: 5.000 km"
+
+Com 3+ registros o medido vence o declarado: o hábito real vale mais que a
+intenção.
+
+**Categoria sem registro não vira número inventado.** Sem barra, sem
+porcentagem, sem alerta — vira convite para registrar. Previsão de data só
+aparece quando há ritmo medido; sem saber quanto o piloto roda por mês, prever
+data seria chute.
+
+O `ConsumableStatus` e o `calculateConsumablesStatus` foram removidos. Eram uma
+estrutura paralela e fictícia convivendo com o passaporte, que já modelava
+eventos de verdade — duas verdades sobre a mesma moto.

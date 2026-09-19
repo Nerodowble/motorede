@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, Suspense, lazy } from 'react';
-import { UserRole, UserProfile, Motorcycle, ConsumableStatus, SOSAlert, SOSVolunteer, VoiceRoom, Coupon, MaintenanceRecord, EmergencyType } from '@motorede/shared';
+import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react';
+import { UserRole, UserProfile, Motorcycle, SOSAlert, SOSVolunteer, VoiceRoom, Coupon, MaintenanceRecord, EmergencyType, summarizeMaintenance } from '@motorede/shared';
 import { storageService } from './services/storage';
 import { GeoPoint, geolocationService, calculateDistanceKm, DEFAULT_USER_COORDS } from './services/geolocation';
 import { audioEngine } from './services/audioEngine';
@@ -51,14 +51,19 @@ export default function App() {
     if (currentUser?.motorcycle) return currentUser.motorcycle;
     return storageService.getMotorcycle();
   });
-  const [consumables, setConsumables] = useState<ConsumableStatus[]>(() =>
-    storageService.getConsumables(motorcycle.currentKm)
-  );
   const [sosAlerts, setSosAlerts] = useState<SOSAlert[]>(() => storageService.getSOSAlerts());
   const [voiceRoom, setVoiceRoom] = useState<VoiceRoom>(() => storageService.getVoiceRoom());
   const [coupons, setCoupons] = useState<Coupon[]>(() => storageService.getCoupons());
   const [maintenanceRecords, setMaintenanceRecords] = useState<MaintenanceRecord[]>(() =>
     storageService.getMaintenanceRecords()
+  );
+
+  // A manutenção é DERIVADA do histórico, não guardada em paralelo. Antes havia
+  // um estado de consumíveis com valores próprios, que podia divergir do que o
+  // passaporte registrava — duas verdades sobre a mesma moto.
+  const maintenance = useMemo(
+    () => summarizeMaintenance(maintenanceRecords, motorcycle),
+    [maintenanceRecords, motorcycle]
   );
 
   // Background Audio & Lockscreen State (inactive on cold boot to prevent browser autoplay blocks)
@@ -110,9 +115,6 @@ export default function App() {
     const updatedBike = { ...motorcycle, currentKm: newKm };
     setMotorcycle(updatedBike);
     storageService.saveMotorcycle(updatedBike);
-
-    const updatedConsumables = storageService.calculateConsumablesWear(newKm);
-    setConsumables(updatedConsumables);
   };
 
   // Full motorcycle data & technical sheet update
@@ -127,8 +129,6 @@ export default function App() {
       storageService.setCurrentUser(updatedUser);
     }
 
-    const updatedConsumables = storageService.calculateConsumablesWear(updatedBike.currentKm);
-    setConsumables(updatedConsumables);
   };
 
   // Trigger SOS alert
@@ -311,8 +311,6 @@ export default function App() {
 
     if (user.motorcycle) {
       setMotorcycle(user.motorcycle);
-      const updatedConsumables = storageService.calculateConsumablesWear(user.motorcycle.currentKm);
-      setConsumables(updatedConsumables);
     }
     setIsAuthModalOpen(false);
   };
@@ -357,7 +355,7 @@ export default function App() {
         {activeTab === 'dashboard' && (
           <DashboardView
             motorcycle={motorcycle}
-            consumables={consumables}
+            maintenance={maintenance}
             voiceRoom={voiceRoom}
             onNavigateTab={(tab) => setActiveTab(tab)}
             onUpdateKm={handleUpdateKm}
@@ -409,9 +407,9 @@ export default function App() {
           {activeTab === 'maintenance' && (
             <MaintenanceView
               motorcycle={motorcycle}
-              consumables={consumables}
-              coupons={coupons}
-              onUpdateKm={handleUpdateKm}
+              maintenance={maintenance}
+              records={maintenanceRecords}
+              onAddRecord={handleAddMaintenanceRecord}
               onOpenEditMotorcycle={() => setIsMotorcycleEditOpen(true)}
             />
           )}

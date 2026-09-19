@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Radio, Wrench, ChevronRight, Bike, Gauge } from 'lucide-react';
-import { Motorcycle, ConsumableStatus, VoiceRoom } from '@motorede/shared';
+import { Motorcycle, VoiceRoom, type MaintenanceItemStatus } from '@motorede/shared';
 import { storageService } from '../services/storage';
 import { ActiveTab } from '../components/Navigation';
 
@@ -25,7 +25,7 @@ import { ActiveTab } from '../components/Navigation';
 
 interface DashboardViewProps {
   motorcycle: Motorcycle;
-  consumables: ConsumableStatus[];
+  maintenance: MaintenanceItemStatus[];
   voiceRoom: VoiceRoom;
   onNavigateTab: (tab: ActiveTab) => void;
   onUpdateKm: (newKm: number) => void;
@@ -34,7 +34,7 @@ interface DashboardViewProps {
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
   motorcycle,
-  consumables,
+  maintenance,
   voiceRoom,
   onNavigateTab,
   onUpdateKm,
@@ -50,10 +50,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   // Mesmo comboio que a tela de voz abre, para os dois não divergirem.
   const roomCode = storageService.getLastRoomCode() || voiceRoom.code;
 
-  // Só o que realmente pede ação. Item em dia não precisa ocupar a tela.
-  const needsAttention = consumables
-    .filter((c) => c.status === 'critical' || c.status === 'warning')
-    .sort((a, b) => a.estimatedRemainingKm - b.estimatedRemainingKm);
+  // Só o que realmente pede ação, e só com base em registro do próprio piloto.
+  // Item sem histórico não aparece: não há o que afirmar sobre ele.
+  const needsAttention = maintenance
+    .filter((m) => m.status === 'vencido' || m.status === 'proximo')
+    .sort((a, b) => (a.kmRemaining ?? 0) - (b.kmRemaining ?? 0));
 
   const handleSaveKm = (e: React.FormEvent) => {
     e.preventDefault();
@@ -166,15 +167,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
 
           <div className="space-y-2">
-            {needsAttention.slice(0, 3).map((c) => (
-              <div key={c.id} className="flex items-center justify-between gap-3">
-                <span className="text-xs text-slate-300 truncate">{c.name}</span>
+            {needsAttention.slice(0, 3).map((m) => (
+              <div key={m.category} className="flex items-center justify-between gap-3">
+                <span className="text-xs text-slate-300 truncate">{m.label}</span>
                 <span
                   className={`text-[11px] font-mono font-bold shrink-0 ${
-                    c.status === 'critical' ? 'text-red-400' : 'text-amber-400'
+                    m.status === 'vencido' ? 'text-red-400' : 'text-amber-400'
                   }`}
                 >
-                  {c.estimatedRemainingKm.toLocaleString('pt-BR')} km
+                  {m.status === 'vencido'
+                    ? `${Math.abs(m.kmRemaining ?? 0).toLocaleString('pt-BR')} km atrasado`
+                    : `faltam ${(m.kmRemaining ?? 0).toLocaleString('pt-BR')} km`}
                 </span>
               </div>
             ))}

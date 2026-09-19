@@ -57,20 +57,6 @@ export interface Motorcycle {
   customIntervals?: Partial<Record<ConsumableCategory, number>>;
 }
 
-export interface ConsumableStatus {
-  id: string;
-  category: ConsumableCategory;
-  name: string;
-  intervalKm: number;
-  intervalMonths: number;
-  lastChangedKm: number;
-  lastChangedDate: string;
-  currentWearPercentage: number; // 0 to 100
-  estimatedRemainingKm: number;
-  estimatedRemainingDays: number;
-  status: 'optimal' | 'warning' | 'critical'; // optimal (>30% left), warning (10-30%), critical (<10%)
-}
-
 export interface MaintenanceRecord {
   id: string;
   motorcycleId: string;
@@ -80,6 +66,10 @@ export interface MaintenanceRecord {
   title: string;
   description: string;
   workshopName: string; // e.g. "MotoTech Especializada" or "Feito pelo Piloto"
+  /** Marca e modelo do que foi usado, ex.: "Motul 5100 10W40". */
+  product?: string;
+  /** Intervalo que o piloto pretende adotar. Com 3+ registros, o medido vence. */
+  declaredIntervalKm?: number;
   cost: number; // BRL
   receiptNumber?: string;
   hasAttachment: boolean;
