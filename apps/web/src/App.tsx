@@ -14,6 +14,8 @@ import { PWAInstallBanner } from './components/PWAInstallBanner';
 import { LockscreenWidget } from './components/LockscreenWidget';
 import { AuthModal } from './components/AuthModal';
 import { MotorcycleEditModal } from './components/MotorcycleEditModal';
+import { LoginScreen } from './components/LoginScreen';
+import { useGoogleAuth } from './hooks/useGoogleAuth';
 
 // Eagerly load primary Dashboard for instant first paint
 import { DashboardView } from './views/DashboardView';
@@ -28,6 +30,11 @@ const PartnerShopView = lazy(() => import('./views/PartnerShopView').then((m) =>
 const AdminView = lazy(() => import('./views/AdminView').then((m) => ({ default: m.AdminView })));
 
 export default function App() {
+  // Identidade real, vinda do Google. Enquanto o login não estiver configurado
+  // (ambiente sem credencial), o app segue funcionando com a sessão local —
+  // caso contrário um deploy mal configurado deixaria o app inacessível.
+  const auth = useGoogleAuth();
+
   // Authentication & Session State
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => storageService.getCurrentUser());
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -61,6 +68,26 @@ export default function App() {
 
   // Geolocation State - initialized immediately with default without waiting for GPS
   const [userCoords, setUserCoords] = useState<GeoPoint>(DEFAULT_USER_COORDS);
+
+  // A identidade do Google vira o perfil do app. Sem isso o cabeçalho
+  // continuaria mostrando o piloto fictício do protótipo.
+  useEffect(() => {
+    if (!auth.user) return;
+    setCurrentUser((anterior) => {
+      if (anterior?.email === auth.user!.email) return anterior;
+      const perfil: UserProfile = {
+        id: `g-${auth.user!.email}`,
+        name: auth.user!.name,
+        email: auth.user!.email,
+        role: 'rider',
+        phone: anterior?.phone || '',
+        createdAt: anterior?.createdAt || new Date().toISOString(),
+        motorcycle: anterior?.motorcycle,
+      };
+      storageService.setCurrentUser(perfil);
+      return perfil;
+    });
+  }, [auth.user]);
 
   // Non-blocking Geolocation setup on mount
   useEffect(() => {
@@ -293,12 +320,20 @@ export default function App() {
   const handleLogout = () => {
     storageService.logout();
     setCurrentUser(null);
-    setIsAuthModalOpen(true);
+    if (auth.isConfigured) {
+      auth.signOut();
+    } else {
+      setIsAuthModalOpen(true);
+    }
   };
 
   const activeSOSCount = sosAlerts.filter(
     (a) => a.status === 'active' || a.status === 'in_progress'
   ).length;
+
+  if (auth.isConfigured && !auth.user) {
+    return <LoginScreen auth={auth} />;
+  }
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-amber-500 selection:text-slate-950">
@@ -433,7 +468,7 @@ export default function App() {
 
       {/* Authentication & User Registration Modal */}
       <AuthModal
-        isOpen={isAuthModalOpen || !currentUser}
+        isOpen={!auth.isConfigured && (isAuthModalOpen || !currentUser)}
         onClose={currentUser ? () => setIsAuthModalOpen(false) : undefined}
         currentUser={currentUser}
         onLoginSuccess={handleLoginSuccess}
