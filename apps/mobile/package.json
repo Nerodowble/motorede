@@ -1,0 +1,32 @@
+{
+  "name": "@motorede/mobile",
+  "version": "0.1.0",
+  "main": "index.ts",
+  "private": true,
+  "scripts": {
+    "start": "expo start --dev-client",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "prebuild": "expo prebuild --clean",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@livekit/react-native": "^2.12.0",
+    "@livekit/react-native-webrtc": "^144.2.0",
+    "@motorede/shared": "*",
+    "expo": "~57.0.24",
+    "expo-build-properties": "~57.0.21",
+    "expo-dev-client": "~57.0.19",
+    "expo-keep-awake": "~57.0.2",
+    "expo-status-bar": "~57.0.1",
+    "livekit-client": "^2.19.0",
+    "react": "19.2.3",
+    "react-native": "0.86.3"
+  },
+  "devDependencies": {
+    "@config-plugins/react-native-webrtc": "^15.0.2",
+    "@livekit/react-native-expo-plugin": "^1.0.2",
+    "@types/react": "~19.2.2",
+    "typescript": "~6.0.3"
+  }
+}

@@ -1,13 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { AudioSession } from '@livekit/react-native';
 import {
   AudioPresets,
   ConnectionState,
   Participant,
-  RemoteTrack,
-  RemoteTrackPublication,
   Room,
   RoomEvent,
-  Track,
 } from 'livekit-client';
 import {
   toVoiceParticipants,
@@ -24,11 +22,8 @@ export type VoiceConnectionStatus =
   | 'error';
 
 interface ConnectOptions {
-  /** Código da sala do comboio, ex.: "SERRA-88". */
   roomCode: string;
-  /** Identificador único deste piloto. */
   identity: string;
-  /** Nome exibido aos outros. */
   displayName: string;
 }
 
@@ -37,45 +32,30 @@ interface UseVoiceConnection {
   error: string | null;
   participants: VoiceParticipant[];
   isMuted: boolean;
-  /** true quando o navegador bloqueou o áudio e falta um gesto do usuário. */
-  needsAudioUnlock: boolean;
   connect: (options: ConnectOptions) => Promise<void>;
   disconnect: () => Promise<void>;
   setMuted: (muted: boolean) => Promise<void>;
-  unlockAudio: () => Promise<void>;
 }
 
 /**
- * Conexão de voz do comboio contra um servidor LiveKit.
+ * Conexão de voz do comboio no app nativo.
  *
- * Expõe a lista de participantes já no formato `VoiceParticipant` que as telas
- * existentes consomem, de modo que a interface não precise saber que existe
- * LiveKit por trás. A mesma lógica é reaproveitada no app React Native — só a
- * camada de mídia muda.
+ * Espelha o hook da web e compartilha com ele o mapeamento de participantes e
+ * os ajustes de áudio (`@motorede/shared`). As diferenças são justamente o que
+ * motivou o app nativo:
+ *
+ * - `AudioSession` configura a sessão de áudio do sistema operacional. É o que
+ *   permite continuar capturando o microfone com a tela bloqueada — exatamente
+ *   o que o navegador não faz.
+ * - Não há elementos `<audio>` para anexar: a reprodução é nativa.
  */
-export function useVoiceConnection(): UseVoiceConnection {
+export function useVoiceConnection(tokenEndpoint: string): UseVoiceConnection {
   const roomRef = useRef<Room | null>(null);
-  const audioContainerRef = useRef<HTMLDivElement | null>(null);
 
   const [status, setStatus] = useState<VoiceConnectionStatus>('disconnected');
   const [error, setError] = useState<string | null>(null);
   const [participants, setParticipants] = useState<VoiceParticipant[]>([]);
   const [isMuted, setIsMuted] = useState(false);
-  const [needsAudioUnlock, setNeedsAudioUnlock] = useState(false);
-
-  // Contêiner oculto onde os elementos <audio> dos outros pilotos são anexados.
-  useEffect(() => {
-    const container = document.createElement('div');
-    container.id = 'motorede-voice-audio';
-    container.style.display = 'none';
-    document.body.appendChild(container);
-    audioContainerRef.current = container;
-
-    return () => {
-      container.remove();
-      audioContainerRef.current = null;
-    };
-  }, []);
 
   const syncParticipants = useCallback(() => {
     const room = roomRef.current;
@@ -83,15 +63,8 @@ export function useVoiceConnection(): UseVoiceConnection {
       setParticipants([]);
       return;
     }
-
     const all: Participant[] = [room.localParticipant, ...room.remoteParticipants.values()];
     setParticipants(toVoiceParticipants(all));
-  }, []);
-
-  const attachTrack = useCallback((track: RemoteTrack) => {
-    if (track.kind !== Track.Kind.Audio) return;
-    const element = track.attach();
-    audioContainerRef.current?.appendChild(element);
   }, []);
 
   const connect = useCallback(
@@ -102,20 +75,7 @@ export function useVoiceConnection(): UseVoiceConnection {
       setError(null);
 
       try {
-        // O navegador só expõe o microfone em "contexto seguro": https, ou
-        // localhost. Num IP de rede via http, navigator.mediaDevices simplesmente
-        // não existe, e o erro nativo ("Cannot read properties of undefined")
-        // não diz nada sobre a causa real.
-        if (!navigator.mediaDevices?.getUserMedia) {
-          throw new Error(
-            'Microfone indisponível: o navegador exige contexto seguro. ' +
-              'Neste computador use http://localhost:3000. ' +
-              'No celular, libere este endereço em chrome://flags → ' +
-              '"Insecure origins treated as secure".'
-          );
-        }
-
-        const response = await fetch('/api/livekit-token', {
+        const response = await fetch(tokenEndpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ room: roomCode, identity, name: displayName }),
@@ -127,13 +87,16 @@ export function useVoiceConnection(): UseVoiceConnection {
 
         const { token, url } = (await response.json()) as { token: string; url: string };
 
+        // Prepara a sessão de áudio do sistema ANTES de conectar. É o que
+        // sustenta a captura com a tela bloqueada e roteia para o fone.
+        await AudioSession.startAudioSession();
+
         const room = new Room({
           adaptiveStream: true,
           dynacast: true,
           audioCaptureDefaults: VOICE_CAPTURE_DEFAULTS,
           publishDefaults: {
             ...VOICE_PUBLISH_DEFAULTS,
-            // Preset de voz: bitrate baixo, suficiente para fala.
             audioPreset: AudioPresets.speech,
           },
         });
@@ -144,18 +107,9 @@ export function useVoiceConnection(): UseVoiceConnection {
           .on(RoomEvent.ActiveSpeakersChanged, syncParticipants)
           .on(RoomEvent.TrackMuted, syncParticipants)
           .on(RoomEvent.TrackUnmuted, syncParticipants)
+          .on(RoomEvent.TrackSubscribed, syncParticipants)
+          .on(RoomEvent.TrackUnsubscribed, syncParticipants)
           .on(RoomEvent.LocalTrackPublished, syncParticipants)
-          .on(RoomEvent.TrackSubscribed, (track: RemoteTrack) => {
-            attachTrack(track);
-            syncParticipants();
-          })
-          .on(RoomEvent.TrackUnsubscribed, (track: RemoteTrack, _pub: RemoteTrackPublication) => {
-            track.detach().forEach((el) => el.remove());
-            syncParticipants();
-          })
-          .on(RoomEvent.AudioPlaybackStatusChanged, () => {
-            setNeedsAudioUnlock(!room.canPlaybackAudio);
-          })
           .on(RoomEvent.ConnectionStateChanged, (state: ConnectionState) => {
             if (state === ConnectionState.Reconnecting) setStatus('reconnecting');
             else if (state === ConnectionState.Connected) setStatus('connected');
@@ -164,6 +118,7 @@ export function useVoiceConnection(): UseVoiceConnection {
             setStatus('disconnected');
             setParticipants([]);
             roomRef.current = null;
+            void AudioSession.stopAudioSession();
           });
 
         await room.connect(url, token);
@@ -171,7 +126,6 @@ export function useVoiceConnection(): UseVoiceConnection {
 
         roomRef.current = room;
         setIsMuted(false);
-        setNeedsAudioUnlock(!room.canPlaybackAudio);
         setStatus('connected');
         syncParticipants();
       } catch (err) {
@@ -179,9 +133,10 @@ export function useVoiceConnection(): UseVoiceConnection {
         setError(message);
         setStatus('error');
         roomRef.current = null;
+        await AudioSession.stopAudioSession();
       }
     },
-    [attachTrack, syncParticipants]
+    [syncParticipants, tokenEndpoint]
   );
 
   const disconnect = useCallback(async () => {
@@ -191,6 +146,7 @@ export function useVoiceConnection(): UseVoiceConnection {
     roomRef.current = null;
     setStatus('disconnected');
     setParticipants([]);
+    await AudioSession.stopAudioSession();
   }, []);
 
   const setMuted = useCallback(async (muted: boolean) => {
@@ -200,34 +156,13 @@ export function useVoiceConnection(): UseVoiceConnection {
     setIsMuted(muted);
   }, []);
 
-  /**
-   * Navegadores bloqueiam áudio até haver um gesto do usuário. Chamado a partir
-   * de um clique, isto libera a reprodução.
-   */
-  const unlockAudio = useCallback(async () => {
-    const room = roomRef.current;
-    if (!room) return;
-    await room.startAudio();
-    setNeedsAudioUnlock(!room.canPlaybackAudio);
-  }, []);
-
-  // Desconecta ao desmontar, para não deixar a sala aberta e o microfone ligado.
   useEffect(() => {
     return () => {
-      roomRef.current?.disconnect();
+      void roomRef.current?.disconnect();
       roomRef.current = null;
+      void AudioSession.stopAudioSession();
     };
   }, []);
 
-  return {
-    status,
-    error,
-    participants,
-    isMuted,
-    needsAudioUnlock,
-    connect,
-    disconnect,
-    setMuted,
-    unlockAudio,
-  };
+  return { status, error, participants, isMuted, connect, disconnect, setMuted };
 }

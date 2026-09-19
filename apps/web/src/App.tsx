@@ -4,9 +4,9 @@
  */
 
 import React, { useState, useEffect, Suspense, lazy } from 'react';
-import { UserRole, UserProfile, Motorcycle, ConsumableStatus, SOSAlert, VoiceRoom, Coupon, MaintenanceRecord, EmergencyType } from '@motorede/shared';
+import { UserRole, UserProfile, Motorcycle, ConsumableStatus, SOSAlert, SOSVolunteer, VoiceRoom, Coupon, MaintenanceRecord, EmergencyType } from '@motorede/shared';
 import { storageService } from './services/storage';
-import { GeoPoint, geolocationService, DEFAULT_USER_COORDS } from './services/geolocation';
+import { GeoPoint, geolocationService, calculateDistanceKm, DEFAULT_USER_COORDS } from './services/geolocation';
 import { audioEngine } from './services/audioEngine';
 import { Header } from './components/Header';
 import { Navigation, ActiveTab } from './components/Navigation';
@@ -148,24 +148,26 @@ export default function App() {
 
   // Volunteer responding to an SOS alert
   const handleRespondToSOS = (alertId: string) => {
-    const updated = sosAlerts.map((alert) => {
+    const updated: SOSAlert[] = sosAlerts.map((alert) => {
       if (alert.id === alertId) {
         const hasJoined = alert.volunteers.some((v) => v.id === 'user-current');
         if (hasJoined) return alert;
 
+        const volunteer: SOSVolunteer = {
+          id: 'user-current',
+          name: 'Você (Voluntário)',
+          motorcycle: `${motorcycle.brand} ${motorcycle.model}`,
+          lat: userCoords.lat,
+          lng: userCoords.lng,
+          distanceKm: calculateDistanceKm(userCoords.lat, userCoords.lng, alert.lat, alert.lng),
+          status: 'en_route',
+          joinedAt: new Date().toISOString(),
+        };
+
         return {
           ...alert,
           status: 'in_progress' as const,
-          volunteers: [
-            ...alert.volunteers,
-            {
-              id: 'user-current',
-              name: 'Você (Voluntário)',
-              distanceKm: 2.1,
-              etaMinutes: 6,
-              status: 'en_route' as const,
-            },
-          ],
+          volunteers: [...alert.volunteers, volunteer],
           chatMessages: [
             ...alert.chatMessages,
             {
