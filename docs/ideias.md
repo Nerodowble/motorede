@@ -256,3 +256,40 @@ microfone para junto. O truque de áudio silencioso + MediaSession que já exist
 
 Ver [ideia 8](#8-arquitetura-local-first) e a decisão de direção do produto: o app é
 nativo, a web fica como painel sem voz.
+
+---
+
+## 12. O que o Android exige para voz em segundo plano
+
+**Status:** `decidido` — configurado; aguardando confirmação no aparelho
+**Data:** 2026-09-18
+
+Levantado ao montar o app nativo. Não basta pedir `RECORD_AUDIO`: desde o
+Android 14 a captura em segundo plano exige um **serviço em primeiro plano** do
+tipo `microphone`, iniciado enquanto o app ainda está visível.
+
+São **duas** permissões de serviço, e faltar uma quebra metade do produto:
+
+| Permissão | Sem ela |
+|---|---|
+| `FOREGROUND_SERVICE_MICROPHONE` | você não consegue falar |
+| `FOREGROUND_SERVICE_MEDIA_PLAYBACK` | você não consegue ouvir os outros |
+
+**Não precisamos de biblioteca extra:** desde a versão 2.4 o SDK do LiveKit
+implementa o serviço internamente. Ele não aparece no manifesto gerado pelo
+`expo prebuild` porque vem do SDK Android e entra na mesclagem durante o build.
+
+**`audioType: "communication"`** no plugin do LiveKit: faz o sistema tratar como
+chamada de voz em vez de música. Muda o cancelamento de eco e, principalmente, o
+roteamento para o fone bluetooth do capacete — que é o cenário de uso real.
+
+**Permissões demais atrapalham:** o plugin do WebRTC adiciona câmera, sobreposição
+de tela e acesso a armazenamento por padrão. Um app só de voz não usa nada disso, e
+permissão sem justificativa vira questionamento na revisão da Play Store. Removidas
+via `blockedPermissions`.
+
+**Armadilha:** `eas init --force` reescreve o `app.json` a partir da configuração já
+resolvida, reinserindo em `permissions` justamente o que estava em
+`blockedPermissions`. Conferir o arquivo depois de rodar.
+
+No iOS o equivalente é `UIBackgroundModes: ["audio", "voip"]`, já configurado.
