@@ -18,6 +18,9 @@
       "distribution": "internal",
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_TOKEN_ENDPOINT": "https://motorede-web.vercel.app/api/livekit-token"
       }
     },
     "production": {
