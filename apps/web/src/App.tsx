@@ -23,8 +23,7 @@ import { DashboardView } from './views/DashboardView';
 // Code-split secondary views to reduce initial bundle size and speed up boot
 const ConvoyVoiceView = lazy(() => import('./views/ConvoyVoiceView').then((m) => ({ default: m.ConvoyVoiceView })));
 const SOSRescueView = lazy(() => import('./views/SOSRescueView').then((m) => ({ default: m.SOSRescueView })));
-const MaintenanceView = lazy(() => import('./views/MaintenanceView').then((m) => ({ default: m.MaintenanceView })));
-const PassportView = lazy(() => import('./views/PassportView').then((m) => ({ default: m.PassportView })));
+const MyMotorcycleView = lazy(() => import('./views/MyMotorcycleView').then((m) => ({ default: m.MyMotorcycleView })));
 const DiagnosticView = lazy(() => import('./views/DiagnosticView').then((m) => ({ default: m.DiagnosticView })));
 const PartnerShopView = lazy(() => import('./views/PartnerShopView').then((m) => ({ default: m.PartnerShopView })));
 const AdminView = lazy(() => import('./views/AdminView').then((m) => ({ default: m.AdminView })));
@@ -414,21 +413,17 @@ export default function App() {
             />
           )}
 
-          {activeTab === 'maintenance' && (
-            <MaintenanceView
+          
+
+          
+
+          {activeTab === 'motorcycle' && (
+            <MyMotorcycleView
               motorcycle={motorcycle}
               maintenance={maintenance}
               records={maintenanceRecords}
               onAddRecord={handleAddMaintenanceRecord}
-              onOpenEditMotorcycle={() => setIsMotorcycleEditOpen(true)}
-            />
-          )}
-
-          {activeTab === 'passport' && (
-            <PassportView
-              motorcycle={motorcycle}
-              records={maintenanceRecords}
-              onAddRecord={handleAddMaintenanceRecord}
+              onUpdateKm={handleUpdateKm}
               onOpenEditMotorcycle={() => setIsMotorcycleEditOpen(true)}
             />
           )}

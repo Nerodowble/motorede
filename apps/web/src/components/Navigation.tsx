@@ -21,8 +21,7 @@ export type ActiveTab =
   | 'dashboard'
   | 'convoy'
   | 'sos'
-  | 'maintenance'
-  | 'passport'
+  | 'motorcycle'
   | 'diagnostic'
   | 'partner_shop'
   | 'admin';
@@ -53,7 +52,7 @@ export const Navigation: React.FC<NavigationProps> = ({
     if (userRole === 'partner_shop') {
       return [
         { id: 'partner_shop' as ActiveTab, label: 'Painel da Oficina', icon: Store },
-        { id: 'maintenance' as ActiveTab, label: 'Cupons e Desgaste', icon: Wrench },
+        { id: 'motorcycle' as ActiveTab, label: 'Minha moto', icon: Bike },
         { id: 'sos' as ActiveTab, label: 'Rede SOS', icon: ShieldAlert, badge: activeSOSCount },
         { id: 'dashboard' as ActiveTab, label: 'Visão Piloto', icon: LayoutDashboard },
       ];
@@ -73,14 +72,13 @@ export const Navigation: React.FC<NavigationProps> = ({
       { id: 'dashboard' as ActiveTab, label: 'Painel', icon: LayoutDashboard },
       { id: 'convoy' as ActiveTab, label: 'Comboio', icon: Radio, pulse: isVoiceActive },
       { id: 'sos' as ActiveTab, label: 'Rede SOS', icon: ShieldAlert, badge: activeSOSCount, alertColor: true },
-      { id: 'maintenance' as ActiveTab, label: 'Manutenção', icon: Wrench },
-      { id: 'passport' as ActiveTab, label: 'Passaporte', icon: BookOpenCheck },
+      { id: 'motorcycle' as ActiveTab, label: 'Minha moto', icon: Bike },
       { id: 'diagnostic' as ActiveTab, label: 'Diagnóstico', icon: Stethoscope },
     ];
   };
 
   const allNavItems = getAllNavItems();
-  const isMoreActive = userRole === 'rider' && (activeTab === 'passport' || activeTab === 'diagnostic');
+  const isMoreActive = userRole === 'rider' && (activeTab === 'motorcycle' || activeTab === 'diagnostic');
 
   const handleMobileTabSelect = (tab: ActiveTab) => {
     onTabChange(tab);
@@ -122,9 +120,9 @@ export const Navigation: React.FC<NavigationProps> = ({
             {/* Grid of extra features */}
             <div className="space-y-2">
               <button
-                onClick={() => handleMobileTabSelect('passport')}
+                onClick={() => handleMobileTabSelect('motorcycle')}
                 className={`w-full p-3.5 rounded-xl border flex items-center justify-between transition active:scale-98 ${
-                  activeTab === 'passport'
+                  activeTab === 'motorcycle'
                     ? 'bg-amber-500/15 border-amber-500/40 text-amber-400'
                     : 'bg-slate-950/60 border-slate-800 text-slate-200 hover:bg-slate-800'
                 }`}
@@ -334,20 +332,20 @@ export const Navigation: React.FC<NavigationProps> = ({
 
               {/* 4. Manutenção */}
               <button
-                onClick={() => onTabChange('maintenance')}
+                onClick={() => onTabChange('motorcycle')}
                 className={`relative flex flex-col items-center justify-center py-1 rounded-xl transition active:scale-95 ${
-                  activeTab === 'maintenance' ? 'text-amber-400 font-bold' : 'text-slate-400'
+                  activeTab === 'motorcycle' ? 'text-amber-400 font-bold' : 'text-slate-400'
                 }`}
               >
                 <div
                   className={`p-1 rounded-lg ${
-                    activeTab === 'maintenance' ? 'bg-amber-500/15 text-amber-400' : 'text-slate-400'
+                    activeTab === 'motorcycle' ? 'bg-amber-500/15 text-amber-400' : 'text-slate-400'
                   }`}
                 >
                   <Wrench className="w-5 h-5" />
                 </div>
                 <span className="text-[10px] tracking-tight leading-tight mt-0.5">Oficina</span>
-                {activeTab === 'maintenance' && (
+                {activeTab === 'motorcycle' && (
                   <span className="absolute bottom-0 w-6 h-0.5 bg-amber-500 rounded-full" />
                 )}
               </button>
@@ -370,7 +368,7 @@ export const Navigation: React.FC<NavigationProps> = ({
                   <MoreHorizontal className="w-5 h-5" />
                 </div>
                 <span className="text-[10px] tracking-tight leading-tight mt-0.5">
-                  {activeTab === 'passport' ? 'Passaporte' : activeTab === 'diagnostic' ? 'Triagem' : 'Mais'}
+                  {activeTab === 'motorcycle' ? 'Passaporte' : activeTab === 'diagnostic' ? 'Triagem' : 'Mais'}
                 </span>
                 {isMoreActive && (
                   <span className="absolute bottom-0 w-6 h-0.5 bg-amber-500 rounded-full" />

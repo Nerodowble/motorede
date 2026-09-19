@@ -161,7 +161,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       {/* Manutenção: só aparece quando há algo a fazer. */}
       {needsAttention.length > 0 && (
         <button
-          onClick={() => onNavigateTab('maintenance')}
+          onClick={() => onNavigateTab('motorcycle')}
           className="w-full rounded-2xl bg-slate-900/80 border border-slate-800 p-4 text-left hover:border-slate-700 transition active:scale-[0.99]"
         >
           <div className="flex items-center gap-2 mb-3">

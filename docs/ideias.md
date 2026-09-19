@@ -581,3 +581,55 @@ fica.
 erros, e é exatamente o tipo de verificação que pega esta classe de bug antes de
 chegar no usuário. Sem ele, o typecheck passava limpo com `motorcycle` podendo
 ser nulo em dez lugares que fariam o app quebrar em execução.
+
+---
+
+## 20. Uma aba só: "Minha moto"
+
+**Status:** `decidido` — implementado
+**Data:** 2026-09-19
+
+A reescrita da ideia 18 corrigiu o **domínio**, não a **arquitetura da
+interface**. Sobraram três superfícies para a mesma moto: a Ficha (modal de 17
+campos), a aba Manutenção e a aba Passaporte.
+
+**A sobreposição era concreta**, não estética:
+
+- **Dois formulários para o mesmo evento**, com campos diferentes: o da
+  Manutenção gravava `product` e não custo; o do Passaporte gravava custo e
+  **não** `product`
+- A mesma lista de registros em dois layouts
+- O mesmo botão de ficha com dois nomes ("Ficha" e "Dados da Moto")
+- A navegação tinha **três nomes para duas abas**: "Manutenção" no desktop,
+  "Oficina" no celular, "Passaporte & Ficha da Moto" na gaveta
+
+**O achado que orientou o redesenho:** o app nunca mostrava os "900 km". A frase
+do dono — *"troquei há 900 km, faltam 100"* — tem duas metades, e a interface
+entregava só a que projeta o futuro. `kmSinceLast` era calculado e nunca
+exibido.
+
+**Três bugs de honestidade, corrigidos junto:**
+
+1. A Ficha pré-preenchia os 4 intervalos com os valores padrão e os gravava ao
+   salvar. Quem abriu a ficha uma vez passou a ver *"Você definiu 5.000 km"* sem
+   nunca ter definido — corrompendo a distinção medido/declarado/padrão que
+   torna o app honesto. Migração limpa os que são idênticos ao padrão.
+2. `declaredIntervalKm` era gravado pelo formulário e **nunca lido** por
+   ninguém.
+3. O Passaporte marcava todo registro digitado pelo próprio piloto como
+   "verificado por parceiro", e o Score de Procedência era `75 + algo` — nunca
+   saía de "Excelente". Removidos.
+
+**E `ridingStyle` prometia** ajustar a taxa de desgaste no próprio rótulo, mas o
+cálculo morreu junto com `calculateConsumablesStatus`. Removido, assim como
+`avgKmPerMonth`, substituído por `measureKmPerMonth`, que mede de verdade.
+
+**O formulário caiu para 3 campos:** km (pré-preenchido), data (hoje, mas
+editável — a troca é anotada no domingo seguinte) e produto (sugerindo o último
+usado). A categoria vem do cartão, então o formulário nunca pergunta *o quê*.
+
+**Salvar sobe o odômetro** quando o km informado é maior. Antes o piloto anotava
+25.000 na troca e o painel seguia em 24.850.
+
+Cartões ordenados por urgência: vencido, se aproximando, em dia, sem registro.
+A ordem fixa por categoria fazia um item vencido aparecer em sexto lugar.

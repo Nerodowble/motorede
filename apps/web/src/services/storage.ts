@@ -33,6 +33,7 @@ const STORAGE_KEYS = {
   MY_COUPONS: 'motorede_my_coupons',
   LAST_ROOM_CODE: 'motorede_last_room_code',
   SEED_BIKE_CLEARED: 'motorede_seed_bike_cleared',
+  FAKE_INTERVALS_CLEARED: 'motorede_fake_intervals_cleared',
   PHONE: 'motorede_phone',
   FAVORITE_ROOMS: 'motorede_favorite_rooms',
   LOCK_WARNING_DISMISSED: 'motorede_lock_warning_dismissed',
@@ -714,6 +715,7 @@ export const storageService = {
   getMotorcycle(): Motorcycle | null {
     if (typeof window === 'undefined') return null;
     this.migrateSeedMotorcycle();
+    this.migrateFakeDeclaredIntervals();
     const raw = localStorage.getItem(STORAGE_KEYS.MOTORCYCLE);
     if (!raw) return null;
     try {
@@ -752,6 +754,47 @@ export const storageService = {
     }
 
     localStorage.setItem(STORAGE_KEYS.SEED_BIKE_CLEARED, 'true');
+  },
+
+  /**
+   * Remove intervalos "declarados" que o piloto nunca declarou.
+   *
+   * A ficha antiga vinha pré-preenchida com os valores padrão e os gravava ao
+   * salvar. Quem abriu a ficha uma vez passou a ver "Você definiu 5.000 km" sem
+   * nunca ter definido nada — e isso corrompe a distinção entre medido,
+   * declarado e padrão, que é o que torna o app honesto.
+   *
+   * Só remove quando o valor é idêntico ao padrão: número diferente do padrão
+   * é escolha real e fica.
+   */
+  migrateFakeDeclaredIntervals(): void {
+    if (typeof window === 'undefined') return;
+    if (localStorage.getItem(STORAGE_KEYS.FAKE_INTERVALS_CLEARED) === 'true') return;
+
+    const padroes: Record<string, number> = {
+      engine_oil: 5000,
+      transmission_chain: 25000,
+      brakes: 12000,
+      tires: 15000,
+    };
+
+    const raw = localStorage.getItem(STORAGE_KEYS.MOTORCYCLE);
+    if (raw) {
+      try {
+        const moto = JSON.parse(raw) as Motorcycle;
+        if (moto.customIntervals) {
+          for (const [chave, padrao] of Object.entries(padroes)) {
+            const atual = moto.customIntervals[chave as ConsumableCategory];
+            if (atual === padrao) delete moto.customIntervals[chave as ConsumableCategory];
+          }
+          localStorage.setItem(STORAGE_KEYS.MOTORCYCLE, JSON.stringify(moto));
+        }
+      } catch {
+        // Dado ilegível: a leitura da moto já trata.
+      }
+    }
+
+    localStorage.setItem(STORAGE_KEYS.FAKE_INTERVALS_CLEARED, 'true');
   },
 
   /** Sem moto cadastrada não há km a atualizar. */

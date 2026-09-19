@@ -222,3 +222,26 @@ export function describeIntervalSource(
       return `Recomendação típica: ${km} km`;
   }
 }
+
+/**
+ * Ordena por urgência: vencido, se aproximando, em dia, sem registro.
+ *
+ * A ordem fixa por categoria fazia um item vencido aparecer em sexto lugar,
+ * abaixo de coisas em dia — o piloto rolava a tela para descobrir o que já
+ * estava atrasado.
+ */
+const STATUS_ORDER: Record<MaintenanceItemStatus['status'], number> = {
+  vencido: 0,
+  proximo: 1,
+  ok: 2,
+  'sem-registro': 3,
+};
+
+export function sortByUrgency(items: MaintenanceItemStatus[]): MaintenanceItemStatus[] {
+  return [...items].sort((a, b) => {
+    const porStatus = STATUS_ORDER[a.status] - STATUS_ORDER[b.status];
+    if (porStatus !== 0) return porStatus;
+    // Dentro do mesmo status, o que vence antes vem primeiro.
+    return (a.kmRemaining ?? Infinity) - (b.kmRemaining ?? Infinity);
+  });
+}

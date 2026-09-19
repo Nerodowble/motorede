@@ -33,7 +33,6 @@ export const MotorcycleEditModal: React.FC<MotorcycleEditModalProps> = ({
   const [year, setYear] = useState(motorcycle?.year.toString() ?? String(new Date().getFullYear()));
   const [licensePlate, setLicensePlate] = useState(motorcycle?.licensePlate ?? '');
   const [currentKm, setCurrentKm] = useState(motorcycle?.currentKm.toString() ?? '');
-  const [avgKmPerMonth, setAvgKmPerMonth] = useState(motorcycle?.avgKmPerMonth.toString() ?? '');
   const [displacementCc, setDisplacementCc] = useState(
     motorcycle?.displacementCc ? motorcycle?.displacementCc.toString() : '500'
   );
@@ -46,25 +45,10 @@ export const MotorcycleEditModal: React.FC<MotorcycleEditModalProps> = ({
   const [tankCapacityLiters, setTankCapacityLiters] = useState(
     motorcycle?.tankCapacityLiters ? motorcycle?.tankCapacityLiters.toString() : '17.7'
   );
-  const [ridingStyle, setRidingStyle] = useState<'calm' | 'mixed' | 'aggressive' | 'commuter_heavy'>(
-    motorcycle?.ridingStyle || 'mixed'
-  );
   const [chassisVin, setChassisVin] = useState(motorcycle?.chassisVin || '');
   const [notes, setNotes] = useState(motorcycle?.notes || '');
 
   // Custom intervals
-  const [customOilInterval, setCustomOilInterval] = useState(
-    motorcycle?.customIntervals?.engine_oil ? motorcycle?.customIntervals.engine_oil.toString() : '5000'
-  );
-  const [customChainInterval, setCustomChainInterval] = useState(
-    motorcycle?.customIntervals?.transmission_chain ? motorcycle?.customIntervals.transmission_chain.toString() : '25000'
-  );
-  const [customBrakesInterval, setCustomBrakesInterval] = useState(
-    motorcycle?.customIntervals?.brakes ? motorcycle?.customIntervals.brakes.toString() : '12000'
-  );
-  const [customTiresInterval, setCustomTiresInterval] = useState(
-    motorcycle?.customIntervals?.tires ? motorcycle?.customIntervals.tires.toString() : '15000'
-  );
 
   const [feedback, setFeedback] = useState<string | null>(null);
 
@@ -74,7 +58,6 @@ export const MotorcycleEditModal: React.FC<MotorcycleEditModalProps> = ({
     e.preventDefault();
 
     const parsedKm = parseInt(currentKm, 10);
-    const parsedAvgKm = parseInt(avgKmPerMonth, 10);
     const parsedYear = parseInt(year, 10);
 
     if (!brand.trim() || !model.trim() || isNaN(parsedKm) || parsedKm < 0) {
@@ -83,10 +66,6 @@ export const MotorcycleEditModal: React.FC<MotorcycleEditModalProps> = ({
     }
 
     const customIntervals: Partial<Record<ConsumableCategory, number>> = {};
-    if (parseInt(customOilInterval, 10)) customIntervals.engine_oil = parseInt(customOilInterval, 10);
-    if (parseInt(customChainInterval, 10)) customIntervals.transmission_chain = parseInt(customChainInterval, 10);
-    if (parseInt(customBrakesInterval, 10)) customIntervals.brakes = parseInt(customBrakesInterval, 10);
-    if (parseInt(customTiresInterval, 10)) customIntervals.tires = parseInt(customTiresInterval, 10);
 
     const updated: Motorcycle = {
       // Sem moto anterior, este é o primeiro cadastro: nasce com id próprio.
@@ -97,12 +76,11 @@ export const MotorcycleEditModal: React.FC<MotorcycleEditModalProps> = ({
       year: parsedYear || new Date().getFullYear(),
       licensePlate: licensePlate.trim().toUpperCase(),
       currentKm: parsedKm,
-      avgKmPerMonth: parsedAvgKm > 0 ? parsedAvgKm : 1000,
+      avgKmPerMonth: 0,
       displacementCc: parseInt(displacementCc, 10) || 500,
       fuelType,
       avgConsumptionKmL: parseFloat(avgConsumptionKmL) || 25,
       tankCapacityLiters: parseFloat(tankCapacityLiters) || 15,
-      ridingStyle,
       chassisVin: chassisVin.trim() || undefined,
       notes: notes.trim(),
       customIntervals,
@@ -214,94 +192,36 @@ export const MotorcycleEditModal: React.FC<MotorcycleEditModalProps> = ({
             </div>
           </div>
 
-          {/* Section 2: Quilometragem e Rotina de Uso */}
-          <div className="rounded-xl bg-slate-950/70 border border-slate-800/80 p-4 space-y-3">
-            <div className="flex items-center gap-2 text-xs font-bold text-amber-400 uppercase tracking-wider font-mono">
-              <Gauge className="w-4 h-4" />
-              2. Quilometragem e Média de Rodagem (Cálculo Preditivo)
+          {/* Seção 2: Quilometragem */}
+          <section className="space-y-3">
+            <h3 className="text-xs font-bold text-amber-500 uppercase tracking-wider font-mono">
+              Quilometragem
+            </h3>
+            <div className="grid grid-cols-2 gap-3">
+              <label className="block">
+                <span className="text-[11px] text-slate-400 mb-1.5 block">Odômetro (km)</span>
+                <input
+                  type="number"
+                  value={currentKm}
+                  onChange={(e) => setCurrentKm(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-slate-100 text-sm font-mono focus:outline-none focus:border-amber-500/60"
+                />
+              </label>
+              <label className="block">
+                <span className="text-[11px] text-slate-400 mb-1.5 block">Cilindrada (cc)</span>
+                <input
+                  type="number"
+                  value={displacementCc}
+                  onChange={(e) => setDisplacementCc(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-slate-100 text-sm font-mono focus:outline-none focus:border-amber-500/60"
+                />
+              </label>
             </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-              <div>
-                <label className="block text-slate-300 font-medium mb-1">
-                  Odômetro Atual (KM) *
-                </label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    value={currentKm}
-                    onChange={(e) => setCurrentKm(e.target.value)}
-                    placeholder="Ex: 24850"
-                    min="0"
-                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 pr-10 text-amber-400 font-bold font-mono focus:outline-none focus:border-amber-500"
-                    required
-                  />
-                  <span className="absolute right-3 top-2.5 text-slate-500 font-mono text-[11px]">KM</span>
-                </div>
-                <p className="text-[10px] text-slate-500 mt-1">
-                  Base de cálculo para os 6 consumíveis monitorados pelo MotoRede.
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-slate-300 font-medium mb-1">
-                  Sua Média Mensal Estimada (KM/Mês)
-                </label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    value={avgKmPerMonth}
-                    onChange={(e) => setAvgKmPerMonth(e.target.value)}
-                    placeholder="Ex: 1200"
-                    min="100"
-                    step="50"
-                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 pr-14 text-white font-mono focus:outline-none focus:border-amber-500"
-                  />
-                  <span className="absolute right-3 top-2.5 text-slate-500 font-mono text-[11px]">KM/mês</span>
-                </div>
-                <p className="text-[10px] text-slate-500 mt-1">
-                  Usado para prever a quantidade de dias restantes até as próximas trocas.
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-slate-300 font-medium mb-1">
-                  Estilo de Pilotagem / Tipo de Uso
-                </label>
-                <select
-                  value={ridingStyle}
-                  onChange={(e) => setRidingStyle(e.target.value as any)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-amber-500"
-                >
-                  <option value="calm">Suave / Turismo (Desgaste 10% menor)</option>
-                  <option value="mixed">Misto Cidade e Rodovia (Padrão)</option>
-                  <option value="commuter_heavy">Trânsito Pesado / Entregas diárias (Desgaste 15% maior)</option>
-                  <option value="aggressive">Esportivo / Giros Altos (Desgaste 25% maior)</option>
-                </select>
-                <p className="text-[10px] text-slate-500 mt-1">
-                  Ajusta dinamicamente a taxa de deterioração do óleo, relação e freios.
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-slate-300 font-medium mb-1">
-                  Cilindrada do Motor (cc)
-                </label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    value={displacementCc}
-                    onChange={(e) => setDisplacementCc(e.target.value)}
-                    placeholder="Ex: 500"
-                    min="50"
-                    max="2500"
-                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 pr-10 text-white font-mono focus:outline-none focus:border-amber-500"
-                  />
-                  <span className="absolute right-3 top-2.5 text-slate-500 font-mono text-[11px]">cc</span>
-                </div>
-              </div>
-            </div>
-          </div>
+            <p className="text-[10px] text-slate-500">
+              O ritmo em km por mês é medido pelos seus registros de troca — não
+              precisa informar.
+            </p>
+          </section>
 
           {/* Section 3: Combustível e Autonomia */}
           <div className="rounded-xl bg-slate-950/70 border border-slate-800/80 p-4 space-y-3">
@@ -364,87 +284,6 @@ export const MotorcycleEditModal: React.FC<MotorcycleEditModalProps> = ({
                 </span>
               </div>
             )}
-          </div>
-
-          {/* Section 4: Intervalos Customizados de Manutenção (Manual do Proprietário) */}
-          <div className="rounded-xl bg-slate-950/70 border border-slate-800/80 p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-xs font-bold text-amber-400 uppercase tracking-wider font-mono">
-                <Settings2 className="w-4 h-4" />
-                4. Intervalos de Troca (Manual do Proprietário)
-              </div>
-              <span className="text-[10px] text-slate-500">Ajuste conforme o manual da sua moto</span>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-              <div>
-                <label className="block text-slate-300 font-medium mb-1">
-                  Troca de Óleo e Filtro (a cada quantos KM?)
-                </label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    value={customOilInterval}
-                    onChange={(e) => setCustomOilInterval(e.target.value)}
-                    placeholder="5000"
-                    step="500"
-                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 pr-10 text-white font-mono focus:outline-none focus:border-amber-500"
-                  />
-                  <span className="absolute right-3 top-2.5 text-slate-500 font-mono text-[11px]">KM</span>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-slate-300 font-medium mb-1">
-                  Kit Transmissão / Relação (a cada quantos KM?)
-                </label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    value={customChainInterval}
-                    onChange={(e) => setCustomChainInterval(e.target.value)}
-                    placeholder="25000"
-                    step="1000"
-                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 pr-10 text-white font-mono focus:outline-none focus:border-amber-500"
-                  />
-                  <span className="absolute right-3 top-2.5 text-slate-500 font-mono text-[11px]">KM</span>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-slate-300 font-medium mb-1">
-                  Pastilhas de Freio (a cada quantos KM?)
-                </label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    value={customBrakesInterval}
-                    onChange={(e) => setCustomBrakesInterval(e.target.value)}
-                    placeholder="12000"
-                    step="1000"
-                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 pr-10 text-white font-mono focus:outline-none focus:border-amber-500"
-                  />
-                  <span className="absolute right-3 top-2.5 text-slate-500 font-mono text-[11px]">KM</span>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-slate-300 font-medium mb-1">
-                  Pneus (a cada quantos KM?)
-                </label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    value={customTiresInterval}
-                    onChange={(e) => setCustomTiresInterval(e.target.value)}
-                    placeholder="15000"
-                    step="1000"
-                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 pr-10 text-white font-mono focus:outline-none focus:border-amber-500"
-                  />
-                  <span className="absolute right-3 top-2.5 text-slate-500 font-mono text-[11px]">KM</span>
-                </div>
-              </div>
-            </div>
           </div>
 
           {/* Section 5: Observações e Prontuário */}
