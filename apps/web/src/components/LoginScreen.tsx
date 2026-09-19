@@ -29,8 +29,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ auth }) => {
   }, [auth.isReady, auth.renderButton]);
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
-      <div className="w-full max-w-sm">
+    {/* Centralizar com `items-center` transborda para os dois lados quando o
+        conteúdo passa da altura da tela, e o que sai por cima fica inalcançável
+        — a rolagem não alcança área negativa. `my-auto` centraliza sem esse
+        efeito: sobrando espaço ele centraliza, faltando espaço ele rola. */}
+    <div className="min-h-screen bg-slate-950 flex justify-center px-4 py-8 overflow-y-auto">
+      <div className="w-full max-w-sm my-auto">
         <div className="text-center mb-8">
           <div className="w-16 h-16 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 mx-auto mb-4">
             <Headphones className="w-8 h-8" />
