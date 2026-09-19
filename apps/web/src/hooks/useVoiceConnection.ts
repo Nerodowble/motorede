@@ -44,9 +44,12 @@ interface UseVoiceConnection {
   /** Host do servidor de voz em uso. Exibido para que uma divergência entre
    *  app e web (servidores diferentes) seja vista, e não silenciosa. */
   serverHost: string | null;
+  /** Volume de reprodução dos outros pilotos, 0 a 100. */
+  volume: number;
   connect: (options: ConnectOptions) => Promise<void>;
   disconnect: () => Promise<void>;
   setMuted: (muted: boolean) => Promise<void>;
+  setVolume: (volume: number) => void;
   unlockAudio: () => Promise<void>;
 }
 
@@ -68,6 +71,7 @@ export function useVoiceConnection(): UseVoiceConnection {
   const [isMuted, setIsMuted] = useState(false);
   const [needsAudioUnlock, setNeedsAudioUnlock] = useState(false);
   const [serverHost, setServerHost] = useState<string | null>(null);
+  const [volume, setVolumeState] = useState(100);
 
   // Contêiner oculto onde os elementos <audio> dos outros pilotos são anexados.
   useEffect(() => {
@@ -208,6 +212,32 @@ export function useVoiceConnection(): UseVoiceConnection {
   }, []);
 
   /**
+   * Ajusta o volume de todos os participantes remotos.
+   *
+   * O volume não é uma propriedade da sala: é aplicado por participante. Quem
+   * entrar depois precisa receber o mesmo valor, por isso reaplicamos também
+   * quando a lista muda.
+   */
+  const applyVolume = useCallback((value: number) => {
+    const room = roomRef.current;
+    if (!room) return;
+    room.remoteParticipants.forEach((p) => p.setVolume(value / 100));
+  }, []);
+
+  const setVolume = useCallback(
+    (value: number) => {
+      setVolumeState(value);
+      applyVolume(value);
+    },
+    [applyVolume]
+  );
+
+  // Participante novo entra com o volume que o piloto já escolheu.
+  useEffect(() => {
+    applyVolume(volume);
+  }, [participants, volume, applyVolume]);
+
+  /**
    * Navegadores bloqueiam áudio até haver um gesto do usuário. Chamado a partir
    * de um clique, isto libera a reprodução.
    */
@@ -233,9 +263,11 @@ export function useVoiceConnection(): UseVoiceConnection {
     isMuted,
     needsAudioUnlock,
     serverHost,
+    volume,
     connect,
     disconnect,
     setMuted,
+    setVolume,
     unlockAudio,
   };
 }

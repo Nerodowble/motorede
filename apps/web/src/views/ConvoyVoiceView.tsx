@@ -27,7 +27,6 @@ import {
   isJoinableRoomCode,
 } from '@motorede/shared';
 import { storageService } from '../services/storage';
-import { audioEngine } from '../services/audioEngine';
 import { getGoogleMapsNavigationUrl, getWazeNavigationUrl } from '../services/geolocation';
 import QRCode from 'qrcode';
 import { useVoiceConnection } from '../hooks/useVoiceConnection';
@@ -46,16 +45,10 @@ export const ConvoyVoiceView: React.FC<ConvoyVoiceViewProps> = ({
   isBackgroundAudioActive,
   onToggleBackgroundSession,
 }) => {
-  const [isMuted, setIsMuted] = useState(false);
-  const [volume, setVolume] = useState(85);
-  const [isPTTPressed, setIsPTTPressed] = useState(false);
-  const [speakingLevel, setSpeakingLevel] = useState(0);
-  const [isSpeaking, setIsSpeaking] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [showEditDestModal, setShowEditDestModal] = useState(false);
   const [newDestName, setNewDestName] = useState(voiceRoom.destinationName || '');
-  const [isMicHardwareActive, setIsMicHardwareActive] = useState(false);
 
   // Conexão de voz real contra o servidor LiveKit.
   const voice = useVoiceConnection();
@@ -150,71 +143,6 @@ export const ConvoyVoiceView: React.FC<ConvoyVoiceViewProps> = ({
     });
   };
 
-  // Initialize or update background session on mount or room change
-  useEffect(() => {
-    if (isBackgroundAudioActive) {
-      audioEngine.startBackgroundSession(voiceRoom.name, voiceRoom.code, () => {
-        handleToggleMute();
-      });
-    }
-  }, [voiceRoom.name, voiceRoom.code, isBackgroundAudioActive]);
-
-  const handleToggleMute = () => {
-    const nextMuted = !isMuted;
-    setIsMuted(nextMuted);
-    audioEngine.setMute(nextMuted);
-    audioEngine.playRadioChirp(!nextMuted);
-
-    // Update user status in room list
-    const updatedParticipants = voiceRoom.participants.map((p) =>
-      p.id === 'p-user' ? { ...p, isMuted: nextMuted } : p
-    );
-    onUpdateVoiceRoom({ participants: updatedParticipants });
-  };
-
-  const handleStartMicCapture = async () => {
-    const success = await audioEngine.startMicrophone((speaking, level) => {
-      setIsSpeaking(speaking);
-      setSpeakingLevel(level);
-
-      const updated = voiceRoom.participants.map((p) =>
-        p.id === 'p-user' ? { ...p, isSpeaking: speaking } : p
-      );
-      onUpdateVoiceRoom({ participants: updated });
-    });
-    setIsMicHardwareActive(success);
-  };
-
-  const handleVolumeChange = (newVol: number) => {
-    setVolume(newVol);
-    audioEngine.setRoomVolume(newVol / 100);
-  };
-
-  // Push-To-Talk Handlers
-  const handlePTTDown = () => {
-    setIsPTTPressed(true);
-    audioEngine.setMute(false);
-    audioEngine.playRadioChirp(true);
-    setIsSpeaking(true);
-
-    const updated = voiceRoom.participants.map((p) =>
-      p.id === 'p-user' ? { ...p, isSpeaking: true, isMuted: false } : p
-    );
-    onUpdateVoiceRoom({ participants: updated });
-  };
-
-  const handlePTTUp = () => {
-    setIsPTTPressed(false);
-    audioEngine.setMute(isMuted);
-    audioEngine.playRadioChirp(false);
-    setIsSpeaking(false);
-
-    const updated = voiceRoom.participants.map((p) =>
-      p.id === 'p-user' ? { ...p, isSpeaking: false, isMuted } : p
-    );
-    onUpdateVoiceRoom({ participants: updated });
-  };
-
   const handleCopyInviteLink = () => {
     navigator.clipboard.writeText(inviteUrl);
     setCopiedLink(true);
@@ -231,13 +159,6 @@ export const ConvoyVoiceView: React.FC<ConvoyVoiceViewProps> = ({
       });
       setShowEditDestModal(false);
     }
-  };
-
-  const handleSimulateIncomingRadio = () => {
-    audioEngine.playSimulatedIncomingRadio(
-      'Marcos Viana (Líder)',
-      'Atenção comboio, radar de 80 km/h logo após a curva do KM 32. Mantenham a formação em zigue-zague!'
-    );
   };
 
   return (
@@ -359,13 +280,35 @@ export const ConvoyVoiceView: React.FC<ConvoyVoiceViewProps> = ({
                   {activeRoomCode}
                 </p>
               </div>
-              <button
-                onClick={handleCreateRoom}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition active:scale-95"
-              >
-                <Plus className="w-4 h-4 text-amber-400" />
-                Criar novo
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowQRModal(true)}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition active:scale-95"
+                  title="Exibir QR Code do convite"
+                >
+                  <QrCode className="w-4 h-4 text-amber-400" />
+                  QR
+                </button>
+                <button
+                  onClick={handleCopyInviteLink}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition active:scale-95"
+                  title="Copiar link de convite"
+                >
+                  {copiedLink ? (
+                    <Check className="w-4 h-4 text-emerald-400" />
+                  ) : (
+                    <Copy className="w-4 h-4 text-slate-400" />
+                  )}
+                  {copiedLink ? 'Copiado' : 'Link'}
+                </button>
+                <button
+                  onClick={handleCreateRoom}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition active:scale-95"
+                >
+                  <Plus className="w-4 h-4 text-amber-400" />
+                  Novo
+                </button>
+              </div>
             </div>
 
             <form onSubmit={handleJoinByCode} className="flex items-center gap-2">
@@ -420,168 +363,144 @@ export const ConvoyVoiceView: React.FC<ConvoyVoiceViewProps> = ({
         )}
       </div>
 
-      {/* Voice Room Header & Info */}
-      <div className="rounded-2xl bg-gradient-to-b from-slate-900 to-slate-950 border border-slate-800 p-4 sm:p-5 shadow-xl">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
-              <Radio className="w-5 h-5 sm:w-6 sm:h-6 animate-pulse" />
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h2 className="text-base sm:text-lg font-extrabold text-white tracking-tight truncate">
-                  {voiceRoom.name}
-                </h2>
-                <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold shrink-0">
-                  CANAL {activeRoomCode}
-                </span>
+      {/* Controles da chamada. Só aparecem com a conversa ativa — fora dela
+          não há o que controlar, e mostrá-los desligados era o que dava a
+          impressão de tela quebrada. */}
+      {isLive && (
+        <div className="rounded-2xl bg-gradient-to-b from-slate-900 to-slate-950 border border-slate-800 p-4 sm:p-5 shadow-xl space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Mudo — agora atua na conexão real, não no simulador */}
+            <button
+              onClick={() => voice.setMuted(!voice.isMuted)}
+              className={`py-5 px-4 rounded-2xl flex flex-col items-center justify-center gap-2 transition-all active:scale-95 shadow-lg ${
+                voice.isMuted
+                  ? 'bg-slate-900 border-2 border-amber-500/40 text-slate-200'
+                  : 'bg-gradient-to-br from-emerald-600 to-emerald-700 text-white shadow-emerald-950/50'
+              }`}
+            >
+              <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
+                {voice.isMuted ? (
+                  <MicOff className="w-7 h-7 text-amber-400" />
+                ) : (
+                  <Mic className="w-7 h-7" />
+                )}
               </div>
-              <p className="text-xs text-slate-400 mt-0.5 truncate">
-                Líder: {voiceRoom.creatorName} • {displayParticipants.length} pilotos conectados
-              </p>
-            </div>
-          </div>
-
-          {/* Quick QR Code and Invite Link buttons */}
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <button
-              onClick={() => setShowQRModal(true)}
-              className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition active:scale-95"
-              title="Exibir QR Code para escanear"
-            >
-              <QrCode className="w-4 h-4 text-amber-400" />
-              QR Code
+              <span className="text-sm font-black uppercase tracking-wider text-center">
+                {voice.isMuted ? 'Microfone mudo' : 'Microfone aberto'}
+              </span>
+              <span className="text-[11px] text-slate-300/80 font-mono text-center">
+                {voice.isMuted ? 'Você ouve, mas não transmite' : 'Você está transmitindo'}
+              </span>
             </button>
+
+            {/* Segure para falar: abre o microfone enquanto pressionado e
+                fecha ao soltar. Útil para quem prefere manter tudo mudo. */}
             <button
-              onClick={handleCopyInviteLink}
-              className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition active:scale-95"
-              title="Copiar link de convite da sala"
+              onPointerDown={() => voice.setMuted(false)}
+              onPointerUp={() => voice.setMuted(true)}
+              onPointerLeave={() => voice.isMuted || voice.setMuted(true)}
+              className="py-5 px-4 rounded-2xl flex flex-col items-center justify-center gap-2 transition-all select-none active:scale-95 shadow-lg bg-slate-900 border border-slate-800 text-slate-200 hover:border-amber-500/40 active:bg-amber-500 active:text-slate-950"
             >
-              {copiedLink ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-slate-400" />}
-              {copiedLink ? 'Copiado!' : 'Link'}
+              <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
+                <Radio className="w-7 h-7 text-amber-400" />
+              </div>
+              <span className="text-sm font-black uppercase tracking-wider text-center">
+                Segure para falar
+              </span>
+              <span className="text-[11px] text-slate-400 font-mono text-center">
+                Solte para fechar o canal
+              </span>
             </button>
           </div>
-        </div>
 
-        {/* Background Audio Keepalive Toggle Banner */}
-        <div className="mt-4 pt-3 border-t border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-          <div className="flex items-center gap-2.5">
-            <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${isBackgroundAudioActive ? 'bg-emerald-400 animate-ping' : 'bg-slate-600'}`} />
-            <div>
-              <p className="text-xs font-bold text-slate-200">
-                Transmissão em Segundo Plano (Tela Bloqueada)
-              </p>
-              <p className="text-[11px] text-slate-400">
-                Mantém o intercomunicador ativo mesmo com Waze aberto ou celular bloqueado.
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={() => onToggleBackgroundSession(!isBackgroundAudioActive)}
-            className={`w-full sm:w-auto px-4 py-2 rounded-xl font-bold text-xs transition active:scale-95 text-center shrink-0 ${
-              isBackgroundAudioActive
-                ? 'bg-emerald-600 text-white'
-                : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'
-            }`}
-          >
-            {isBackgroundAudioActive ? 'Ativo' : 'Ativar'}
-          </button>
-        </div>
-      </div>
-
-      {/* Primary Transit Voice Controls (Ergonomic, High Contrast) */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {/* Big Mute/Unmute Button */}
-        <button
-          onClick={handleToggleMute}
-          className={`py-5 px-4 rounded-2xl flex flex-col items-center justify-center gap-2 transition-all active:scale-95 shadow-lg ${
-            isMuted
-              ? 'bg-slate-900 border-2 border-amber-500/40 text-slate-200 hover:bg-slate-850'
-              : 'bg-gradient-to-br from-emerald-600 to-emerald-700 text-white shadow-emerald-950/50'
-          }`}
-        >
-          <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
-            {isMuted ? <MicOff className="w-7 h-7 text-amber-400" /> : <Mic className="w-7 h-7" />}
-          </div>
-          <span className="text-sm font-black uppercase tracking-wider">
-            {isMuted ? 'Microfone Mudo (Toque p/ Ativar)' : 'Microfone Aberto'}
-          </span>
-          <span className="text-[11px] text-slate-300/80 font-mono">
-            {isMuted ? 'Canal em escuta silenciosa' : 'Você está transmitindo no comboio'}
-          </span>
-        </button>
-
-        {/* Push-To-Talk (PTT) Hold-to-Talk Button */}
-        <button
-          onMouseDown={handlePTTDown}
-          onMouseUp={handlePTTUp}
-          onTouchStart={handlePTTDown}
-          onTouchEnd={handlePTTUp}
-          className={`py-5 px-4 rounded-2xl flex flex-col items-center justify-center gap-2 transition-all select-none active:scale-95 shadow-lg ${
-            isPTTPressed
-              ? 'bg-amber-500 text-slate-950 ring-4 ring-amber-400/50'
-              : 'bg-slate-900 border border-slate-800 text-slate-200 hover:border-amber-500/40'
-          }`}
-        >
-          <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
-            <Radio className={`w-7 h-7 ${isPTTPressed ? 'animate-pulse text-slate-950' : 'text-amber-400'}`} />
-          </div>
-          <span className="text-sm font-black uppercase tracking-wider">
-            {isPTTPressed ? 'Transmitindo no Rádio...' : 'Segure para Falar (PTT)'}
-          </span>
-          <span className="text-[11px] text-slate-400 font-mono">
-            {isPTTPressed ? 'Liberte para fechar canal' : 'Pressione e fale como num rádio'}
-          </span>
-        </button>
-
-        {/* Master Volume & Real Mic Capture Activation */}
-        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between">
+          {/* Volume dos outros pilotos */}
           <div>
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
                 <Volume2 className="w-4 h-4 text-amber-500" />
-                Volume do Intercom
+                Volume do comboio
               </span>
-              <span className="text-xs font-mono font-bold text-amber-400">{volume}%</span>
+              <span className="text-xs font-mono font-bold text-amber-400">
+                {voice.volume}%
+              </span>
             </div>
             <input
               type="range"
               min="0"
               max="100"
-              value={volume}
-              onChange={(e) => handleVolumeChange(Number(e.target.value))}
+              value={voice.volume}
+              onChange={(e) => voice.setVolume(Number(e.target.value))}
               className="w-full accent-amber-500 h-2 bg-slate-800 rounded-lg cursor-pointer"
             />
           </div>
 
-          {/* Test Hardware Mic / Speech */}
-          <div className="mt-3 pt-3 border-t border-slate-800 space-y-2">
-            {!isMicHardwareActive ? (
-              <button
-                onClick={handleStartMicCapture}
-                className="w-full py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 flex items-center justify-center gap-2 transition"
-              >
-                <Headphones className="w-3.5 h-3.5 text-amber-400" />
-                Conectar Microfone Físico
-              </button>
-            ) : (
-              <div className="flex items-center justify-between text-[11px] text-emerald-400 font-mono">
-                <span>Microfone Físico Ativo</span>
-                <span>Nível: {speakingLevel}%</span>
-              </div>
-            )}
+          {/* Quem está no comboio */}
+          <div className="pt-3 border-t border-slate-800/80">
+            <div className="flex items-center gap-2 mb-2">
+              <Users className="w-4 h-4 text-amber-500" />
+              <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider font-mono">
+                No comboio ({voice.participants.length})
+              </h3>
+            </div>
 
+            <div className="divide-y divide-slate-800/60">
+              {voice.participants.map((p) => (
+                <div key={p.id} className="py-2.5 flex items-center gap-3">
+                  <div
+                    className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 ${
+                      p.isSpeaking
+                        ? 'bg-amber-500 text-slate-950 ring-2 ring-amber-400'
+                        : 'bg-slate-800 text-slate-300'
+                    }`}
+                  >
+                    {p.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-slate-100 truncate">
+                      {p.name}
+                      {p.isHost && (
+                        <span className="text-[10px] text-amber-400 font-mono ml-1.5">
+                          LÍDER
+                        </span>
+                      )}
+                    </p>
+                    <p className="text-[11px] text-slate-400">
+                      {p.isMuted ? 'mudo' : p.isSpeaking ? 'falando' : 'ouvindo'}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Transmissão em segundo plano */}
+          <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <span
+                className={`w-2.5 h-2.5 rounded-full shrink-0 ${
+                  isBackgroundAudioActive ? 'bg-emerald-400 animate-pulse' : 'bg-slate-600'
+                }`}
+              />
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-slate-200">Tela bloqueada</p>
+                <p className="text-[11px] text-slate-400 truncate">
+                  Mantém a conversa com o celular no bolso.
+                </p>
+              </div>
+            </div>
             <button
-              onClick={handleSimulateIncomingRadio}
-              className="w-full py-2 px-3 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-amber-400 text-xs font-semibold border border-slate-700/80 flex items-center justify-center gap-2 transition"
-              title="Simula mensagem de rádio por voz do líder"
+              onClick={() => onToggleBackgroundSession(!isBackgroundAudioActive)}
+              className={`px-4 py-2 rounded-xl font-bold text-xs transition active:scale-95 shrink-0 ${
+                isBackgroundAudioActive
+                  ? 'bg-emerald-600 text-white'
+                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'
+              }`}
             >
-              <Sparkles className="w-3.5 h-3.5" />
-              Simular Chamada do Líder
+              {isBackgroundAudioActive ? 'Ativo' : 'Ativar'}
             </button>
           </div>
         </div>
-      </div>
+      )}
 
       {/* External Navigation Destination (Waze & Google Maps) */}
       <div className="rounded-2xl bg-slate-900/80 border border-slate-800 p-4 shadow-md">
@@ -635,68 +554,6 @@ export const ConvoyVoiceView: React.FC<ConvoyVoiceViewProps> = ({
               <ExternalLink className="w-3.5 h-3.5" />
             </a>
           </div>
-        </div>
-      </div>
-
-      {/* Participants List */}
-      <div className="rounded-2xl bg-slate-900/80 border border-slate-800 p-4">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <Users className="w-4 h-4 text-amber-500" />
-            <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider font-mono">
-              Integrantes no Comboio ({displayParticipants.length})
-            </h3>
-          </div>
-          <span className="text-[11px] text-slate-400 font-mono">Latência: ~45ms</span>
-        </div>
-
-        <div className="divide-y divide-slate-800/60">
-          {displayParticipants.map((p) => (
-            <div key={p.id} className="py-2.5 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                {/* Speaking indicator dot */}
-                <div className="relative">
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs ${
-                    p.isSpeaking ? 'bg-amber-500 text-slate-950 ring-2 ring-amber-400' : 'bg-slate-800 text-slate-300'
-                  }`}>
-                    {p.name.charAt(0)}
-                  </div>
-                  {p.isSpeaking && (
-                    <span className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full bg-emerald-400 animate-ping" />
-                  )}
-                </div>
-
-                <div>
-                  <div className="flex items-center gap-2">
-                    <p className="text-xs font-bold text-slate-200">{p.name}</p>
-                    {p.isHost && (
-                      <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 font-mono">
-                        Líder
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-[11px] text-slate-400 flex items-center gap-1.5 mt-0.5">
-                    <span>Distância: {p.distanceToHostKm === 0 ? 'Ponto Base' : `${p.distanceToHostKm} km`}</span>
-                    <span>•</span>
-                    <span className="capitalize">{p.deviceType || 'intercom'}</span>
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 text-xs">
-                {p.isSpeaking ? (
-                  <span className="text-[11px] font-mono text-amber-400 flex items-center gap-1 font-bold">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                    Falando...
-                  </span>
-                ) : p.isMuted ? (
-                  <MicOff className="w-4 h-4 text-slate-500" />
-                ) : (
-                  <Mic className="w-4 h-4 text-slate-400" />
-                )}
-              </div>
-            </div>
-          ))}
         </div>
       </div>
 
