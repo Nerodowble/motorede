@@ -20,8 +20,41 @@ import { coarsenLocation, type GeoPoint } from '@motorede/shared';
  * adianta tocar para quem não vai ver.
  */
 
-const REST_URL = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
-const REST_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
+/**
+ * Onde fica o Redis.
+ *
+ * A integração do Upstash na Vercel deixa VOCÊ escolher o prefixo das
+ * variáveis que ela cria: com `KV` saem `KV_REST_API_URL` e
+ * `KV_REST_API_TOKEN`, com `STORAGE` saem `STORAGE_REST_API_*`, e assim por
+ * diante. Amarrar o código a um prefixo transforma uma escolha de formulário
+ * em um 503 silencioso meses depois.
+ *
+ * Então: os nomes conhecidos primeiro e, se nenhum aparecer, procura qualquer
+ * par `*_REST_API_URL` / `*_REST_API_TOKEN` no ambiente. `KV_URL` é
+ * deliberadamente ignorada — apesar do nome parecido, ela é uma string de
+ * conexão `redis://`, que não serve para a API REST.
+ */
+function acharCredenciais(): { url?: string; token?: string } {
+  const env = process.env;
+
+  const explicito = {
+    url: env.UPSTASH_REDIS_REST_URL || env.KV_REST_API_URL,
+    token: env.UPSTASH_REDIS_REST_TOKEN || env.KV_REST_API_TOKEN,
+  };
+  if (explicito.url && explicito.token) return explicito;
+
+  const prefixo = Object.keys(env)
+    .filter((k) => k.endsWith('_REST_API_URL') && env[k])
+    .map((k) => k.slice(0, -'_REST_API_URL'.length))
+    .find((p) => env[`${p}_REST_API_TOKEN`]);
+
+  if (prefixo) {
+    return { url: env[`${prefixo}_REST_API_URL`], token: env[`${prefixo}_REST_API_TOKEN`] };
+  }
+  return explicito;
+}
+
+const { url: REST_URL, token: REST_TOKEN } = acharCredenciais();
 
 export const PRESENCA_SEGUNDOS = 45 * 60;
 export const PEDIDO_SEGUNDOS = 2 * 60 * 60;

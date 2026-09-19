@@ -49,14 +49,27 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     res.end(JSON.stringify(corpo));
   };
 
+  if (req.method === 'GET') {
+    return responder(200, {
+      rede: storeConfigured() ? 'ligada' : 'desligada',
+      // Só o prefixo, nunca o valor: serve para conferir que a integração da
+      // Vercel criou as variáveis com o nome que o código encontra.
+      variaveis: Object.keys(process.env)
+        .filter((k) => k.endsWith('_REST_API_URL') || k.endsWith('_REST_API_TOKEN'))
+        .sort(),
+    });
+  }
+
   if (req.method !== 'POST' && req.method !== 'DELETE') {
-    return responder(405, { error: 'Use POST para entrar na rede ou DELETE para sair.' });
+    return responder(405, { error: 'Use GET para conferir, POST para entrar na rede, DELETE para sair.' });
   }
 
   if (!storeConfigured()) {
     return responder(503, {
       error: 'Rede de socorro ainda não configurada no servidor.',
-      detail: 'Faltam UPSTASH_REDIS_REST_URL e UPSTASH_REDIS_REST_TOKEN.',
+      detail:
+        'Faltam as credenciais do Redis. Na Vercel: Storage > Upstash Redis. ' +
+        'Qualquer prefixo serve, desde que gere *_REST_API_URL e *_REST_API_TOKEN.',
     });
   }
 
