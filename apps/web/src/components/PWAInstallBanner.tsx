@@ -1,121 +1,109 @@
 import React, { useState } from 'react';
+import { Download, Smartphone, X, ChevronRight } from 'lucide-react';
 import { usePWAInstall } from '../hooks/usePWAInstall';
 import { storageService } from '../services/storage';
-import { Download, Share2, Smartphone, X } from 'lucide-react';
+
+/**
+ * Convite para colocar o MotoRede na tela inicial.
+ *
+ * POR QUE NEM SEMPRE HÁ UM BOTÃO QUE INSTALA
+ *
+ * O navegador só permite abrir o diálogo nativo de instalação quando ELE
+ * dispara o evento `beforeinstallprompt` — uma proteção contra sites que
+ * pedem instalação o tempo todo. Não existe forma de forçá-lo.
+ *
+ * O Chrome guarda esse evento até considerar que houve "engajamento" com o
+ * site, e nunca mais o dispara para quem já instalou. O Safari no iOS não o
+ * implementa de forma alguma.
+ *
+ * Por isso este componente tem dois caminhos: quando o navegador permite, um
+ * toque instala; quando não permite, ele mostra o passo a passo do próprio
+ * aparelho, em vez de simplesmente não aparecer. O usuário sempre tem um
+ * caminho a partir de dentro do app.
+ */
 
 export const PWAInstallBanner: React.FC = () => {
   const { isInstallable, isInstalled, isIOS, install } = usePWAInstall();
-  const [showIOSGuide, setShowIOSGuide] = useState(false);
-  const [dismissed, setDismissed] = useState(() => storageService.isInstallDismissed());
+  const [mostrarPassos, setMostrarPassos] = useState(false);
+  const [dispensado, setDispensado] = useState(() => storageService.isInstallDismissed());
+
+  if (isInstalled || dispensado) return null;
 
   const dispensar = () => {
     storageService.dismissInstall();
-    setDismissed(true);
+    setDispensado(true);
   };
 
-  // If running in standalone or dismissed, hide banner
-  if (isInstalled || dismissed) {
-    return null;
-  }
+  const passos = isIOS
+    ? ['Toque em Compartilhar, na barra do Safari', 'Escolha "Adicionar à Tela de Início"', 'Confirme em "Adicionar"']
+    : ['Toque no menu ⋮ do navegador', 'Escolha "Instalar app" ou "Adicionar à tela inicial"', 'Confirme'];
 
-  // Chromium / Android prompt
-  if (isInstallable) {
-    return (
-      <div className="bg-slate-900 border-b border-slate-800 px-4 py-2.5 flex items-center justify-between text-xs text-slate-300">
-        <div className="flex items-center gap-2">
-          <span className="p-1.5 rounded-lg bg-amber-500/10 text-amber-400">
+  return (
+    <div className="bg-slate-900 border-b border-slate-800 px-4 py-2.5">
+      <div className="flex items-center justify-between gap-3 max-w-5xl mx-auto">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <span className="p-1.5 rounded-lg bg-amber-500/10 text-amber-400 shrink-0">
             <Smartphone className="w-4 h-4" />
           </span>
-          <div>
-            <p className="font-semibold text-slate-100">Instalar MotoRede no celular</p>
-            <p className="text-slate-400 text-[11px]">Abre direto da tela inicial, sem barra de navegador</p>
+          <div className="min-w-0">
+            <p className="text-xs font-semibold text-slate-100">
+              Colocar o MotoRede na tela inicial
+            </p>
+            <p className="text-[11px] text-slate-400 truncate">
+              Abre direto, sem barra de navegador
+            </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={install}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 font-bold rounded-lg text-xs transition shadow-sm"
-          >
-            <Download className="w-3.5 h-3.5" />
-            Instalar
-          </button>
+
+        <div className="flex items-center gap-2 shrink-0">
+          {isInstallable ? (
+            <button
+              onClick={install}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 font-bold rounded-lg text-xs transition"
+            >
+              <Download className="w-3.5 h-3.5" />
+              Instalar
+            </button>
+          ) : (
+            <button
+              onClick={() => setMostrarPassos((v) => !v)}
+              className="flex items-center gap-1 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-lg text-xs border border-slate-700 transition"
+            >
+              Como fazer
+              <ChevronRight
+                className={`w-3.5 h-3.5 transition-transform ${mostrarPassos ? 'rotate-90' : ''}`}
+              />
+            </button>
+          )}
+
           <button
             onClick={dispensar}
-            className="p-1 text-slate-400 hover:text-slate-200"
-            title="Fechar"
+            className="p-1 text-slate-500 hover:text-slate-300"
+            title="Dispensar"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
       </div>
-    );
-  }
 
-  // iOS Safari Flow
-  if (isIOS) {
-    return (
-      <>
-        <div className="bg-slate-900 border-b border-slate-800 px-4 py-2 flex items-center justify-between text-xs text-slate-300">
-          <div className="flex items-center gap-2">
-            <span className="p-1 rounded-md bg-slate-800 text-slate-300">
-              <Smartphone className="w-3.5 h-3.5" />
-            </span>
-            <span className="text-slate-300">Adicione à tela de início para modo PWA</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowIOSGuide(true)}
-              className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-amber-400 font-medium rounded text-xs border border-slate-700"
-            >
-              Como Instalar
-            </button>
-            <button onClick={dispensar} className="p-1 text-slate-500 hover:text-slate-300">
-              <X className="w-3.5 h-3.5" />
-            </button>
-          </div>
+      {mostrarPassos && (
+        <div className="max-w-5xl mx-auto mt-2.5 pt-2.5 border-t border-slate-800">
+          <ol className="space-y-1.5">
+            {passos.map((passo, i) => (
+              <li key={passo} className="flex items-start gap-2 text-[11px] text-slate-300">
+                <span className="w-4 h-4 rounded bg-slate-800 text-amber-400 text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">
+                  {i + 1}
+                </span>
+                {passo}
+              </li>
+            ))}
+          </ol>
+          <p className="text-[10px] text-slate-500 mt-2">
+            Seu navegador não permite que o app abra essa janela sozinho — por isso o
+            passo a passo.
+          </p>
         </div>
-
-        {showIOSGuide && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
-            <div className="w-full max-w-sm rounded-xl bg-slate-900 border border-slate-800 p-5 shadow-2xl text-slate-200">
-              <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
-                <h3 className="text-base font-bold text-slate-100 flex items-center gap-2">
-                  <Smartphone className="w-5 h-5 text-amber-500" />
-                  Instalar no iPhone / iPad
-                </h3>
-                <button onClick={() => setShowIOSGuide(false)} className="text-slate-400 hover:text-white">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              <p className="text-xs text-slate-300 mb-4 leading-relaxed">
-                Para abrir o MotoRede direto da tela inicial, em tela cheia:
-              </p>
-              <div className="space-y-2.5 text-xs">
-                <div className="flex items-start gap-2.5 p-2.5 rounded-lg bg-slate-800/70 border border-slate-700/50">
-                  <span className="w-5 h-5 rounded-full bg-slate-700 text-slate-200 flex items-center justify-center font-bold text-[10px] shrink-0">1</span>
-                  <p>Toque no ícone de <strong className="text-white">Compartilhar</strong> <Share2 className="w-3.5 h-3.5 inline mx-1 text-blue-400" /> na barra inferior do Safari.</p>
-                </div>
-                <div className="flex items-start gap-2.5 p-2.5 rounded-lg bg-slate-800/70 border border-slate-700/50">
-                  <span className="w-5 h-5 rounded-full bg-slate-700 text-slate-200 flex items-center justify-center font-bold text-[10px] shrink-0">2</span>
-                  <p>Role para baixo e selecione <strong className="text-amber-400">"Adicionar à Tela de Início"</strong>.</p>
-                </div>
-                <div className="flex items-start gap-2.5 p-2.5 rounded-lg bg-slate-800/70 border border-slate-700/50">
-                  <span className="w-5 h-5 rounded-full bg-slate-700 text-slate-200 flex items-center justify-center font-bold text-[10px] shrink-0">3</span>
-                  <p>Confirme clicando em <strong className="text-white">Adicionar</strong> no canto superior direito.</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowIOSGuide(false)}
-                className="mt-5 w-full rounded-lg bg-amber-500 py-2.5 text-xs font-bold text-slate-950 hover:bg-amber-400 transition"
-              >
-                Entendido
-              </button>
-            </div>
-          </div>
-        )}
-      </>
-    );
-  }
-
-  return null;
+      )}
+    </div>
+  );
 };
