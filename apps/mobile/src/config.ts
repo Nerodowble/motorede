@@ -23,5 +23,9 @@ const DEV_TOKEN_ENDPOINT = `http://${DEV_HOST}:3000/api/livekit-token`;
 export const TOKEN_ENDPOINT =
   process.env.EXPO_PUBLIC_TOKEN_ENDPOINT || DEV_TOKEN_ENDPOINT;
 
-/** Sala usada nos testes, a mesma que o app web abre por padrão. */
+/** Endereço do app web, usado para montar o link de convite. */
+export const WEB_APP_URL =
+  process.env.EXPO_PUBLIC_WEB_APP_URL || 'https://motorede-web.vercel.app';
+
+/** Comboio inicial. O piloto troca pela tela; serve só como ponto de partida. */
 export const DEV_ROOM_CODE = 'SERRA-88';

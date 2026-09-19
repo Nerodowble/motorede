@@ -19,7 +19,14 @@ import {
   Smartphone,
   Sparkles,
 } from 'lucide-react';
-import { VoiceRoom, VoiceParticipant } from '@motorede/shared';
+import {
+  VoiceRoom,
+  VoiceParticipant,
+  generateRoomCode,
+  normalizeRoomCode,
+  isJoinableRoomCode,
+} from '@motorede/shared';
+import { storageService } from '../services/storage';
 import { audioEngine } from '../services/audioEngine';
 import { getGoogleMapsNavigationUrl, getWazeNavigationUrl } from '../services/geolocation';
 import { useVoiceConnection } from '../hooks/useVoiceConnection';
@@ -52,11 +59,46 @@ export const ConvoyVoiceView: React.FC<ConvoyVoiceViewProps> = ({
   const voice = useVoiceConnection();
   const isLive = voice.status === 'connected' || voice.status === 'reconnecting';
 
+  // Código do comboio ativo. A ordem de precedência importa: um link de convite
+  // (?sala=) tem que vencer o último comboio salvo, senão quem recebe o convite
+  // cai na própria sala anterior em vez da do amigo.
+  const [activeRoomCode, setActiveRoomCode] = useState<string>(() => {
+    const fromLink = new URLSearchParams(window.location.search).get('sala');
+    if (fromLink) {
+      const normalized = normalizeRoomCode(fromLink);
+      if (isJoinableRoomCode(normalized)) return normalized;
+    }
+    return storageService.getLastRoomCode() || voiceRoom.code;
+  });
+  const [codeInput, setCodeInput] = useState('');
+  const [codeError, setCodeError] = useState<string | null>(null);
+
   // Enquanto não há conexão real, a tela segue mostrando os participantes de
   // demonstração. Conectado, passa a refletir quem está de fato na sala.
   const displayParticipants: VoiceParticipant[] = isLive
     ? voice.participants
     : voiceRoom.participants;
+
+  const enterRoom = (code: string) => {
+    setActiveRoomCode(code);
+    storageService.saveLastRoomCode(code);
+    setCodeInput('');
+    setCodeError(null);
+  };
+
+  const handleCreateRoom = () => {
+    enterRoom(generateRoomCode());
+  };
+
+  const handleJoinByCode = (e: React.FormEvent) => {
+    e.preventDefault();
+    const normalized = normalizeRoomCode(codeInput);
+    if (!isJoinableRoomCode(normalized)) {
+      setCodeError('Código inválido. Confira com quem te passou.');
+      return;
+    }
+    enterRoom(normalized);
+  };
 
   const handleToggleLive = async () => {
     if (isLive) {
@@ -64,7 +106,7 @@ export const ConvoyVoiceView: React.FC<ConvoyVoiceViewProps> = ({
       return;
     }
     await voice.connect({
-      roomCode: voiceRoom.code,
+      roomCode: activeRoomCode,
       identity: `piloto-${Math.random().toString(36).slice(2, 8)}`,
       displayName: 'Você (Piloto)',
     });
@@ -136,7 +178,7 @@ export const ConvoyVoiceView: React.FC<ConvoyVoiceViewProps> = ({
   };
 
   const handleCopyInviteLink = () => {
-    const url = `${window.location.origin}/?room=${voiceRoom.code}`;
+    const url = `${window.location.origin}/?sala=${activeRoomCode}`;
     navigator.clipboard.writeText(url);
     setCopiedLink(true);
     setTimeout(() => setCopiedLink(false), 2000);
@@ -190,7 +232,7 @@ export const ConvoyVoiceView: React.FC<ConvoyVoiceViewProps> = ({
                 {voice.error
                   ? voice.error
                   : isLive
-                    ? `Canal ${voiceRoom.code} • microfone ${voice.isMuted ? 'mudo' : 'aberto'}`
+                    ? `Canal ${activeRoomCode} • microfone ${voice.isMuted ? 'mudo' : 'aberto'}`
                     : 'Lista abaixo em modo demonstração até conectar.'}
               </p>
             </div>
@@ -225,6 +267,55 @@ export const ConvoyVoiceView: React.FC<ConvoyVoiceViewProps> = ({
           </div>
         </div>
 
+        {/* Seleção de comboio — some enquanto a conversa está ativa, para não
+            oferecer troca de sala com o piloto em movimento. */}
+        {!isLive && (
+          <div className="mt-4 pt-3 border-t border-slate-800/80 space-y-3">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="min-w-0">
+                <p className="text-[11px] text-slate-400 uppercase tracking-wider font-mono">
+                  Comboio
+                </p>
+                <p className="text-xl font-extrabold text-amber-400 font-mono tracking-widest">
+                  {activeRoomCode}
+                </p>
+              </div>
+              <button
+                onClick={handleCreateRoom}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition active:scale-95"
+              >
+                <Plus className="w-4 h-4 text-amber-400" />
+                Criar novo
+              </button>
+            </div>
+
+            <form onSubmit={handleJoinByCode} className="flex items-center gap-2">
+              <input
+                value={codeInput}
+                onChange={(e) => {
+                  setCodeInput(e.target.value);
+                  setCodeError(null);
+                }}
+                placeholder="Entrar com código (ex: K7M-3PQ)"
+                inputMode="text"
+                autoCapitalize="characters"
+                autoCorrect="off"
+                spellCheck={false}
+                className="flex-1 min-w-0 px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-slate-100 text-sm font-mono uppercase placeholder:font-sans placeholder:normal-case placeholder:text-slate-500 focus:outline-none focus:border-amber-500/60"
+              />
+              <button
+                type="submit"
+                disabled={!codeInput.trim()}
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-200 text-xs font-bold border border-slate-700 transition active:scale-95"
+              >
+                Entrar
+              </button>
+            </form>
+
+            {codeError && <p className="text-[11px] text-red-400">{codeError}</p>}
+          </div>
+        )}
+
         {/* Navegadores bloqueiam áudio até um gesto do usuário. */}
         {voice.needsAudioUnlock && (
           <button
@@ -250,7 +341,7 @@ export const ConvoyVoiceView: React.FC<ConvoyVoiceViewProps> = ({
                   {voiceRoom.name}
                 </h2>
                 <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold shrink-0">
-                  CANAL {voiceRoom.code}
+                  CANAL {activeRoomCode}
                 </span>
               </div>
               <p className="text-xs text-slate-400 mt-0.5 truncate">

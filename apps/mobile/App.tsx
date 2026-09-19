@@ -6,14 +6,21 @@ import {
   Pressable,
   SafeAreaView,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { registerGlobals } from '@livekit/react-native';
+import {
+  generateRoomCode,
+  isJoinableRoomCode,
+  normalizeRoomCode,
+} from '@motorede/shared';
 import { useVoiceConnection } from './src/hooks/useVoiceConnection';
-import { DEV_ROOM_CODE, TOKEN_ENDPOINT } from './src/config';
+import { DEV_ROOM_CODE, TOKEN_ENDPOINT, WEB_APP_URL } from './src/config';
 
 // Instala as APIs de WebRTC no ambiente do React Native. Precisa rodar uma vez,
 // antes de qualquer uso do LiveKit.
@@ -44,16 +51,44 @@ async function requestMicrophonePermission(): Promise<boolean> {
 }
 
 export default function App() {
-  // Nada de manter a tela acesa: o teste é justamente bloquear o aparelho e
-  // verificar se o áudio continua.
+  // Nada de manter a tela acesa: bloquear o aparelho e seguir conversando é
+  // justamente o comportamento que o app precisa sustentar.
   const [permissionDenied, setPermissionDenied] = useState(false);
-  const voice = useVoiceConnection(TOKEN_ENDPOINT);
 
+  // O comboio ativo vive apenas em memória. Persistir exigiria AsyncStorage,
+  // que é módulo nativo e obrigaria um novo build a cada ajuste — não vale o
+  // custo agora. Entra junto com o Supabase, quando houver conta de usuário.
+  const [activeRoomCode, setActiveRoomCode] = useState(DEV_ROOM_CODE);
+  const [codeInput, setCodeInput] = useState('');
+  const [codeError, setCodeError] = useState<string | null>(null);
+
+  const voice = useVoiceConnection(TOKEN_ENDPOINT);
   const isLive = voice.status === 'connected' || voice.status === 'reconnecting';
 
   useEffect(() => {
     void requestMicrophonePermission().then((ok) => setPermissionDenied(!ok));
   }, []);
+
+  const enterRoom = (code: string) => {
+    setActiveRoomCode(code);
+    setCodeInput('');
+    setCodeError(null);
+  };
+
+  const handleJoinByCode = () => {
+    const normalized = normalizeRoomCode(codeInput);
+    if (!isJoinableRoomCode(normalized)) {
+      setCodeError('Código inválido. Confira com quem te passou.');
+      return;
+    }
+    enterRoom(normalized);
+  };
+
+  const handleShare = async () => {
+    await Share.share({
+      message: `Entra no meu comboio no MotoRede: ${WEB_APP_URL}/?sala=${activeRoomCode}\n\nCódigo: ${activeRoomCode}`,
+    });
+  };
 
   const handleToggle = async () => {
     if (isLive) {
@@ -66,7 +101,7 @@ export default function App() {
       return;
     }
     await voice.connect({
-      roomCode: DEV_ROOM_CODE,
+      roomCode: activeRoomCode,
       identity: `piloto-${Math.random().toString(36).slice(2, 8)}`,
       displayName: 'Piloto (app)',
     });
@@ -94,7 +129,7 @@ export default function App() {
       <StatusBar style="light" />
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.title}>MotoRede</Text>
-        <Text style={styles.subtitle}>Comboio por voz · canal {DEV_ROOM_CODE}</Text>
+        <Text style={styles.subtitle}>Comboio por voz</Text>
 
         <View style={styles.card}>
           <View style={styles.statusRow}>
@@ -113,6 +148,19 @@ export default function App() {
             </Text>
           )}
 
+          <View style={styles.roomRow}>
+            <View style={styles.roomInfo}>
+              <Text style={styles.roomLabel}>COMBOIO</Text>
+              <Text style={styles.roomCode}>{activeRoomCode}</Text>
+            </View>
+            <Pressable
+              onPress={handleShare}
+              style={({ pressed }) => [styles.smallButton, pressed && styles.buttonPressed]}
+            >
+              <Text style={styles.smallButtonText}>Convidar</Text>
+            </Pressable>
+          </View>
+
           <Pressable
             onPress={handleToggle}
             disabled={voice.status === 'connecting'}
@@ -123,7 +171,7 @@ export default function App() {
             ]}
           >
             <Text style={[styles.buttonText, isLive && styles.buttonTextLeave]}>
-              {isLive ? 'Sair do canal' : 'Entrar no canal'}
+              {isLive ? 'Sair do comboio' : 'Entrar no comboio'}
             </Text>
           </Pressable>
 
@@ -143,9 +191,58 @@ export default function App() {
           )}
         </View>
 
+        {/* Trocar de comboio some durante a conversa: não se oferece isso a
+            alguém pilotando. */}
+        {!isLive && (
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>Trocar de comboio</Text>
+
+            <View style={styles.joinRow}>
+              <TextInput
+                value={codeInput}
+                onChangeText={(t) => {
+                  setCodeInput(t);
+                  setCodeError(null);
+                }}
+                placeholder="Código (ex: K7M-3PQ)"
+                placeholderTextColor={COLORS.muted}
+                autoCapitalize="characters"
+                autoCorrect={false}
+                style={styles.input}
+                onSubmitEditing={handleJoinByCode}
+                returnKeyType="go"
+              />
+              <Pressable
+                onPress={handleJoinByCode}
+                disabled={!codeInput.trim()}
+                style={({ pressed }) => [
+                  styles.smallButton,
+                  !codeInput.trim() && styles.disabled,
+                  pressed && styles.buttonPressed,
+                ]}
+              >
+                <Text style={styles.smallButtonText}>Entrar</Text>
+              </Pressable>
+            </View>
+
+            {codeError && <Text style={styles.error}>{codeError}</Text>}
+
+            <Pressable
+              onPress={() => enterRoom(generateRoomCode())}
+              style={({ pressed }) => [
+                styles.button,
+                styles.buttonSecondary,
+                pressed && styles.buttonPressed,
+              ]}
+            >
+              <Text style={styles.buttonSecondaryText}>Criar comboio novo</Text>
+            </Pressable>
+          </View>
+        )}
+
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>
-            Integrantes no comboio ({voice.participants.length})
+            Integrantes ({voice.participants.length})
           </Text>
 
           {voice.participants.length === 0 && (
@@ -155,16 +252,10 @@ export default function App() {
           {voice.participants.map((p) => (
             <View key={p.id} style={styles.participantRow}>
               <View
-                style={[
-                  styles.avatar,
-                  p.isSpeaking && { backgroundColor: COLORS.accent },
-                ]}
+                style={[styles.avatar, p.isSpeaking && { backgroundColor: COLORS.accent }]}
               >
                 <Text
-                  style={[
-                    styles.avatarText,
-                    p.isSpeaking && { color: COLORS.background },
-                  ]}
+                  style={[styles.avatarText, p.isSpeaking && { color: COLORS.background }]}
                 >
                   {p.name.charAt(0).toUpperCase()}
                 </Text>
@@ -181,11 +272,6 @@ export default function App() {
             </View>
           ))}
         </View>
-
-        <Text style={styles.hint}>
-          Teste principal: entre no canal, bloqueie a tela e continue falando. O áudio
-          precisa seguir funcionando — é justamente o que o navegador não faz.
-        </Text>
       </ScrollView>
     </SafeAreaView>
   );
@@ -208,15 +294,55 @@ const styles = StyleSheet.create({
   dot: { width: 10, height: 10, borderRadius: 5 },
   statusText: { color: COLORS.text, fontSize: 14, fontWeight: '700', flex: 1 },
   error: { color: COLORS.danger, fontSize: 12, lineHeight: 17 },
+  roomRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  roomInfo: { flex: 1 },
+  roomLabel: { color: COLORS.muted, fontSize: 10, fontWeight: '700', letterSpacing: 1.5 },
+  roomCode: {
+    color: COLORS.accent,
+    fontSize: 24,
+    fontWeight: '800',
+    letterSpacing: 3,
+    fontFamily: Platform.select({ android: 'monospace', default: undefined }),
+  },
+  joinRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  input: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    color: COLORS.text,
+    fontSize: 14,
+  },
   button: { borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
   buttonJoin: { backgroundColor: COLORS.accent },
-  buttonLeave: { backgroundColor: 'rgba(248,113,113,0.15)', borderWidth: 1, borderColor: 'rgba(248,113,113,0.3)' },
-  buttonSecondary: { backgroundColor: '#1e293b' },
+  buttonLeave: {
+    backgroundColor: 'rgba(248,113,113,0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(248,113,113,0.3)',
+  },
+  buttonSecondary: { backgroundColor: COLORS.border },
+  smallButton: {
+    backgroundColor: COLORS.border,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  smallButtonText: { color: COLORS.text, fontSize: 12, fontWeight: '700' },
+  disabled: { opacity: 0.4 },
   buttonPressed: { opacity: 0.7 },
   buttonText: { color: COLORS.background, fontSize: 14, fontWeight: '800' },
   buttonTextLeave: { color: COLORS.danger },
   buttonSecondaryText: { color: COLORS.text, fontSize: 13, fontWeight: '700' },
-  sectionTitle: { color: COLORS.text, fontSize: 12, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1 },
+  sectionTitle: {
+    color: COLORS.text,
+    fontSize: 12,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
   muted: { color: COLORS.muted, fontSize: 12 },
   participantRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   avatar: {
@@ -230,5 +356,4 @@ const styles = StyleSheet.create({
   avatarText: { color: COLORS.text, fontWeight: '800' },
   participantInfo: { flex: 1 },
   participantName: { color: COLORS.text, fontSize: 14, fontWeight: '600' },
-  hint: { color: COLORS.muted, fontSize: 12, lineHeight: 18, paddingHorizontal: 4 },
 });

@@ -34,6 +34,7 @@ const STORAGE_KEYS = {
   COMMUNITY_SYMPTOMS: 'motorede_community_symptoms',
   MY_COUPONS: 'motorede_my_coupons',
   CONSUMABLES_CUSTOM: 'motorede_consumables_custom',
+  LAST_ROOM_CODE: 'motorede_last_room_code',
 };
 
 // Seed Motorcycle: Honda CB 500X 2022
@@ -460,6 +461,17 @@ export { DIAGNOSTIC_DECISION_TREE, calculateConsumablesStatus } from '@motorede/
  * Storage Service Helper
  */
 export const storageService = {
+  /** Último comboio em que o piloto entrou, para reabrir direto nele. */
+  getLastRoomCode(): string | null {
+    if (typeof window === 'undefined') return null;
+    return localStorage.getItem(STORAGE_KEYS.LAST_ROOM_CODE);
+  },
+
+  saveLastRoomCode(code: string): void {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(STORAGE_KEYS.LAST_ROOM_CODE, code);
+  },
+
   getCurrentUser(): UserProfile | null {
     if (typeof window === 'undefined') return DEFAULT_USERS[0];
     const raw = localStorage.getItem(STORAGE_KEYS.CURRENT_USER);
