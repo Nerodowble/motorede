@@ -365,3 +365,39 @@ também precisa de TLS. Isso é exatamente a fase amigos já planejada:
 Alternativa para teste em moto de verdade: build **preview** (não `development`)
 embute o JavaScript e roda sem Metro — os amigos instalam o app nativo, que é o
 produto real. Mas também depende do endpoint de token ser público.
+
+---
+
+## 15. Ressalva à ideia 11: a web aguentou em produção
+
+**Status:** `em aberto` — medição isolada, não generalizável
+**Data:** 2026-09-18
+
+Testando o app web já em produção (`https://motorede-web.vercel.app`, LiveKit
+Cloud), a voz **continuou funcionando com a tela do celular bloqueada** — o que
+contradiz a [ideia 11](#11-confirmado-na-prática-web-não-sustenta-voz-em-segundo-plano),
+medida no mesmo aparelho contra o servidor local.
+
+**O que mudou entre os dois testes, e não foi isolado:**
+- `http://` num IP de rede, com exceção no `chrome://flags` → `https://` de verdade
+- servidor LiveKit local → LiveKit Cloud
+- duração e direção do áudio testadas não foram controladas de forma idêntica
+
+A hipótese mais provável é a origem HTTPS legítima: o navegador trata uma origem
+segura de forma diferente na gestão de ciclo de vida da página, e o app é
+instalável como PWA.
+
+**Por que isso NÃO muda a decisão do app nativo:**
+
+Funcionar num aparelho não é funcionar. Esse comportamento varia com fabricante,
+versão de Android e perfil de bateria — Xiaomi e Samsung são notoriamente
+agressivas em encerrar processos em segundo plano —, e o iOS é bem mais restritivo
+que o Android neste ponto. Num app usado em moto, "funciona na maioria dos
+celulares" não serve: o piloto descobre a falha na estrada, de luva, a 90 km/h.
+
+**O que isso muda, de positivo:** a web é melhor do que assumíamos para o público
+que só quer experimentar. Vale como porta de entrada, não como produto.
+
+**Para fechar a questão** seria preciso testar em aparelhos de fabricantes
+diferentes, com tempo controlado (5+ minutos) e verificando as duas direções do
+áudio separadamente — falar e ouvir se comportam de formas distintas.
