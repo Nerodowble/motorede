@@ -11,8 +11,7 @@
     "livekit": "powershell -ExecutionPolicy Bypass -File scripts/livekit-dev.ps1",
     "dev:web": "npm run dev --workspace @motorede/web",
     "build:web": "npm run build --workspace @motorede/web",
-    "lint": "npm run check:convoy && npm run lint --workspaces --if-present",
-    "check:convoy": "node scripts/check-convoy.mjs"
+    "lint": "npm run lint --workspaces --if-present"
   },
   "overrides": {
     "react": "19.2.3",

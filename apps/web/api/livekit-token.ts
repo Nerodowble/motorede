@@ -1,13 +1,13 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { AccessToken } from 'livekit-server-sdk';
-import { canJoinConvoy, CONVOY_MAX, normalizePhone } from './_convoy';
+import { canJoinConvoy, CONVOY_MAX, normalizePhone } from '@motorede/shared';
 import {
   countParticipants,
   encodeMetadata,
   phoneFingerprint,
   roomService,
   verifyGoogleUser,
-} from './_livekit';
+} from './_livekit.js';
 
 /**
  * Emissão de token do LiveKit.
