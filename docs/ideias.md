@@ -401,3 +401,62 @@ que só quer experimentar. Vale como porta de entrada, não como produto.
 **Para fechar a questão** seria preciso testar em aparelhos de fabricantes
 diferentes, com tempo controlado (5+ minutos) e verificando as duas direções do
 áudio separadamente — falar e ouvir se comportam de formas distintas.
+
+---
+
+## 16. Comboio de 8 e trânsito do admin
+
+**Status:** `decidido` — próxima funcionalidade depois da limpeza de tela
+**Data:** 2026-09-19
+
+Limite de **8 pilotos por comboio**, mais **2 vagas fantasma** reservadas a
+administradores.
+
+**Por que 8:** cada participante a mais multiplica o tráfego, e 8 é onde a
+qualidade ainda se sustenta em 4G de estrada. Mas o motivo social pesa igual —
+conversa por voz com mais de 8 pessoas deixa de funcionar; ninguém fala.
+
+**As vagas fantasma:** num evento com 300 pessoas divididas em dezenas de
+comboios, o administrador precisa circular para passar recados. Sem a reserva,
+ele não conseguiria entrar num grupo já cheio. Com ela, entra sem estourar o
+limite real.
+
+Regras: o admin fica em **um comboio por vez** (sai de um para entrar em outro),
+e pode favoritar comboios — inclusive o próprio — para voltar rápido.
+
+**Não precisa de banco:** a API de servidor do LiveKit lista as salas ativas com
+a contagem de participantes. O navegador de comboios sai disso, e o limite é
+verificado no endpoint de token antes de assinar. Favoritos ficam locais.
+
+**Dependência:** identificar admin exige **login obrigatório**. Enquanto
+`REQUIRE_AUTH` estiver desligado, qualquer um se declararia admin e furaria o
+limite. Ou seja, esta funcionalidade força concluir o login no app nativo.
+
+---
+
+## 17. Módulo de Eventos
+
+**Status:** `em aberto` — desenho aprovado, depende de banco
+**Data:** 2026-09-19
+
+Ambiente separado, em configurações, onde um organizador monta um evento antes
+da rota acontecer:
+
+- Dados do evento, destino e informações gerais
+- Tamanho dos comboios
+- **Link de convite** para os participantes confirmarem presença
+- Com as confirmações, o sistema calcula **quantos comboios criar**
+- O organizador designa até **5 sub-administradores** para ajudar nos grupos
+
+**Por que importa:** resolve o que o código de comboio sozinho não resolve. Hoje
+a divisão em grupos de 8 aconteceria no improviso, no estacionamento. Com o
+evento montado antes, as pessoas chegam já sabendo em qual comboio entram.
+
+**Aqui o banco passa a ser necessário** — e é a primeira vez no projeto que isso
+acontece de verdade. Evento, confirmações e lista de sub-admins precisam
+persistir e ser vistos por várias pessoas. Autenticação não precisou
+([ideia 15](#15-ressalva-à-ideia-11-a-web-aguentou-em-produção) e o login com
+Google resolveram sem), mas eventos precisam.
+
+**Também justifica o cadastro de telefone:** associar um contato à conta faz
+sentido no contexto de evento e de socorro — não como dado solto no perfil.
