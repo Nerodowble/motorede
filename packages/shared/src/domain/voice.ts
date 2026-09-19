@@ -1,4 +1,4 @@
-import type { VoiceParticipant } from '../types';
+import type { VoiceParticipant } from '../types.js';
 
 /**
  * Forma mínima de um participante vinda da camada de mídia.

@@ -1,4 +1,4 @@
-import type { DiagnosticDecisionStep } from '../types';
+import type { DiagnosticDecisionStep } from '../types.js';
 
 /**
  * Árvore de triagem mecânica de beira de estrada.

@@ -9,3 +9,6 @@ coverage/
 
 # Binários de ferramentas (baixados por scripts/, não versionados)
 tools/
+
+# Saída compilada do pacote compartilhado
+packages/shared/dist/

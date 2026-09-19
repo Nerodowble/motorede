@@ -1,4 +1,4 @@
-import type { ConsumableCategory, ConsumableStatus, Motorcycle } from '../types';
+import type { ConsumableCategory, ConsumableStatus, Motorcycle } from '../types.js';
 
 /**
  * Ajuste manual do piloto para um consumível específico.
