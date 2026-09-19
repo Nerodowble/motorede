@@ -52,11 +52,23 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
   if (req.method === 'GET') {
     return responder(200, {
       rede: storeConfigured() ? 'ligada' : 'desligada',
-      // Só o prefixo, nunca o valor: serve para conferir que a integração da
-      // Vercel criou as variáveis com o nome que o código encontra.
+      // Só o NOME das variáveis, nunca o valor: serve para conferir que a
+      // integração da Vercel criou credenciais com um nome que o código acha.
       variaveis: Object.keys(process.env)
         .filter((k) => k.endsWith('_REST_API_URL') || k.endsWith('_REST_API_TOKEN'))
         .sort(),
+      // Quem está servindo esta resposta. Sem isto, "as variáveis não chegam"
+      // e "o deploy novo não subiu" e "é outro projeto" são indistinguíveis —
+      // e a gente fica tentando adivinhar qual dos três é, como já aconteceu.
+      build: {
+        projeto: process.env.VERCEL_PROJECT_NAME || null,
+        ambiente: process.env.VERCEL_ENV || 'fora da Vercel',
+        commit: (process.env.VERCEL_GIT_COMMIT_SHA || '').slice(0, 7) || null,
+        // Quantas variáveis de qualquer tipo existem: se vier um número baixo
+        // demais, o problema não é o nome do prefixo, é que nada foi ligado.
+        totalDeVariaveis: Object.keys(process.env).length,
+        comPrefixoKv: Object.keys(process.env).filter((k) => k.startsWith('KV_')).sort(),
+      },
     });
   }
 
