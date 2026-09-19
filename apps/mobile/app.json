@@ -20,7 +20,8 @@
           "voip",
           "location"
         ]
-      }
+      },
+      "bitcode": false
     },
     "android": {
       "package": "br.com.motorede.app",
@@ -43,7 +44,8 @@
         "android.permission.FOREGROUND_SERVICE_MICROPHONE",
         "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
         "android.permission.ACCESS_FINE_LOCATION",
-        "android.permission.ACCESS_COARSE_LOCATION"
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.BLUETOOTH"
       ],
       "blockedPermissions": [
         "android.permission.CAMERA",
@@ -77,6 +79,12 @@
     ],
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "038193cd-0891-4a16-8857-febb8c340206"
+      }
+    },
+    "owner": "willianvidallima"
   }
 }
