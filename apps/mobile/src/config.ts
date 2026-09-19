@@ -54,7 +54,8 @@ export const GOOGLE_CLIENT_ID_WEB =
  * É seguro: Client ID é público por natureza. O que nunca pode entrar aqui é o
  * Client Secret, porque qualquer um abre um APK e o lê.
  */
-export const GOOGLE_CLIENT_ID_ANDROID = '';
+export const GOOGLE_CLIENT_ID_ANDROID =
+  '689939201177-knfagegeg05cl1v1m0h3h0cqssjcc4pc.apps.googleusercontent.com';
 
 /** Comboio inicial. O piloto troca pela tela; serve só como ponto de partida. */
 export const DEV_ROOM_CODE = 'SERRA-88';
