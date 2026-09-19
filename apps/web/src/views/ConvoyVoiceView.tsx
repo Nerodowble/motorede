@@ -29,6 +29,7 @@ import {
 import { storageService } from '../services/storage';
 import { audioEngine } from '../services/audioEngine';
 import { getGoogleMapsNavigationUrl, getWazeNavigationUrl } from '../services/geolocation';
+import QRCode from 'qrcode';
 import { useVoiceConnection } from '../hooks/useVoiceConnection';
 
 interface ConvoyVoiceViewProps {
@@ -72,6 +73,35 @@ export const ConvoyVoiceView: React.FC<ConvoyVoiceViewProps> = ({
   });
   const [codeInput, setCodeInput] = useState('');
   const [codeError, setCodeError] = useState<string | null>(null);
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+
+  const inviteUrl = `${window.location.origin}/?sala=${activeRoomCode}`;
+
+  // Detecção simples de celular: basta para decidir se vale oferecer o app.
+  const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+  // Gera o QR de verdade quando o modal abre ou o comboio muda.
+  useEffect(() => {
+    if (!showQRModal) return;
+    let cancelled = false;
+
+    QRCode.toDataURL(inviteUrl, {
+      width: 512,
+      margin: 1,
+      errorCorrectionLevel: 'M',
+      color: { dark: '#0f172a', light: '#ffffff' },
+    })
+      .then((url) => {
+        if (!cancelled) setQrDataUrl(url);
+      })
+      .catch(() => {
+        if (!cancelled) setQrDataUrl(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [showQRModal, inviteUrl]);
 
   // Enquanto não há conexão real, a tela segue mostrando os participantes de
   // demonstração. Conectado, passa a refletir quem está de fato na sala.
@@ -178,8 +208,7 @@ export const ConvoyVoiceView: React.FC<ConvoyVoiceViewProps> = ({
   };
 
   const handleCopyInviteLink = () => {
-    const url = `${window.location.origin}/?sala=${activeRoomCode}`;
-    navigator.clipboard.writeText(url);
+    navigator.clipboard.writeText(inviteUrl);
     setCopiedLink(true);
     setTimeout(() => setCopiedLink(false), 2000);
   };
@@ -313,6 +342,19 @@ export const ConvoyVoiceView: React.FC<ConvoyVoiceViewProps> = ({
             </form>
 
             {codeError && <p className="text-[11px] text-red-400">{codeError}</p>}
+
+            {/* Quem abriu o convite no celular provavelmente quer o app, que é
+                onde a voz sobrevive à tela bloqueada. Só aparece em celular:
+                num desktop o link não levaria a lugar nenhum. */}
+            {isMobileDevice && (
+              <a
+                href={`motorede://sala/${activeRoomCode}`}
+                className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-amber-500/10 text-amber-300 border border-amber-500/30 text-xs font-bold hover:bg-amber-500/20 transition"
+              >
+                <Smartphone className="w-4 h-4" />
+                Abrir no app MotoRede
+              </a>
+            )}
           </div>
         )}
 
@@ -617,36 +659,22 @@ export const ConvoyVoiceView: React.FC<ConvoyVoiceViewProps> = ({
               Aponte a câmera do celular para entrar diretamente na sala de voz:
             </p>
 
-            {/* Generated High-Contrast SVG QR code representation */}
             <div className="bg-white p-4 rounded-xl inline-block mx-auto mb-4">
-              <svg className="w-48 h-48" viewBox="0 0 100 100" fill="#0f172a">
-                {/* Corner markers */}
-                <rect x="5" y="5" width="25" height="25" fill="#0f172a" />
-                <rect x="8" y="8" width="19" height="19" fill="#ffffff" />
-                <rect x="11" y="11" width="13" height="13" fill="#0f172a" />
-
-                <rect x="70" y="5" width="25" height="25" fill="#0f172a" />
-                <rect x="73" y="8" width="19" height="19" fill="#ffffff" />
-                <rect x="76" y="11" width="13" height="13" fill="#0f172a" />
-
-                <rect x="5" y="70" width="25" height="25" fill="#0f172a" />
-                <rect x="8" y="73" width="19" height="19" fill="#ffffff" />
-                <rect x="11" y="76" width="13" height="13" fill="#0f172a" />
-
-                {/* Data blocks */}
-                <rect x="35" y="10" width="8" height="8" />
-                <rect x="48" y="15" width="8" height="8" />
-                <rect x="40" y="35" width="20" height="8" />
-                <rect x="15" y="45" width="10" height="10" />
-                <rect x="75" y="45" width="12" height="8" />
-                <rect x="45" y="55" width="12" height="12" />
-                <rect x="65" y="65" width="8" height="16" />
-                <rect x="40" y="75" width="10" height="10" />
-              </svg>
+              {qrDataUrl ? (
+                <img
+                  src={qrDataUrl}
+                  alt={`QR Code do comboio ${activeRoomCode}`}
+                  className="w-48 h-48"
+                />
+              ) : (
+                <div className="w-48 h-48 flex items-center justify-center text-slate-400 text-xs">
+                  Gerando...
+                </div>
+              )}
             </div>
 
             <p className="font-mono text-sm font-bold text-amber-400 mb-4 tracking-wider">
-              CÓDIGO: {voiceRoom.code}
+              CÓDIGO: {activeRoomCode}
             </p>
 
             <div className="flex gap-2">

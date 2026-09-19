@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Linking,
   PermissionsAndroid,
   Platform,
   Pressable,
@@ -67,6 +68,26 @@ export default function App() {
 
   useEffect(() => {
     void requestMicrophonePermission().then((ok) => setPermissionDenied(!ok));
+  }, []);
+
+  // Convite por link: motorede://sala/K7M-3PQ ou motorede://?sala=K7M-3PQ.
+  // O scheme já está declarado no app.json e embutido no APK, então isto é só
+  // JavaScript — recarrega pelo Metro, sem build novo.
+  useEffect(() => {
+    const applyUrl = (url: string | null) => {
+      if (!url) return;
+      const match = url.match(/(?:[?&]sala=|sala\/)([^&?/#]+)/i);
+      if (!match) return;
+      const normalized = normalizeRoomCode(decodeURIComponent(match[1]));
+      if (isJoinableRoomCode(normalized)) enterRoom(normalized);
+    };
+
+    // App aberto pelo link a partir do estado encerrado.
+    void Linking.getInitialURL().then(applyUrl);
+
+    // App já estava aberto quando o link foi tocado.
+    const sub = Linking.addEventListener('url', ({ url }) => applyUrl(url));
+    return () => sub.remove();
   }, []);
 
   const enterRoom = (code: string) => {
