@@ -13,6 +13,10 @@ import {
   VOICE_PUBLISH_DEFAULTS,
   type VoiceParticipant,
 } from '@motorede/shared';
+import {
+  startVoiceForegroundService,
+  stopVoiceForegroundService,
+} from '../services/foregroundService';
 
 export type VoiceConnectionStatus =
   | 'disconnected'
@@ -87,8 +91,13 @@ export function useVoiceConnection(tokenEndpoint: string): UseVoiceConnection {
 
         const { token, url } = (await response.json()) as { token: string; url: string };
 
-        // Prepara a sessão de áudio do sistema ANTES de conectar. É o que
-        // sustenta a captura com a tela bloqueada e roteia para o fone.
+        // Sobe o serviço em primeiro plano ANTES de conectar. O Android exige
+        // que ele seja iniciado enquanto o app ainda está visível; começar
+        // depois, com a tela já apagada, é recusado pelo sistema.
+        await startVoiceForegroundService(roomCode);
+
+        // Prepara a sessão de áudio do sistema. É o que roteia para o fone
+        // bluetooth e mantém o áudio ativo em segundo plano.
         await AudioSession.startAudioSession();
 
         const room = new Room({
@@ -119,6 +128,7 @@ export function useVoiceConnection(tokenEndpoint: string): UseVoiceConnection {
             setParticipants([]);
             roomRef.current = null;
             void AudioSession.stopAudioSession();
+            void stopVoiceForegroundService();
           });
 
         await room.connect(url, token);
@@ -134,6 +144,7 @@ export function useVoiceConnection(tokenEndpoint: string): UseVoiceConnection {
         setStatus('error');
         roomRef.current = null;
         await AudioSession.stopAudioSession();
+        await stopVoiceForegroundService();
       }
     },
     [syncParticipants, tokenEndpoint]
@@ -147,6 +158,7 @@ export function useVoiceConnection(tokenEndpoint: string): UseVoiceConnection {
     setStatus('disconnected');
     setParticipants([]);
     await AudioSession.stopAudioSession();
+    await stopVoiceForegroundService();
   }, []);
 
   const setMuted = useCallback(async (muted: boolean) => {
@@ -161,6 +173,7 @@ export function useVoiceConnection(tokenEndpoint: string): UseVoiceConnection {
       void roomRef.current?.disconnect();
       roomRef.current = null;
       void AudioSession.stopAudioSession();
+      void stopVoiceForegroundService();
     };
   }, []);
 

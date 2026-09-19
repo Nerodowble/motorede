@@ -74,7 +74,8 @@
             "deploymentTarget": "16.4"
           }
         }
-      ]
+      ],
+      "./plugins/withVoiceForegroundService"
     ],
     "web": {
       "favicon": "./assets/favicon.png"

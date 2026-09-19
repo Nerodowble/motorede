@@ -14,6 +14,7 @@
     "@livekit/react-native": "^2.12.0",
     "@livekit/react-native-webrtc": "144.1.2",
     "@motorede/shared": "*",
+    "@supersami/rn-foreground-service": "^2.2.5",
     "expo": "~57.0.24",
     "expo-build-properties": "~57.0.21",
     "expo-dev-client": "~57.0.19",

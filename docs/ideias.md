@@ -275,9 +275,26 @@ São **duas** permissões de serviço, e faltar uma quebra metade do produto:
 | `FOREGROUND_SERVICE_MICROPHONE` | você não consegue falar |
 | `FOREGROUND_SERVICE_MEDIA_PLAYBACK` | você não consegue ouvir os outros |
 
-**Não precisamos de biblioteca extra:** desde a versão 2.4 o SDK do LiveKit
-implementa o serviço internamente. Ele não aparece no manifesto gerado pelo
-`expo prebuild` porque vem do SDK Android e entra na mesclagem durante o build.
+**CORRIGIDO (2026-09-18):** eu havia registrado aqui que o SDK do LiveKit
+implementava o serviço internamente desde a 2.4. **Isso está errado.** A busca no
+código mostra que o único serviço nesses pacotes é o `MediaProjectionService`, do
+`react-native-webrtc`, que serve para **captura de tela** — não de microfone.
+
+O erro apareceu no primeiro teste no aparelho: ao bloquear a tela, o LiveKit
+derrubou a conexão com `ConnectionError / reasonName: WebSocket`. O Android havia
+suspendido o processo, o JavaScript parou de executar e o WebSocket de sinalização
+morreu junto.
+
+**A solução:** `@supersami/rn-foreground-service` (o mesmo que o app de exemplo do
+LiveKit usa) mais um plugin de configuração próprio em
+`apps/mobile/plugins/withVoiceForegroundService.js`. O pacote tenta editar o
+AndroidManifest por um script de postinstall, o que não funciona com Expo — o
+manifesto é regenerado a cada prebuild e a edição se perde. O plugin declara os
+dois serviços com `android:foregroundServiceType="microphone|mediaPlayback"`.
+
+**Detalhe de ordem que importa:** o serviço tem de ser iniciado **antes** de
+conectar, enquanto o app ainda está visível. O Android recusa iniciar um serviço em
+primeiro plano quando a tela já está apagada.
 
 **`audioType: "communication"`** no plugin do LiveKit: faz o sistema tratar como
 chamada de voz em vez de música. Muda o cancelamento de eco e, principalmente, o
