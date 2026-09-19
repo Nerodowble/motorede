@@ -40,6 +40,8 @@ interface ConvoyVoiceViewProps {
   onUpdateVoiceRoom: (updated: Partial<VoiceRoom>) => void;
   isBackgroundAudioActive: boolean;
   onToggleBackgroundSession: (active: boolean) => void;
+  /** Avisa quando o piloto de fato conversou com alguém. */
+  onConversationHappened?: () => void;
 }
 
 export const ConvoyVoiceView: React.FC<ConvoyVoiceViewProps> = ({
@@ -47,6 +49,7 @@ export const ConvoyVoiceView: React.FC<ConvoyVoiceViewProps> = ({
   onUpdateVoiceRoom,
   isBackgroundAudioActive,
   onToggleBackgroundSession,
+  onConversationHappened,
 }) => {
   const [showQRModal, setShowQRModal] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
@@ -107,6 +110,11 @@ export const ConvoyVoiceView: React.FC<ConvoyVoiceViewProps> = ({
       cancelled = true;
     };
   }, [showQRModal, inviteUrl]);
+
+  // Conversa de verdade é ter outra pessoa na sala — entrar sozinho não conta.
+  useEffect(() => {
+    if (isLive && voice.participants.length > 1) onConversationHappened?.();
+  }, [isLive, voice.participants.length, onConversationHappened]);
 
   useEffect(() => {
     if (!auth.user) auth.renderButton(googleButtonRef.current);

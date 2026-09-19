@@ -1,11 +1,17 @@
 import React, { useState } from 'react';
 import { usePWAInstall } from '../hooks/usePWAInstall';
+import { storageService } from '../services/storage';
 import { Download, Share2, Smartphone, X } from 'lucide-react';
 
 export const PWAInstallBanner: React.FC = () => {
   const { isInstallable, isInstalled, isIOS, install } = usePWAInstall();
   const [showIOSGuide, setShowIOSGuide] = useState(false);
-  const [dismissed, setDismissed] = useState(false);
+  const [dismissed, setDismissed] = useState(() => storageService.isInstallDismissed());
+
+  const dispensar = () => {
+    storageService.dismissInstall();
+    setDismissed(true);
+  };
 
   // If running in standalone or dismissed, hide banner
   if (isInstalled || dismissed) {
@@ -22,7 +28,7 @@ export const PWAInstallBanner: React.FC = () => {
           </span>
           <div>
             <p className="font-semibold text-slate-100">Instalar MotoRede no celular</p>
-            <p className="text-slate-400 text-[11px]">Acesso sem barra de navegador e áudio em segundo plano</p>
+            <p className="text-slate-400 text-[11px]">Abre direto da tela inicial, sem barra de navegador</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -34,7 +40,7 @@ export const PWAInstallBanner: React.FC = () => {
             Instalar
           </button>
           <button
-            onClick={() => setDismissed(true)}
+            onClick={dispensar}
             className="p-1 text-slate-400 hover:text-slate-200"
             title="Fechar"
           >
@@ -63,7 +69,7 @@ export const PWAInstallBanner: React.FC = () => {
             >
               Como Instalar
             </button>
-            <button onClick={() => setDismissed(true)} className="p-1 text-slate-500 hover:text-slate-300">
+            <button onClick={dispensar} className="p-1 text-slate-500 hover:text-slate-300">
               <X className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -82,7 +88,7 @@ export const PWAInstallBanner: React.FC = () => {
                 </button>
               </div>
               <p className="text-xs text-slate-300 mb-4 leading-relaxed">
-                Para usar o MotoRede com áudio contínuo em segundo plano e tela cheia:
+                Para abrir o MotoRede direto da tela inicial, em tela cheia:
               </p>
               <div className="space-y-2.5 text-xs">
                 <div className="flex items-start gap-2.5 p-2.5 rounded-lg bg-slate-800/70 border border-slate-700/50">

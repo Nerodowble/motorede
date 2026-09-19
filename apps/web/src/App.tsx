@@ -71,6 +71,9 @@ export default function App() {
   // Background Audio & Lockscreen State (inactive on cold boot to prevent browser autoplay blocks)
   const [isBackgroundAudioActive, setIsBackgroundAudioActive] = useState(false);
   const [isLockscreenOpen, setIsLockscreenOpen] = useState(false);
+  const [jaConversou, setJaConversou] = useState(() =>
+    storageService.hasConversationHappened()
+  );
   const [isMuted, setIsMuted] = useState(false);
 
   // Geolocation State - initialized immediately with default without waiting for GPS
@@ -340,8 +343,10 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-amber-500 selection:text-slate-950">
-      {/* PWA Install Banner (Chromium & iOS Safari instructions) */}
-      <PWAInstallBanner />
+      {/* Convite para instalar, só depois da primeira conversa de verdade.
+          Oferecer antes é pedir compromisso antes de entregar valor: a pessoa
+          ainda não sabe se o app serve para ela. */}
+      {jaConversou && <PWAInstallBanner />}
 
       {/* Primary App Header */}
       <Header
@@ -377,6 +382,10 @@ export default function App() {
         >
           {activeTab === 'convoy' && (
             <ConvoyVoiceView
+              onConversationHappened={() => {
+                storageService.markConversationHappened();
+                setJaConversou(true);
+              }}
               voiceRoom={voiceRoom}
               onUpdateVoiceRoom={(patch) => {
                 const updated = { ...voiceRoom, ...patch };

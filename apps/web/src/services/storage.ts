@@ -37,6 +37,8 @@ const STORAGE_KEYS = {
   PHONE: 'motorede_phone',
   FAVORITE_ROOMS: 'motorede_favorite_rooms',
   LOCK_WARNING_DISMISSED: 'motorede_lock_warning_dismissed',
+  HAD_CONVERSATION: 'motorede_had_conversation',
+  INSTALL_DISMISSED: 'motorede_install_dismissed',
 };
 
 // Seed Motorcycle: Honda CB 500X 2022
@@ -495,6 +497,33 @@ export const storageService = {
   dismissLockWarning(): void {
     if (typeof window === 'undefined') return;
     localStorage.setItem(STORAGE_KEYS.LOCK_WARNING_DISMISSED, 'true');
+  },
+
+  /**
+   * Marca que o piloto já conversou com alguém de verdade no comboio.
+   *
+   * É o gatilho do convite para instalar. Oferecer instalação antes disso é
+   * pedir compromisso antes de entregar valor — a pessoa ainda não sabe se o
+   * app serve para ela.
+   */
+  hasConversationHappened(): boolean {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem(STORAGE_KEYS.HAD_CONVERSATION) === 'true';
+  },
+
+  markConversationHappened(): void {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(STORAGE_KEYS.HAD_CONVERSATION, 'true');
+  },
+
+  isInstallDismissed(): boolean {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem(STORAGE_KEYS.INSTALL_DISMISSED) === 'true';
+  },
+
+  dismissInstall(): void {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(STORAGE_KEYS.INSTALL_DISMISSED, 'true');
   },
 
   /** Comboios marcados como favoritos, para o admin voltar rápido. */
