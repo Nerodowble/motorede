@@ -167,6 +167,31 @@ export const ConvoyVoiceView: React.FC<ConvoyVoiceViewProps> = ({
     setTimeout(() => setCopiedLink(false), 2000);
   };
 
+  /**
+   * Convidar alguém para o comboio.
+   *
+   * No celular usa a folha de compartilhamento do sistema, que cai direto no
+   * WhatsApp — que é por onde um convite de comboio realmente circula. Onde
+   * isso não existe, copia o link.
+   */
+  const handleShareConvoy = async () => {
+    const texto = `Entra no meu comboio no MotoRede
+
+Código: ${activeRoomCode}
+${inviteUrl}`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: 'Comboio MotoRede', text: texto, url: inviteUrl });
+        return;
+      } catch {
+        // Cancelado pelo usuário ou indisponível: segue para a cópia.
+      }
+    }
+
+    handleCopyInviteLink();
+  };
+
   const handleSaveDestination = (e: React.FormEvent) => {
     e.preventDefault();
     if (newDestName.trim()) {
@@ -316,9 +341,9 @@ export const ConvoyVoiceView: React.FC<ConvoyVoiceViewProps> = ({
                   QR
                 </button>
                 <button
-                  onClick={handleCopyInviteLink}
+                  onClick={handleShareConvoy}
                   className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition active:scale-95"
-                  title="Copiar link de convite"
+                  title="Convidar para este comboio"
                 >
                   {copiedLink ? (
                     <Check className="w-4 h-4 text-emerald-400" />
@@ -455,6 +480,33 @@ export const ConvoyVoiceView: React.FC<ConvoyVoiceViewProps> = ({
               <span className="text-[11px] text-slate-400 font-mono text-center">
                 Solte para fechar o canal
               </span>
+            </button>
+          </div>
+
+          {/* Convidar. Antes isto vivia só na seleção de comboio, que some ao
+              conectar — ou seja, sumia justamente na hora de chamar um amigo. */}
+          <div className="flex items-center gap-2 pt-1">
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] text-slate-500 uppercase tracking-wider font-mono">
+                Código do comboio
+              </p>
+              <p className="text-lg font-extrabold text-amber-400 font-mono tracking-widest">
+                {activeRoomCode}
+              </p>
+            </div>
+            <button
+              onClick={() => setShowQRModal(true)}
+              className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition active:scale-95"
+              title="QR Code do convite"
+            >
+              <QrCode className="w-4 h-4 text-amber-400" />
+            </button>
+            <button
+              onClick={handleShareConvoy}
+              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold transition active:scale-95"
+            >
+              {copiedLink ? <Check className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
+              {copiedLink ? 'Copiado' : 'Convidar'}
             </button>
           </div>
 
