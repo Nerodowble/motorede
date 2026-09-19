@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Linking,
@@ -6,41 +6,36 @@ import {
   Platform,
   Pressable,
   SafeAreaView,
-  ScrollView,
-  Share,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { registerGlobals } from '@livekit/react-native';
 import {
-  generateRoomCode,
   isJoinableRoomCode,
   normalizeRoomCode,
+  summarizeMaintenance,
+  type MaintenanceRecord,
+  type Motorcycle,
 } from '@motorede/shared';
-import { useVoiceConnection } from './src/hooks/useVoiceConnection';
-import { DEV_ROOM_CODE, TOKEN_ENDPOINT, WEB_APP_URL } from './src/config';
+import { useGoogleAuth } from './src/hooks/useGoogleAuth';
+import { LoginScreen } from './src/screens/LoginScreen';
+import { ConvoyScreen } from './src/screens/ConvoyScreen';
+import { MyMotorcycleScreen } from './src/screens/MyMotorcycleScreen';
+import { storage } from './src/services/storage';
+import { DEV_ROOM_CODE } from './src/config';
+import { COLORS } from './src/theme';
 
 // Instala as APIs de WebRTC no ambiente do React Native. Precisa rodar uma vez,
 // antes de qualquer uso do LiveKit.
 registerGlobals();
 
-const COLORS = {
-  background: '#020617',
-  surface: '#0f172a',
-  border: '#1e293b',
-  text: '#f1f5f9',
-  muted: '#94a3b8',
-  accent: '#f59e0b',
-  success: '#34d399',
-  danger: '#f87171',
-};
+type Aba = 'comboio' | 'moto';
 
-async function requestMicrophonePermission(): Promise<boolean> {
+async function pedirPermissaoMicrofone(): Promise<boolean> {
   if (Platform.OS !== 'android') return true;
-  const granted = await PermissionsAndroid.request(
+  const concedida = await PermissionsAndroid.request(
     PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
     {
       title: 'Microfone',
@@ -48,340 +43,188 @@ async function requestMicrophonePermission(): Promise<boolean> {
       buttonPositive: 'Permitir',
     }
   );
-  return granted === PermissionsAndroid.RESULTS.GRANTED;
+  return concedida === PermissionsAndroid.RESULTS.GRANTED;
 }
 
 export default function App() {
-  // Nada de manter a tela acesa: bloquear o aparelho e seguir conversando é
-  // justamente o comportamento que o app precisa sustentar.
-  const [permissionDenied, setPermissionDenied] = useState(false);
+  const auth = useGoogleAuth();
 
-  // O comboio ativo vive apenas em memória. Persistir exigiria AsyncStorage,
-  // que é módulo nativo e obrigaria um novo build a cada ajuste — não vale o
-  // custo agora. Entra junto com o Supabase, quando houver conta de usuário.
-  const [activeRoomCode, setActiveRoomCode] = useState(DEV_ROOM_CODE);
-  const [codeInput, setCodeInput] = useState('');
-  const [codeError, setCodeError] = useState<string | null>(null);
+  const [aba, setAba] = useState<Aba>('comboio');
+  const [roomCode, setRoomCode] = useState(DEV_ROOM_CODE);
+  const [motorcycle, setMotorcycle] = useState<Motorcycle | null>(null);
+  const [records, setRecords] = useState<MaintenanceRecord[]>([]);
+  const [carregando, setCarregando] = useState(true);
 
-  const voice = useVoiceConnection(TOKEN_ENDPOINT);
-  const isLive = voice.status === 'connected' || voice.status === 'reconnecting';
+  // A manutenção é DERIVADA do histórico, nunca guardada em paralelo.
+  const maintenance = useMemo(
+    () => (motorcycle ? summarizeMaintenance(records, motorcycle) : []),
+    [records, motorcycle]
+  );
 
-  useEffect(() => {
-    void requestMicrophonePermission().then((ok) => setPermissionDenied(!ok));
+  const trocarSala = useCallback((codigo: string) => {
+    setRoomCode(codigo);
+    void storage.saveLastRoom(codigo);
   }, []);
 
-  // Convite por link: motorede://sala/K7M-3PQ ou motorede://?sala=K7M-3PQ.
-  // O scheme já está declarado no app.json e embutido no APK, então isto é só
-  // JavaScript — recarrega pelo Metro, sem build novo.
   useEffect(() => {
-    const applyUrl = (url: string | null) => {
+    void (async () => {
+      const [moto, regs, sala] = await Promise.all([
+        storage.getMotorcycle(),
+        storage.getRecords(),
+        storage.getLastRoom(),
+      ]);
+      setMotorcycle(moto);
+      setRecords(regs);
+      if (sala) setRoomCode(sala);
+      setCarregando(false);
+    })();
+    void pedirPermissaoMicrofone();
+  }, []);
+
+  // Convite por link: motorede://sala/K7M-3PQ
+  useEffect(() => {
+    const aplicar = (url: string | null) => {
       if (!url) return;
-      const match = url.match(/(?:[?&]sala=|sala\/)([^&?/#]+)/i);
-      if (!match) return;
-      const normalized = normalizeRoomCode(decodeURIComponent(match[1]));
-      if (isJoinableRoomCode(normalized)) enterRoom(normalized);
+      const m = url.match(/(?:[?&]sala=|sala\/)([^&?/#]+)/i);
+      if (!m) return;
+      const normalizado = normalizeRoomCode(decodeURIComponent(m[1]));
+      if (isJoinableRoomCode(normalizado)) trocarSala(normalizado);
     };
-
-    // App aberto pelo link a partir do estado encerrado.
-    void Linking.getInitialURL().then(applyUrl);
-
-    // App já estava aberto quando o link foi tocado.
-    const sub = Linking.addEventListener('url', ({ url }) => applyUrl(url));
+    void Linking.getInitialURL().then(aplicar);
+    const sub = Linking.addEventListener('url', ({ url }) => aplicar(url));
     return () => sub.remove();
+  }, [trocarSala]);
+
+  const salvarMoto = useCallback((moto: Motorcycle) => {
+    setMotorcycle(moto);
+    void storage.saveMotorcycle(moto);
   }, []);
 
-  const enterRoom = (code: string) => {
-    setActiveRoomCode(code);
-    setCodeInput('');
-    setCodeError(null);
-  };
+  const atualizarKm = useCallback(
+    (km: number) => {
+      if (!motorcycle) return;
+      const atualizada = { ...motorcycle, currentKm: km, lastKmUpdate: new Date().toISOString() };
+      setMotorcycle(atualizada);
+      void storage.saveMotorcycle(atualizada);
+    },
+    [motorcycle]
+  );
 
-  const handleJoinByCode = () => {
-    const normalized = normalizeRoomCode(codeInput);
-    if (!isJoinableRoomCode(normalized)) {
-      setCodeError('Código inválido. Confira com quem te passou.');
-      return;
-    }
-    enterRoom(normalized);
-  };
+  const adicionarRegistro = useCallback(
+    (dados: Omit<MaintenanceRecord, 'id'>) => {
+      const novo: MaintenanceRecord = { ...dados, id: `rec-${Date.now()}` };
+      const proximos = [novo, ...records];
+      setRecords(proximos);
+      void storage.saveRecords(proximos);
+    },
+    [records]
+  );
 
-  const handleShare = async () => {
-    await Share.share({
-      message: `Entra no meu comboio no MotoRede: ${WEB_APP_URL}/?sala=${activeRoomCode}\n\nCódigo: ${activeRoomCode}`,
-    });
-  };
+  if (auth.isLoading || carregando) {
+    return (
+      <SafeAreaView style={[styles.screen, styles.centro]}>
+        <StatusBar style="light" />
+        <ActivityIndicator color={COLORS.accent} />
+      </SafeAreaView>
+    );
+  }
 
-  const handleToggle = async () => {
-    if (isLive) {
-      await voice.disconnect();
-      return;
-    }
-    const ok = await requestMicrophonePermission();
-    if (!ok) {
-      setPermissionDenied(true);
-      return;
-    }
-    await voice.connect({
-      roomCode: activeRoomCode,
-      identity: `piloto-${Math.random().toString(36).slice(2, 8)}`,
-      displayName: 'Piloto (app)',
-    });
-  };
-
-  const statusLabel = {
-    disconnected: 'Desconectado',
-    connecting: 'Conectando...',
-    connected: 'Ao vivo',
-    reconnecting: 'Reconectando...',
-    error: 'Falha ao conectar',
-  }[voice.status];
-
-  const statusColor =
-    voice.status === 'connected'
-      ? COLORS.success
-      : voice.status === 'error'
-        ? COLORS.danger
-        : voice.status === 'disconnected'
-          ? COLORS.muted
-          : COLORS.accent;
+  // Porta de entrada. Se o login não estiver configurado neste build, o app
+  // segue sem identidade em vez de ficar inacessível.
+  if (auth.isConfigured && !auth.user) {
+    return (
+      <>
+        <StatusBar style="light" />
+        <LoginScreen onSignIn={auth.signIn} error={auth.error} isLoading={false} />
+      </>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.screen}>
       <StatusBar style="light" />
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>MotoRede</Text>
-        <Text style={styles.subtitle}>Comboio por voz</Text>
 
-        <View style={styles.card}>
-          <View style={styles.statusRow}>
-            <View style={[styles.dot, { backgroundColor: statusColor }]} />
-            <Text style={styles.statusText}>{statusLabel}</Text>
-            {voice.status === 'connecting' && (
-              <ActivityIndicator size="small" color={COLORS.accent} />
-            )}
-          </View>
-
-          {voice.serverHost && (
-            <Text style={styles.serverLine} numberOfLines={1}>
-              servidor: {voice.serverHost}
-            </Text>
-          )}
-
-          {voice.error && <Text style={styles.error}>{voice.error}</Text>}
-
-          {permissionDenied && (
-            <Text style={styles.error}>
-              Permissão de microfone negada. Libere nas configurações do aparelho.
-            </Text>
-          )}
-
-          <View style={styles.roomRow}>
-            <View style={styles.roomInfo}>
-              <Text style={styles.roomLabel}>COMBOIO</Text>
-              <Text style={styles.roomCode}>{activeRoomCode}</Text>
-            </View>
-            <Pressable
-              onPress={handleShare}
-              style={({ pressed }) => [styles.smallButton, pressed && styles.buttonPressed]}
-            >
-              <Text style={styles.smallButtonText}>Convidar</Text>
-            </Pressable>
-          </View>
-
-          <Pressable
-            onPress={handleToggle}
-            disabled={voice.status === 'connecting'}
-            style={({ pressed }) => [
-              styles.button,
-              isLive ? styles.buttonLeave : styles.buttonJoin,
-              pressed && styles.buttonPressed,
-            ]}
-          >
-            <Text style={[styles.buttonText, isLive && styles.buttonTextLeave]}>
-              {isLive ? 'Sair do comboio' : 'Entrar no comboio'}
-            </Text>
+      <View style={styles.cabecalho}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.marca}>MotoRede</Text>
+          {auth.user && <Text style={styles.usuario}>{auth.user.name}</Text>}
+        </View>
+        {auth.user && (
+          <Pressable onPress={auth.signOut}>
+            <Text style={styles.sair}>Sair</Text>
           </Pressable>
-
-          {isLive && (
-            <Pressable
-              onPress={() => voice.setMuted(!voice.isMuted)}
-              style={({ pressed }) => [
-                styles.button,
-                styles.buttonSecondary,
-                pressed && styles.buttonPressed,
-              ]}
-            >
-              <Text style={styles.buttonSecondaryText}>
-                {voice.isMuted ? 'Reativar microfone' : 'Silenciar microfone'}
-              </Text>
-            </Pressable>
-          )}
-        </View>
-
-        {/* Trocar de comboio some durante a conversa: não se oferece isso a
-            alguém pilotando. */}
-        {!isLive && (
-          <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Trocar de comboio</Text>
-
-            <View style={styles.joinRow}>
-              <TextInput
-                value={codeInput}
-                onChangeText={(t) => {
-                  setCodeInput(t);
-                  setCodeError(null);
-                }}
-                placeholder="Código (ex: K7M-3PQ)"
-                placeholderTextColor={COLORS.muted}
-                autoCapitalize="characters"
-                autoCorrect={false}
-                style={styles.input}
-                onSubmitEditing={handleJoinByCode}
-                returnKeyType="go"
-              />
-              <Pressable
-                onPress={handleJoinByCode}
-                disabled={!codeInput.trim()}
-                style={({ pressed }) => [
-                  styles.smallButton,
-                  !codeInput.trim() && styles.disabled,
-                  pressed && styles.buttonPressed,
-                ]}
-              >
-                <Text style={styles.smallButtonText}>Entrar</Text>
-              </Pressable>
-            </View>
-
-            {codeError && <Text style={styles.error}>{codeError}</Text>}
-
-            <Pressable
-              onPress={() => enterRoom(generateRoomCode())}
-              style={({ pressed }) => [
-                styles.button,
-                styles.buttonSecondary,
-                pressed && styles.buttonPressed,
-              ]}
-            >
-              <Text style={styles.buttonSecondaryText}>Criar comboio novo</Text>
-            </Pressable>
-          </View>
         )}
+      </View>
 
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>
-            Integrantes ({voice.participants.length})
-          </Text>
+      <View style={{ flex: 1 }}>
+        {aba === 'comboio' ? (
+          <ConvoyScreen
+            roomCode={roomCode}
+            onChangeRoom={trocarSala}
+            displayName={auth.user?.name ?? 'Piloto'}
+            idToken={auth.getIdToken()}
+          />
+        ) : (
+          <MyMotorcycleScreen
+            motorcycle={motorcycle}
+            maintenance={maintenance}
+            records={records}
+            onAddRecord={adicionarRegistro}
+            onUpdateKm={atualizarKm}
+            onSaveMotorcycle={salvarMoto}
+          />
+        )}
+      </View>
 
-          {voice.participants.length === 0 && (
-            <Text style={styles.muted}>Ninguém conectado ainda.</Text>
-          )}
-
-          {voice.participants.map((p) => (
-            <View key={p.id} style={styles.participantRow}>
-              <View
-                style={[styles.avatar, p.isSpeaking && { backgroundColor: COLORS.accent }]}
-              >
-                <Text
-                  style={[styles.avatarText, p.isSpeaking && { color: COLORS.background }]}
-                >
-                  {p.name.charAt(0).toUpperCase()}
-                </Text>
-              </View>
-              <View style={styles.participantInfo}>
-                <Text style={styles.participantName}>
-                  {p.name}
-                  {p.isHost ? ' · líder' : ''}
-                </Text>
-                <Text style={styles.muted}>
-                  {p.isMuted ? 'microfone mudo' : p.isSpeaking ? 'falando' : 'ouvindo'}
-                </Text>
-              </View>
-            </View>
-          ))}
-        </View>
-      </ScrollView>
+      {/* Duas abas apenas. O app é usado na moto; tudo que não serve para isso
+          fica na web. */}
+      <View style={styles.barra}>
+        {(
+          [
+            ['comboio', 'Comboio'],
+            ['moto', 'Minha moto'],
+          ] as Array<[Aba, string]>
+        ).map(([id, rotulo]) => (
+          <Pressable key={id} onPress={() => setAba(id)} style={styles.item}>
+            <Text style={[styles.itemTexto, aba === id && styles.itemAtivo]}>
+              {rotulo}
+            </Text>
+            {aba === id && <View style={styles.indicador} />}
+          </Pressable>
+        ))}
+      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: COLORS.background },
-  content: { padding: 16, gap: 16 },
-  title: { color: COLORS.text, fontSize: 28, fontWeight: '800', letterSpacing: -0.5 },
-  subtitle: { color: COLORS.muted, fontSize: 13, marginTop: -12 },
-  card: {
-    backgroundColor: COLORS.surface,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    padding: 16,
-    gap: 12,
-  },
-  statusRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  dot: { width: 10, height: 10, borderRadius: 5 },
-  statusText: { color: COLORS.text, fontSize: 14, fontWeight: '700', flex: 1 },
-  error: { color: COLORS.danger, fontSize: 12, lineHeight: 17 },
-  serverLine: { color: COLORS.muted, fontSize: 10, marginTop: -6 },
-  roomRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  roomInfo: { flex: 1 },
-  roomLabel: { color: COLORS.muted, fontSize: 10, fontWeight: '700', letterSpacing: 1.5 },
-  roomCode: {
-    color: COLORS.accent,
-    fontSize: 24,
-    fontWeight: '800',
-    letterSpacing: 3,
-    fontFamily: Platform.select({ android: 'monospace', default: undefined }),
-  },
-  joinRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  input: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    color: COLORS.text,
-    fontSize: 14,
-  },
-  button: { borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
-  buttonJoin: { backgroundColor: COLORS.accent },
-  buttonLeave: {
-    backgroundColor: 'rgba(248,113,113,0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(248,113,113,0.3)',
-  },
-  buttonSecondary: { backgroundColor: COLORS.border },
-  smallButton: {
-    backgroundColor: COLORS.border,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-  },
-  smallButtonText: { color: COLORS.text, fontSize: 12, fontWeight: '700' },
-  disabled: { opacity: 0.4 },
-  buttonPressed: { opacity: 0.7 },
-  buttonText: { color: COLORS.background, fontSize: 14, fontWeight: '800' },
-  buttonTextLeave: { color: COLORS.danger },
-  buttonSecondaryText: { color: COLORS.text, fontSize: 13, fontWeight: '700' },
-  sectionTitle: {
-    color: COLORS.text,
-    fontSize: 12,
-    fontWeight: '800',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  muted: { color: COLORS.muted, fontSize: 12 },
-  participantRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  avatar: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    backgroundColor: COLORS.border,
+  centro: { alignItems: 'center', justifyContent: 'center' },
+  cabecalho: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
   },
-  avatarText: { color: COLORS.text, fontWeight: '800' },
-  participantInfo: { flex: 1 },
-  participantName: { color: COLORS.text, fontSize: 14, fontWeight: '600' },
+  marca: { color: COLORS.text, fontSize: 17, fontWeight: '800' },
+  usuario: { color: COLORS.faint, fontSize: 11 },
+  sair: { color: COLORS.muted, fontSize: 12 },
+  barra: {
+    flexDirection: 'row',
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+    backgroundColor: COLORS.surface,
+  },
+  item: { flex: 1, alignItems: 'center', paddingVertical: 14 },
+  itemTexto: { color: COLORS.faint, fontSize: 12, fontWeight: '700' },
+  itemAtivo: { color: COLORS.accent },
+  indicador: {
+    position: 'absolute',
+    top: 0,
+    width: 40,
+    height: 2,
+    backgroundColor: COLORS.accent,
+  },
 });

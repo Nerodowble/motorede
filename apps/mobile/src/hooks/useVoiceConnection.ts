@@ -29,6 +29,10 @@ interface ConnectOptions {
   roomCode: string;
   identity: string;
   displayName: string;
+  /** Token do Google, quando houver login. O servidor usa como identidade. */
+  idToken?: string | null;
+  /** Telefone, só para o servidor derivar a impressão digital da busca. */
+  phone?: string;
 }
 
 interface UseVoiceConnection {
@@ -76,7 +80,7 @@ export function useVoiceConnection(tokenEndpoint: string): UseVoiceConnection {
   }, []);
 
   const connect = useCallback(
-    async ({ roomCode, identity, displayName }: ConnectOptions) => {
+    async ({ roomCode, identity, displayName, idToken, phone }: ConnectOptions) => {
       if (roomRef.current) return;
 
       setStatus('connecting');
@@ -86,7 +90,13 @@ export function useVoiceConnection(tokenEndpoint: string): UseVoiceConnection {
         const response = await fetch(tokenEndpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ room: roomCode, identity, name: displayName }),
+          body: JSON.stringify({
+            room: roomCode,
+            identity,
+            name: displayName,
+            idToken,
+            phone,
+          }),
         });
 
         if (!response.ok) {
@@ -94,6 +104,7 @@ export function useVoiceConnection(tokenEndpoint: string): UseVoiceConnection {
         }
 
         const { token, url } = (await response.json()) as { token: string; url: string };
+        setServerHost(url.replace(/^wss?:\/\//, '').split('/')[0]);
         setServerHost(url.replace(/^wss?:\/\//, '').split('/')[0]);
 
         // Sobe o serviço em primeiro plano ANTES de conectar. O Android exige

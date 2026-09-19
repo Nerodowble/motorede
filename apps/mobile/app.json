@@ -75,7 +75,8 @@
           }
         }
       ],
-      "./plugins/withVoiceForegroundService"
+      "./plugins/withVoiceForegroundService",
+      "expo-web-browser"
     ],
     "web": {
       "favicon": "./assets/favicon.png"
@@ -85,6 +86,13 @@
         "projectId": "038193cd-0891-4a16-8857-febb8c340206"
       }
     },
-    "owner": "willianvidallima"
+    "owner": "willianvidallima",
+    "updates": {
+      "url": "https://u.expo.dev/038193cd-0891-4a16-8857-febb8c340206",
+      "fallbackToCacheTimeout": 0
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    }
   }
 }

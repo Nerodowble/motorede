@@ -12,7 +12,8 @@
       },
       "ios": {
         "simulator": false
-      }
+      },
+      "channel": "development"
     },
     "preview": {
       "distribution": "internal",
@@ -21,7 +22,8 @@
       },
       "env": {
         "EXPO_PUBLIC_TOKEN_ENDPOINT": "https://motorede-web.vercel.app/api/livekit-token"
-      }
+      },
+      "channel": "preview"
     },
     "production": {
       "autoIncrement": true,
