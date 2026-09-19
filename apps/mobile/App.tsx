@@ -5,11 +5,14 @@ import {
   PermissionsAndroid,
   Platform,
   Pressable,
-  SafeAreaView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+import {
+  SafeAreaProvider,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { registerGlobals } from '@livekit/react-native';
 import {
@@ -25,6 +28,7 @@ import { useGoogleAuth } from './src/hooks/useGoogleAuth';
 import { ProfileSetupScreen } from './src/screens/ProfileSetupScreen';
 import { ConvoyScreen } from './src/screens/ConvoyScreen';
 import { MyMotorcycleScreen } from './src/screens/MyMotorcycleScreen';
+import { SettingsScreen } from './src/screens/SettingsScreen';
 import { storage } from './src/services/storage';
 import { DEV_ROOM_CODE } from './src/config';
 import { COLORS } from './src/theme';
@@ -33,7 +37,13 @@ import { COLORS } from './src/theme';
 // antes de qualquer uso do LiveKit.
 registerGlobals();
 
-type Aba = 'comboio' | 'moto';
+type Aba = 'comboio' | 'moto' | 'ajustes';
+
+const ABAS: Array<[Aba, string]> = [
+  ['comboio', 'Comboio'],
+  ['moto', 'Minha moto'],
+  ['ajustes', 'Ajustes'],
+];
 
 async function pedirPermissaoMicrofone(): Promise<boolean> {
   if (Platform.OS !== 'android') return true;
@@ -48,8 +58,28 @@ async function pedirPermissaoMicrofone(): Promise<boolean> {
   return concedida === PermissionsAndroid.RESULTS.GRANTED;
 }
 
+/**
+ * O provedor precisa envolver TUDO, porque é ele que mede as áreas que o
+ * sistema operacional ocupa na tela. Sem ele, `useSafeAreaInsets` devolve zero
+ * e a interface volta a ficar embaixo dos botões do aparelho.
+ */
 export default function App() {
+  return (
+    <SafeAreaProvider>
+      <Aplicativo />
+    </SafeAreaProvider>
+  );
+}
+
+function Aplicativo() {
   const auth = useGoogleAuth();
+  // O Android 15 desenha o app DE PONTA A PONTA: a barra de status em cima e os
+  // botões de voltar/início embaixo ficam por cima do conteúdo, não ao lado
+  // dele. Antes o app usava o `SafeAreaView` do react-native, que só faz efeito
+  // no iOS — no Android ele é uma `View` comum. Por isso a barra de abas
+  // aparecia atrás dos botões do celular. Estas medidas vêm do sistema e valem
+  // nos dois.
+  const insets = useSafeAreaInsets();
 
   const [aba, setAba] = useState<Aba>('comboio');
   const [roomCode, setRoomCode] = useState(DEV_ROOM_CODE);
@@ -157,10 +187,10 @@ export default function App() {
 
   if (auth.isLoading || carregando) {
     return (
-      <SafeAreaView style={[styles.screen, styles.centro]}>
+      <View style={[styles.screen, styles.centro]}>
         <StatusBar style="light" />
         <ActivityIndicator color={COLORS.accent} />
-      </SafeAreaView>
+      </View>
     );
   }
 
@@ -182,10 +212,10 @@ export default function App() {
   }
 
   return (
-    <SafeAreaView style={styles.screen}>
+    <View style={styles.screen}>
       <StatusBar style="light" />
 
-      <View style={styles.cabecalho}>
+      <View style={[styles.cabecalho, { paddingTop: insets.top + 12 }]}>
         <View style={{ flex: 1 }}>
           <Text style={styles.marca}>MotoRede</Text>
           <Text style={styles.usuario}>
@@ -199,14 +229,15 @@ export default function App() {
       </View>
 
       <View style={{ flex: 1 }}>
-        {aba === 'comboio' ? (
+        {aba === 'comboio' && (
           <ConvoyScreen
             roomCode={roomCode}
             onChangeRoom={trocarSala}
             displayName={profile.name}
             idToken={auth.getIdToken()}
           />
-        ) : (
+        )}
+        {aba === 'moto' && (
           <MyMotorcycleScreen
             motorcycle={motorcycle}
             maintenance={maintenance}
@@ -216,26 +247,31 @@ export default function App() {
             onSaveMotorcycle={salvarMoto}
           />
         )}
+        {aba === 'ajustes' && <SettingsScreen profile={profile} onSair={sair} />}
       </View>
 
-      {/* Duas abas apenas. O app é usado na moto; tudo que não serve para isso
-          fica na web. */}
-      <View style={styles.barra}>
-        {(
-          [
-            ['comboio', 'Comboio'],
-            ['moto', 'Minha moto'],
-          ] as Array<[Aba, string]>
-        ).map(([id, rotulo]) => (
-          <Pressable key={id} onPress={() => setAba(id)} style={styles.item}>
-            <Text style={[styles.itemTexto, aba === id && styles.itemAtivo]}>
-              {rotulo}
-            </Text>
-            {aba === id && <View style={styles.indicador} />}
-          </Pressable>
-        ))}
+      {/* A barra guarda embaixo o espaço dos botões do aparelho. Onde o celular
+          usa gestos em vez de botões, `insets.bottom` é pequeno ou zero, e o
+          mínimo de 10 evita que os rótulos encostem na borda da tela. */}
+      <View style={[styles.barra, { paddingBottom: Math.max(insets.bottom, 10) }]}>
+        {ABAS.map(([id, rotulo]) => {
+          const ativa = aba === id;
+          return (
+            <Pressable
+              key={id}
+              onPress={() => setAba(id)}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: ativa }}
+              accessibilityLabel={rotulo}
+              style={styles.item}
+            >
+              {ativa && <View style={styles.indicador} />}
+              <Text style={[styles.itemTexto, ativa && styles.itemAtivo]}>{rotulo}</Text>
+            </Pressable>
+          );
+        })}
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -258,15 +294,19 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
     backgroundColor: COLORS.surface,
+    paddingTop: 10,
   },
-  item: { flex: 1, alignItems: 'center', paddingVertical: 14 },
+  // Alvo de toque com folga: o app é usado de luva, em movimento, com a moto
+  // parada mas o corpo ainda instável.
+  item: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 12 },
   itemTexto: { color: COLORS.faint, fontSize: 12, fontWeight: '700' },
   itemAtivo: { color: COLORS.accent },
   indicador: {
     position: 'absolute',
-    top: 0,
+    top: -10,
     width: 40,
     height: 2,
+    borderRadius: 1,
     backgroundColor: COLORS.accent,
   },
 });

@@ -1,6 +1,6 @@
 {
   "name": "@motorede/mobile",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "main": "index.ts",
   "private": true,
   "scripts": {
@@ -29,7 +29,8 @@
     "expo-web-browser": "~57.0.3",
     "livekit-client": "^2.19.0",
     "react": "19.2.3",
-    "react-native": "0.86.3"
+    "react-native": "0.86.3",
+    "react-native-safe-area-context": "~5.7.0"
   },
   "devDependencies": {
     "@config-plugins/react-native-webrtc": "^15.0.2",

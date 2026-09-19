@@ -335,7 +335,7 @@ export const MyMotorcycleScreen: React.FC<MyMotorcycleScreenProps> = ({
 };
 
 const styles = StyleSheet.create({
-  conteudo: { padding: 16, gap: 12, paddingBottom: 100 },
+  conteudo: { padding: 16, gap: 12, paddingBottom: 28 },
   card: {
     backgroundColor: COLORS.surface,
     borderRadius: 16,

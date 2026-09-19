@@ -3,13 +3,13 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   createLocalProfile,
   validateProfile,
@@ -44,6 +44,7 @@ export const ProfileSetupScreen: React.FC<ProfileSetupScreenProps> = ({
   googleDisponivel,
   erroGoogle,
 }) => {
+  const insets = useSafeAreaInsets();
   const [dados, setDados] = useState<ProfileInput>({ name: '', email: '', phone: '' });
   const [erros, setErros] = useState<ReturnType<typeof validateProfile>['errors']>({});
 
@@ -86,12 +87,17 @@ export const ProfileSetupScreen: React.FC<ProfileSetupScreenProps> = ({
   );
 
   return (
-    <SafeAreaView style={styles.screen}>
+    <View style={styles.screen}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={{ flex: 1 }}
       >
-        <ScrollView contentContainerStyle={styles.conteudo}>
+        <ScrollView
+          contentContainerStyle={[
+            styles.conteudo,
+            { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20 },
+          ]}
+        >
           <Text style={styles.titulo}>MotoRede</Text>
           <Text style={styles.subtitulo}>Como você aparece no comboio</Text>
 
@@ -130,7 +136,7 @@ export const ProfileSetupScreen: React.FC<ProfileSetupScreenProps> = ({
           </Text>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 };
 
