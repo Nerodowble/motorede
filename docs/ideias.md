@@ -549,3 +549,35 @@ data seria chute.
 O `ConsumableStatus` e o `calculateConsumablesStatus` foram removidos. Eram uma
 estrutura paralela e fictícia convivendo com o passaporte, que já modelava
 eventos de verdade — duas verdades sobre a mesma moto.
+
+---
+
+## 19. Moto opcional: fim da CB 500X de presente
+
+**Status:** `decidido` — implementado
+**Data:** 2026-09-19
+
+`getMotorcycle()` **gravava** a moto de exemplo no navegador na primeira
+leitura. Quem entrava pela primeira vez ganhava uma Honda CB 500X com placa
+`BRA-5X92` e 24.850 km, como se fosse dele. Não existia o estado "ainda não
+tenho moto", e por isso o app afirmava desgaste de um veículo inexistente.
+
+Agora a moto é `Motorcycle | null`, e o princípio que orienta a interface é:
+**falta de moto não bloqueia a voz.**
+
+| Tela | Sem moto |
+|---|---|
+| Painel | comboio funciona normal; a moto vira convite, abaixo dele |
+| Manutenção | a aba inteira vira o convite |
+| Passaporte | idem |
+| Comboio | não muda nada |
+
+**Migração para quem já usou:** apagar o exemplo do código não limpa o que já
+está no navegador. A limpeza só remove se a moto estiver **exatamente** como
+veio de fábrica — se o piloto editou qualquer campo, passou a ser dado dele e
+fica.
+
+**Efeito colateral bom:** ligamos `strictNullChecks` no app web. Eram só 5
+erros, e é exatamente o tipo de verificação que pega esta classe de bug antes de
+chegar no usuário. Sem ele, o typecheck passava limpo com `motorcycle` podendo
+ser nulo em dez lugares que fariam o app quebrar em execução.

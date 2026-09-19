@@ -9,6 +9,7 @@ import {
   describeIntervalSource,
   type MaintenanceItemStatus,
 } from '@motorede/shared';
+import { MotorcycleEmptyState } from '../components/MotorcycleEmptyState';
 
 /**
  * Manutenção como etiqueta de troca de óleo.
@@ -28,7 +29,7 @@ import {
  */
 
 interface MaintenanceViewProps {
-  motorcycle: Motorcycle;
+  motorcycle: Motorcycle | null;
   maintenance: MaintenanceItemStatus[];
   records: MaintenanceRecord[];
   onAddRecord: (record: Omit<MaintenanceRecord, 'id'>) => void;
@@ -59,6 +60,7 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({
   const [oficina, setOficina] = useState('');
 
   const abrirRegistro = (category: ConsumableCategory) => {
+    if (!motorcycle) return;
     setRegistrando(category);
     setKm(motorcycle.currentKm.toString());
     setProduto('');
@@ -71,7 +73,7 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({
     if (!registrando) return;
 
     const kmNum = parseInt(km, 10);
-    if (isNaN(kmNum) || kmNum <= 0) return;
+    if (isNaN(kmNum) || kmNum <= 0 || !motorcycle) return;
 
     onAddRecord({
       motorcycleId: motorcycle.id,
@@ -91,6 +93,18 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({
   };
 
   const semRegistroNenhum = records.length === 0;
+
+  // Sem moto cadastrada não há o que mostrar aqui — e inventar uma foi
+  // exatamente o problema que esta tela tinha antes.
+  if (!motorcycle) {
+    return (
+      <MotorcycleEmptyState
+        telaInteira
+        onCadastrar={onOpenEditMotorcycle}
+        motivo="O acompanhamento de óleo, relação e pneus começa quando você cadastra a moto."
+      />
+    );
+  }
 
   return (
     <div className="space-y-4 pb-28 sm:pb-24 max-w-2xl mx-auto px-3 sm:px-4 py-4">

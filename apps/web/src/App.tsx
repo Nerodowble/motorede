@@ -47,7 +47,10 @@ export default function App() {
   });
 
   // Application Data States (lazy initializers so localStorage is parsed only once)
-  const [motorcycle, setMotorcycle] = useState<Motorcycle>(() => {
+  // null enquanto o piloto não cadastrar. Antes o app entregava uma moto de
+  // exemplo de presente, e não havia como distinguir "não tenho moto" de
+  // "tenho a CB 500X fictícia".
+  const [motorcycle, setMotorcycle] = useState<Motorcycle | null>(() => {
     if (currentUser?.motorcycle) return currentUser.motorcycle;
     return storageService.getMotorcycle();
   });
@@ -62,7 +65,7 @@ export default function App() {
   // um estado de consumíveis com valores próprios, que podia divergir do que o
   // passaporte registrava — duas verdades sobre a mesma moto.
   const maintenance = useMemo(
-    () => summarizeMaintenance(maintenanceRecords, motorcycle),
+    () => (motorcycle ? summarizeMaintenance(maintenanceRecords, motorcycle) : []),
     [maintenanceRecords, motorcycle]
   );
 
@@ -112,6 +115,7 @@ export default function App() {
 
   // Recalculate wear when motorcycle KM changes
   const handleUpdateKm = (newKm: number) => {
+    if (!motorcycle) return;
     const updatedBike = { ...motorcycle, currentKm: newKm };
     setMotorcycle(updatedBike);
     storageService.saveMotorcycle(updatedBike);
@@ -143,7 +147,9 @@ export default function App() {
       petitionerId: 'user-current',
       petitionerName: 'Você (Piloto)',
       petitionerPhone: '(11) 98765-4321',
-      motorcycleInfo: `${motorcycle.brand} ${motorcycle.model} (${motorcycle.licensePlate})`,
+      motorcycleInfo: motorcycle
+        ? `${motorcycle.brand} ${motorcycle.model} (${motorcycle.licensePlate})`
+        : 'Moto não informada',
       type,
       lat: userCoords.lat,
       lng: userCoords.lng,
@@ -183,7 +189,7 @@ export default function App() {
         const volunteer: SOSVolunteer = {
           id: 'user-current',
           name: 'Você (Voluntário)',
-          motorcycle: `${motorcycle.brand} ${motorcycle.model}`,
+          motorcycle: motorcycle ? `${motorcycle.brand} ${motorcycle.model}` : 'Moto não informada',
           lat: userCoords.lat,
           lng: userCoords.lng,
           distanceKm: calculateDistanceKm(userCoords.lat, userCoords.lng, alert.lat, alert.lng),
@@ -395,7 +401,11 @@ export default function App() {
           {activeTab === 'sos' && (
             <SOSRescueView
               userCoords={userCoords}
-              motorcycleInfo={`${motorcycle.brand} ${motorcycle.model} (${motorcycle.licensePlate})`}
+              motorcycleInfo={
+                motorcycle
+                  ? `${motorcycle.brand} ${motorcycle.model} (${motorcycle.licensePlate})`
+                  : 'Moto não informada'
+              }
               sosAlerts={sosAlerts}
               onTriggerSOS={handleTriggerSOS}
               onRespondToSOS={handleRespondToSOS}

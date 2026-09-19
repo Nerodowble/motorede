@@ -106,7 +106,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ sosAlerts, onResolveSOS })
                   CNPJ: {shop.cnpj} • {shop.address}, {shop.city} • Tel: {shop.phone}
                 </p>
                 <div className="flex gap-1.5 mt-1.5">
-                  {shop.specialties.map((spec, i) => (
+                  {(shop.specialties ?? []).map((spec, i) => (
                     <span key={i} className="text-[10px] px-1.5 py-0.5 bg-slate-900 text-slate-400 rounded font-mono">
                       {spec}
                     </span>

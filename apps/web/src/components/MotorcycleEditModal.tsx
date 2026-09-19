@@ -17,7 +17,8 @@ import { Motorcycle, ConsumableCategory } from '@motorede/shared';
 interface MotorcycleEditModalProps {
   isOpen: boolean;
   onClose: () => void;
-  motorcycle: Motorcycle;
+  /** null quando o piloto ainda não cadastrou: o formulário nasce vazio. */
+  motorcycle: Motorcycle | null;
   onSaveMotorcycle: (updated: Motorcycle) => void;
 }
 
@@ -27,42 +28,42 @@ export const MotorcycleEditModal: React.FC<MotorcycleEditModalProps> = ({
   motorcycle,
   onSaveMotorcycle,
 }) => {
-  const [brand, setBrand] = useState(motorcycle.brand);
-  const [model, setModel] = useState(motorcycle.model);
-  const [year, setYear] = useState(motorcycle.year.toString());
-  const [licensePlate, setLicensePlate] = useState(motorcycle.licensePlate);
-  const [currentKm, setCurrentKm] = useState(motorcycle.currentKm.toString());
-  const [avgKmPerMonth, setAvgKmPerMonth] = useState(motorcycle.avgKmPerMonth.toString());
+  const [brand, setBrand] = useState(motorcycle?.brand ?? '');
+  const [model, setModel] = useState(motorcycle?.model ?? '');
+  const [year, setYear] = useState(motorcycle?.year.toString() ?? String(new Date().getFullYear()));
+  const [licensePlate, setLicensePlate] = useState(motorcycle?.licensePlate ?? '');
+  const [currentKm, setCurrentKm] = useState(motorcycle?.currentKm.toString() ?? '');
+  const [avgKmPerMonth, setAvgKmPerMonth] = useState(motorcycle?.avgKmPerMonth.toString() ?? '');
   const [displacementCc, setDisplacementCc] = useState(
-    motorcycle.displacementCc ? motorcycle.displacementCc.toString() : '500'
+    motorcycle?.displacementCc ? motorcycle?.displacementCc.toString() : '500'
   );
   const [fuelType, setFuelType] = useState<'gasoline' | 'flex' | 'ethanol'>(
-    motorcycle.fuelType || 'gasoline'
+    motorcycle?.fuelType || 'gasoline'
   );
   const [avgConsumptionKmL, setAvgConsumptionKmL] = useState(
-    motorcycle.avgConsumptionKmL ? motorcycle.avgConsumptionKmL.toString() : '26.5'
+    motorcycle?.avgConsumptionKmL ? motorcycle?.avgConsumptionKmL.toString() : '26.5'
   );
   const [tankCapacityLiters, setTankCapacityLiters] = useState(
-    motorcycle.tankCapacityLiters ? motorcycle.tankCapacityLiters.toString() : '17.7'
+    motorcycle?.tankCapacityLiters ? motorcycle?.tankCapacityLiters.toString() : '17.7'
   );
   const [ridingStyle, setRidingStyle] = useState<'calm' | 'mixed' | 'aggressive' | 'commuter_heavy'>(
-    motorcycle.ridingStyle || 'mixed'
+    motorcycle?.ridingStyle || 'mixed'
   );
-  const [chassisVin, setChassisVin] = useState(motorcycle.chassisVin || '');
-  const [notes, setNotes] = useState(motorcycle.notes || '');
+  const [chassisVin, setChassisVin] = useState(motorcycle?.chassisVin || '');
+  const [notes, setNotes] = useState(motorcycle?.notes || '');
 
   // Custom intervals
   const [customOilInterval, setCustomOilInterval] = useState(
-    motorcycle.customIntervals?.engine_oil ? motorcycle.customIntervals.engine_oil.toString() : '5000'
+    motorcycle?.customIntervals?.engine_oil ? motorcycle?.customIntervals.engine_oil.toString() : '5000'
   );
   const [customChainInterval, setCustomChainInterval] = useState(
-    motorcycle.customIntervals?.transmission_chain ? motorcycle.customIntervals.transmission_chain.toString() : '25000'
+    motorcycle?.customIntervals?.transmission_chain ? motorcycle?.customIntervals.transmission_chain.toString() : '25000'
   );
   const [customBrakesInterval, setCustomBrakesInterval] = useState(
-    motorcycle.customIntervals?.brakes ? motorcycle.customIntervals.brakes.toString() : '12000'
+    motorcycle?.customIntervals?.brakes ? motorcycle?.customIntervals.brakes.toString() : '12000'
   );
   const [customTiresInterval, setCustomTiresInterval] = useState(
-    motorcycle.customIntervals?.tires ? motorcycle.customIntervals.tires.toString() : '15000'
+    motorcycle?.customIntervals?.tires ? motorcycle?.customIntervals.tires.toString() : '15000'
   );
 
   const [feedback, setFeedback] = useState<string | null>(null);
@@ -88,6 +89,8 @@ export const MotorcycleEditModal: React.FC<MotorcycleEditModalProps> = ({
     if (parseInt(customTiresInterval, 10)) customIntervals.tires = parseInt(customTiresInterval, 10);
 
     const updated: Motorcycle = {
+      // Sem moto anterior, este é o primeiro cadastro: nasce com id próprio.
+      id: motorcycle?.id || `moto-${Date.now()}`,
       ...motorcycle,
       brand: brand.trim(),
       model: model.trim(),

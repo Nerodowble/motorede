@@ -32,6 +32,7 @@ const STORAGE_KEYS = {
   COMMUNITY_SYMPTOMS: 'motorede_community_symptoms',
   MY_COUPONS: 'motorede_my_coupons',
   LAST_ROOM_CODE: 'motorede_last_room_code',
+  SEED_BIKE_CLEARED: 'motorede_seed_bike_cleared',
   PHONE: 'motorede_phone',
   FAVORITE_ROOMS: 'motorede_favorite_rooms',
   LOCK_WARNING_DISMISSED: 'motorede_lock_warning_dismissed',
@@ -701,22 +702,62 @@ export const storageService = {
     window.dispatchEvent(new CustomEvent('motorede:role_changed', { detail: role }));
   },
 
-  getMotorcycle(): Motorcycle {
-    if (typeof window === 'undefined') return DEFAULT_MOTORCYCLE;
+  /**
+   * A moto do piloto, ou null se ele ainda não cadastrou.
+   *
+   * Antes esta função GRAVAVA a moto de exemplo na primeira leitura: quem
+   * entrava pela primeira vez ganhava uma Honda CB 500X com placa e
+   * quilometragem inventadas, como se fosse dele. Não existia o estado "ainda
+   * não tenho moto", e por isso o app afirmava desgaste de um veículo que não
+   * existia.
+   */
+  getMotorcycle(): Motorcycle | null {
+    if (typeof window === 'undefined') return null;
+    this.migrateSeedMotorcycle();
     const raw = localStorage.getItem(STORAGE_KEYS.MOTORCYCLE);
-    if (!raw) {
-      localStorage.setItem(STORAGE_KEYS.MOTORCYCLE, JSON.stringify(DEFAULT_MOTORCYCLE));
-      return DEFAULT_MOTORCYCLE;
-    }
+    if (!raw) return null;
     try {
-      return JSON.parse(raw);
+      return JSON.parse(raw) as Motorcycle;
     } catch {
-      return DEFAULT_MOTORCYCLE;
+      return null;
     }
   },
 
-  updateMotorcycleKm(newKm: number): Motorcycle {
+  /**
+   * Remove a moto de exemplo de quem já usou o app antes desta mudança.
+   *
+   * Apagar o exemplo do código não limpa o que já está no navegador. Mas só
+   * remove se a moto estiver EXATAMENTE como veio: se o piloto editou qualquer
+   * campo, passou a ser dado dele e fica.
+   */
+  migrateSeedMotorcycle(): void {
+    if (typeof window === 'undefined') return;
+    if (localStorage.getItem(STORAGE_KEYS.SEED_BIKE_CLEARED) === 'true') return;
+
+    const raw = localStorage.getItem(STORAGE_KEYS.MOTORCYCLE);
+    if (raw) {
+      try {
+        const guardada = JSON.parse(raw) as Motorcycle;
+        const intocada =
+          guardada.id === DEFAULT_MOTORCYCLE.id &&
+          guardada.brand === DEFAULT_MOTORCYCLE.brand &&
+          guardada.model === DEFAULT_MOTORCYCLE.model &&
+          guardada.licensePlate === DEFAULT_MOTORCYCLE.licensePlate &&
+          guardada.currentKm === DEFAULT_MOTORCYCLE.currentKm;
+
+        if (intocada) localStorage.removeItem(STORAGE_KEYS.MOTORCYCLE);
+      } catch {
+        localStorage.removeItem(STORAGE_KEYS.MOTORCYCLE);
+      }
+    }
+
+    localStorage.setItem(STORAGE_KEYS.SEED_BIKE_CLEARED, 'true');
+  },
+
+  /** Sem moto cadastrada não há km a atualizar. */
+  updateMotorcycleKm(newKm: number): Motorcycle | null {
     const current = this.getMotorcycle();
+    if (!current) return null;
     const updated: Motorcycle = {
       ...current,
       currentKm: newKm,
@@ -729,9 +770,21 @@ export const storageService = {
     return updated;
   },
 
+  /**
+   * Atualiza a moto, ou cria a primeira a partir dos dados informados.
+   *
+   * Aceita criar do zero: é por aqui que o piloto sem moto cadastra a dele.
+   */
   updateMotorcycle(data: Partial<Motorcycle>): Motorcycle {
     const current = this.getMotorcycle();
     const updated: Motorcycle = {
+      id: current?.id || `moto-${Date.now()}`,
+      brand: '',
+      model: '',
+      year: new Date().getFullYear(),
+      licensePlate: '',
+      currentKm: 0,
+      avgKmPerMonth: 0,
       ...current,
       ...data,
       lastKmUpdate: new Date().toISOString(),

@@ -18,9 +18,10 @@ import {
   Settings2,
 } from 'lucide-react';
 import { Motorcycle, MaintenanceRecord, ConsumableCategory } from '@motorede/shared';
+import { MotorcycleEmptyState } from '../components/MotorcycleEmptyState';
 
 interface PassportViewProps {
-  motorcycle: Motorcycle;
+  motorcycle: Motorcycle | null;
   records: MaintenanceRecord[];
   onAddRecord: (record: Omit<MaintenanceRecord, 'id'>) => void;
   onOpenEditMotorcycle?: () => void;
@@ -38,7 +39,7 @@ export const PassportView: React.FC<PassportViewProps> = ({
   // Form state
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState<ConsumableCategory | 'general_inspection'>('engine_oil');
-  const [km, setKm] = useState(motorcycle.currentKm.toString());
+  const [km, setKm] = useState(motorcycle?.currentKm.toString() ?? '');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [workshopName, setWorkshopName] = useState('MotoTech Garage');
   const [cost, setCost] = useState('');
@@ -53,7 +54,7 @@ export const PassportView: React.FC<PassportViewProps> = ({
 
   const handleSaveRecord = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !km) return;
+    if (!title.trim() || !km || !motorcycle) return;
 
     onAddRecord({
       motorcycleId: motorcycle.id,
@@ -74,6 +75,18 @@ export const PassportView: React.FC<PassportViewProps> = ({
     setDescription('');
     setCost('');
   };
+
+  // Sem moto cadastrada não há o que mostrar aqui — e inventar uma foi
+  // exatamente o problema que esta tela tinha antes.
+  if (!motorcycle) {
+    return (
+      <MotorcycleEmptyState
+        telaInteira
+        onCadastrar={onOpenEditMotorcycle}
+        motivo="O passaporte guarda o histórico da sua moto — e precisa saber qual é ela."
+      />
+    );
+  }
 
   return (
     <div className="space-y-4 pb-28 sm:pb-24 max-w-4xl mx-auto px-3 sm:px-4 py-3">

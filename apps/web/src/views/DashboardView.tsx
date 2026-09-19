@@ -3,6 +3,7 @@ import { Radio, Wrench, ChevronRight, Bike, Gauge } from 'lucide-react';
 import { Motorcycle, VoiceRoom, type MaintenanceItemStatus } from '@motorede/shared';
 import { storageService } from '../services/storage';
 import { ActiveTab } from '../components/Navigation';
+import { MotorcycleEmptyState } from '../components/MotorcycleEmptyState';
 
 /**
  * Painel inicial.
@@ -24,7 +25,7 @@ import { ActiveTab } from '../components/Navigation';
  */
 
 interface DashboardViewProps {
-  motorcycle: Motorcycle;
+  motorcycle: Motorcycle | null;
   maintenance: MaintenanceItemStatus[];
   voiceRoom: VoiceRoom;
   onNavigateTab: (tab: ActiveTab) => void;
@@ -41,11 +42,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onOpenEditMotorcycle,
 }) => {
   const [isEditingKm, setIsEditingKm] = useState(false);
-  const [kmInput, setKmInput] = useState(motorcycle.currentKm.toString());
+  const [kmInput, setKmInput] = useState(motorcycle?.currentKm.toString() ?? '');
 
   useEffect(() => {
-    setKmInput(motorcycle.currentKm.toString());
-  }, [motorcycle.currentKm]);
+    setKmInput(motorcycle?.currentKm.toString() ?? '');
+  }, [motorcycle?.currentKm]);
 
   // Mesmo comboio que a tela de voz abre, para os dois não divergirem.
   const roomCode = storageService.getLastRoomCode() || voiceRoom.code;
@@ -91,7 +92,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </button>
       </div>
 
-      {/* A moto em uma linha. Os detalhes vivem na ficha e no passaporte. */}
+      {/* A moto em uma linha. Sem cadastro, um convite — e nunca acima do
+          comboio: falta de moto não bloqueia a voz. */}
+      {motorcycle ? (
       <div className="rounded-2xl bg-slate-900/80 border border-slate-800 p-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-slate-400 shrink-0">
@@ -100,11 +103,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
           <div className="min-w-0 flex-1">
             <p className="text-sm font-bold text-slate-100 truncate">
-              {motorcycle.brand} {motorcycle.model}
+              {motorcycle!.brand} {motorcycle!.model}
             </p>
             <p className="text-[11px] text-slate-400 font-mono">
-              {motorcycle.currentKm.toLocaleString('pt-BR')} km
-              {motorcycle.licensePlate ? ` · ${motorcycle.licensePlate}` : ''}
+              {motorcycle!.currentKm.toLocaleString('pt-BR')} km
+              {motorcycle!.licensePlate ? ` · ${motorcycle!.licensePlate}` : ''}
             </p>
           </div>
 
@@ -151,6 +154,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </form>
         )}
       </div>
+      ) : (
+        <MotorcycleEmptyState onCadastrar={onOpenEditMotorcycle} />
+      )}
 
       {/* Manutenção: só aparece quando há algo a fazer. */}
       {needsAttention.length > 0 && (
