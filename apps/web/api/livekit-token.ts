@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { AccessToken } from 'livekit-server-sdk';
-import { canJoinConvoy, CONVOY_MAX, normalizePhone } from '@motorede/shared';
+import { canJoinConvoy, CONVOY_MAX, normalizePhone } from './_convoy';
 import {
   countParticipants,
   encodeMetadata,

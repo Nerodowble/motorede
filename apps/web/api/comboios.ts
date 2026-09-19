@@ -1,9 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import {
-  CONVOY_CAPACITY,
-  normalizePhone,
-  type ActiveConvoy,
-} from '@motorede/shared';
+import { CONVOY_CAPACITY, normalizePhone } from './_convoy';
+// Importação de tipo: some na compilação, não existe em tempo de execução.
+import type { ActiveConvoy } from '@motorede/shared';
 import {
   countParticipants,
   decodeMetadata,
