@@ -219,6 +219,29 @@ export function useSocorro() {
     setRede({ disponivel: false });
   }, [rede.pushToken]);
 
+  /** Busca quem se ofereceu nos meus pedidos, para o caso do push ter falhado. */
+  const buscarOfertas = useCallback(async () => {
+    if (!rede.pushToken) return;
+    for (const meu of meusPedidos) {
+      const ofertas = await ofertasDoMeuPedido(meu.pedidoId, deviceIdDe(rede.pushToken));
+      if (ofertas.length === 0) continue;
+      setRespostas((antes) => {
+        const jaTenho = new Set(antes.map((r) => r.ofertaId));
+        const novas = ofertas
+          .filter((o) => !jaTenho.has(o.ofertaId))
+          .map((o) => ({
+            pedidoId: meu.pedidoId,
+            ofertaId: o.ofertaId,
+            nome: o.nome,
+            moto: o.moto,
+            celula: o.celula,
+            em: o.em,
+          }));
+        return novas.length ? [...novas, ...antes] : antes;
+      });
+    }
+  }, [meusPedidos, rede.pushToken]);
+
   const renovar = useCallback(async () => {
     if (!rede.disponivel || !rede.pushToken) return;
     const p = await posicaoAtual();
@@ -302,29 +325,6 @@ export function useSocorro() {
       tocada.remove();
     };
   }, []);
-
-  /** Busca quem se ofereceu nos meus pedidos, para o caso do push ter falhado. */
-  const buscarOfertas = useCallback(async () => {
-    if (!rede.pushToken) return;
-    for (const meu of meusPedidos) {
-      const ofertas = await ofertasDoMeuPedido(meu.pedidoId, deviceIdDe(rede.pushToken));
-      if (ofertas.length === 0) continue;
-      setRespostas((antes) => {
-        const jaTenho = new Set(antes.map((r) => r.ofertaId));
-        const novas = ofertas
-          .filter((o) => !jaTenho.has(o.ofertaId))
-          .map((o) => ({
-            pedidoId: meu.pedidoId,
-            ofertaId: o.ofertaId,
-            nome: o.nome,
-            moto: o.moto,
-            celula: o.celula,
-            em: o.em,
-          }));
-        return novas.length ? [...novas, ...antes] : antes;
-      });
-    }
-  }, [meusPedidos, rede.pushToken]);
 
   const marcarAceita = useCallback((ofertaId: string) => {
     setRespostas((antes) =>
