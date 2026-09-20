@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { EmergencyType, distanceKm, validateRequest } from '@motorede/shared';
 import { GeoPoint, getGoogleMapsNavigationUrl, getWazeNavigationUrl } from '../services/geolocation';
-import { useSocorroRede } from '../hooks/useSocorroRede';
+import type { useSocorroRede } from '../hooks/useSocorroRede';
 import { pedirSocorro, responderChamado } from '../services/socorroRede';
 
 /**
@@ -54,6 +54,7 @@ interface SOSRescueViewProps {
     reference: string,
     radiusKm: number
   ) => void;
+  socorro: ReturnType<typeof useSocorroRede>;
 }
 
 const EMERGENCIAS: Array<{ type: EmergencyType; rotulo: string; icone: string; leva: string }> = [
@@ -71,8 +72,8 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
   motorcycleInfo,
   nomeDoPiloto,
   onRegistrarPedido,
+  socorro,
 }) => {
-  const socorro = useSocorroRede();
   const [tipo, setTipo] = useState<'emergencia' | 'apoio'>('emergencia');
   const [emergencia, setEmergencia] = useState<EmergencyType>('flat_tire');
   const [referencia, setReferencia] = useState('');
@@ -127,6 +128,14 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
         ? 'Ninguém da rede está no seu raio agora. Nada foi entregue.'
         : `${r.avisados} de ${r.encontrados} aparelho(s) no raio receberam. A resposta aparece aqui.`
     );
+    socorro.registrarMeuPedido({
+      pedidoId: r.pedidoId,
+      kind: tipo,
+      referencia: referencia.trim(),
+      em: new Date().toISOString(),
+      encontrados: r.encontrados,
+      avisados: r.avisados,
+    });
     onRegistrarPedido(emergencia, detalhes.trim(), referencia.trim(), raioKm);
     setReferencia('');
     setDetalhes('');
@@ -185,6 +194,53 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
           <p className="text-[10px] text-ink-faint mt-3 leading-relaxed">
             Em emergência com risco de vida, ligue 190 ou 192 primeiro. Isto é ajuda de
             outros motociclistas e não substitui socorro oficial.
+          </p>
+        </div>
+      )}
+
+      {socorro.meusPedidos.length > 0 && (
+        <div className="rounded-2xl bg-surface border border-brand/40 p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <ShieldAlert className="w-4 h-4 text-brand" />
+            <h3 className="text-xs font-bold text-ink uppercase tracking-wider font-mono">
+              Seu pedido está de pé ({socorro.meusPedidos.length})
+            </h3>
+          </div>
+
+          <div className="space-y-2">
+            {socorro.meusPedidos.map((p) => (
+              <div key={p.pedidoId} className="rounded-xl bg-canvas/80 border border-line p-3">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[10px] px-2 py-0.5 rounded font-bold font-mono bg-brand/20 text-brand-soft">
+                    {p.kind === 'emergencia' ? 'Socorro' : 'Apoio'}
+                  </span>
+                  <span className="text-[11px] text-ink-faint font-mono">
+                    {new Date(p.em).toLocaleTimeString('pt-BR', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </span>
+                </div>
+                <p className="text-xs text-ink mt-1">{p.referencia}</p>
+                <p className="text-[11px] text-ink-muted mt-1">
+                  {p.encontrados === 0
+                    ? 'Ninguém estava no seu raio quando você pediu.'
+                    : `${p.avisados} de ${p.encontrados} aparelho(s) foram avisados.`}
+                </p>
+                <button
+                  onClick={() => void socorro.encerrarMeuPedido(p.pedidoId)}
+                  className="mt-2 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition active:scale-95"
+                >
+                  Já resolvi, encerrar
+                </button>
+              </div>
+            ))}
+          </div>
+
+          <p className="text-[10px] text-ink-faint mt-2 leading-relaxed">
+            Encerre assim que resolver. Um pedido esquecido continua na lista de quem
+            está por perto por até 2 horas, e manda gente rodar atrás de você depois de
+            você já ter ido embora.
           </p>
         </div>
       )}

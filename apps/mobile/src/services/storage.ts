@@ -20,6 +20,7 @@ const CHAVES = {
   LAST_ROOM: 'motorede_last_room_code',
   PHONE: 'motorede_phone',
   FAVORITES: 'motorede_favorite_rooms',
+  MEUS_PEDIDOS: 'motorede_meus_pedidos',
 } as const;
 
 async function ler<T>(chave: string): Promise<T | null> {
@@ -54,6 +55,18 @@ export const storage = {
   /** A moto do piloto, ou null se ainda não cadastrou. */
   getMotorcycle: () => ler<Motorcycle>(CHAVES.MOTORCYCLE),
   saveMotorcycle: (moto: Motorcycle) => gravar(CHAVES.MOTORCYCLE, moto),
+
+  /**
+   * Pedidos de socorro que VOCÊ abriu e ainda estão de pé.
+   *
+   * Guardado porque o próprio pedido é excluído da lista de chamados alheios
+   * — senão você se veria ali como se fosse outra pessoa. Sem isto, abrir um
+   * socorro e fechar o app significaria perdê-lo de vista sem saber que
+   * continua de pé nem como encerrar.
+   */
+  getMeusPedidos: async (): Promise<unknown[]> =>
+    (await ler<unknown[]>(CHAVES.MEUS_PEDIDOS)) ?? [],
+  saveMeusPedidos: (lista: unknown[]) => gravar(CHAVES.MEUS_PEDIDOS, lista),
 
   getRecords: async (): Promise<MaintenanceRecord[]> =>
     (await ler<MaintenanceRecord[]>(CHAVES.RECORDS)) ?? [],

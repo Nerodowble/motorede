@@ -12,6 +12,7 @@ import {
   encerrarPedido,
   type EstadoRede,
 } from '../services/socorro';
+import { storage } from '../services/storage';
 
 /**
  * Mantém este aparelho alcançável e escuta os chamados que chegam.
@@ -42,6 +43,19 @@ export interface ChamadoRecebido {
   distanciaAproxKm?: number;
   em: string;
   respondido?: boolean;
+}
+
+/** Mesmo prazo do servidor: passado isso, o pedido já não existe mais lá. */
+const VALIDADE_MS = 2 * 60 * 60 * 1000;
+
+/** Um pedido que VOCÊ abriu e ainda está de pé. */
+export interface MeuPedido {
+  pedidoId: string;
+  kind: 'emergencia' | 'apoio';
+  referencia: string;
+  em: string;
+  encontrados: number;
+  avisados: number;
 }
 
 /** Aviso recebido de alguém que se ofereceu para ajudar no seu pedido. */
@@ -87,6 +101,7 @@ export function useSocorro() {
   const [posicao, setPosicao] = useState<GeoPoint | null>(null);
   const [chamados, setChamados] = useState<ChamadoRecebido[]>([]);
   const [respostas, setRespostas] = useState<RespostaRecebida[]>([]);
+  const [meusPedidos, setMeusPedidos] = useState<MeuPedido[]>([]);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   /**
@@ -129,9 +144,36 @@ export function useSocorro() {
     return estado;
   }, [buscarAbertos]);
 
+  // Ao abrir, recupera os próprios pedidos e descarta os que já venceram no
+  // servidor. Mostrar um pedido que não existe mais faria você acreditar que
+  // ainda há gente a caminho.
+  useEffect(() => {
+    void storage.getMeusPedidos().then((lista) => {
+      const agora = Date.now();
+      const vivos = (lista as MeuPedido[]).filter(
+        (p) => agora - new Date(p.em).getTime() < VALIDADE_MS
+      );
+      setMeusPedidos(vivos);
+      if (vivos.length !== lista.length) void storage.saveMeusPedidos(vivos);
+    });
+  }, []);
+
+  const registrarMeuPedido = useCallback((pedido: MeuPedido) => {
+    setMeusPedidos((antes) => {
+      const proximo = [pedido, ...antes.filter((p) => p.pedidoId !== pedido.pedidoId)];
+      void storage.saveMeusPedidos(proximo);
+      return proximo;
+    });
+  }, []);
+
   const encerrarMeuPedido = useCallback(
     async (pedidoId: string) => {
       if (rede.pushToken) await encerrarPedido(rede.pushToken, pedidoId);
+      setMeusPedidos((antes) => {
+        const proximo = antes.filter((p) => p.pedidoId !== pedidoId);
+        void storage.saveMeusPedidos(proximo);
+        return proximo;
+      });
     },
     [rede.pushToken]
   );
@@ -240,6 +282,8 @@ export function useSocorro() {
     renovar,
     marcarRespondido,
     dispensarChamado,
+    meusPedidos,
+    registrarMeuPedido,
     encerrarMeuPedido,
   };
 }

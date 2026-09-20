@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { distanceKm, validateRequest, type GeoPoint, type RiderProfile } from '@motorede/shared';
 import { pedirSocorro, responderChamado } from '../services/socorro';
-import type { ChamadoRecebido, RespostaRecebida } from '../hooks/useSocorro';
+import type { ChamadoRecebido, RespostaRecebida, MeuPedido } from '../hooks/useSocorro';
 import type { EstadoRede } from '../services/socorro';
 import { COLORS } from '../theme';
 
@@ -48,6 +48,9 @@ interface SocorroScreenProps {
   entrando: boolean;
   posicao: GeoPoint | null;
   chamados: ChamadoRecebido[];
+  meusPedidos: MeuPedido[];
+  onRegistrarPedido: (p: MeuPedido) => void;
+  onEncerrarPedido: (pedidoId: string) => void;
   respostas: RespostaRecebida[];
   onEntrar: () => Promise<EstadoRede>;
   onSair: () => Promise<void>;
@@ -62,6 +65,9 @@ export const SocorroScreen: React.FC<SocorroScreenProps> = ({
   entrando,
   posicao,
   chamados,
+  meusPedidos,
+  onRegistrarPedido,
+  onEncerrarPedido,
   respostas,
   onEntrar,
   onSair,
@@ -105,6 +111,15 @@ export const SocorroScreen: React.FC<SocorroScreenProps> = ({
       setErro(r.erro);
       return;
     }
+
+    onRegistrarPedido({
+      pedidoId: r.pedidoId,
+      kind: tipo,
+      referencia: referencia.trim(),
+      em: new Date().toISOString(),
+      encontrados: r.encontrados,
+      avisados: r.avisados,
+    });
 
     // Número, não adjetivo. "Enviado" não diz se alguém está por perto.
     setResultado(
@@ -173,6 +188,40 @@ export const SocorroScreen: React.FC<SocorroScreenProps> = ({
 
   return (
     <ScrollView contentContainerStyle={styles.conteudo}>
+      {meusPedidos.length > 0 && (
+        <View style={styles.card}>
+          <Text style={styles.tituloCard}>Seu pedido está de pé</Text>
+          {meusPedidos.map((p) => (
+            <View key={p.pedidoId} style={styles.chamado}>
+              <Text style={styles.chamadoNome}>
+                {p.kind === 'emergencia' ? 'Socorro' : 'Apoio'} ·{' '}
+                {new Date(p.em).toLocaleTimeString('pt-BR', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+              </Text>
+              <Text style={styles.chamadoRef}>{p.referencia}</Text>
+              <Text style={styles.chamadoMeta}>
+                {p.encontrados === 0
+                  ? 'Ninguém estava no seu raio quando você pediu.'
+                  : `${p.avisados} de ${p.encontrados} aparelho(s) avisados.`}
+              </Text>
+              <Pressable
+                onPress={() => onEncerrarPedido(p.pedidoId)}
+                style={[styles.botaoPequeno, styles.botaoResolver]}
+              >
+                <Text style={styles.botaoResolverTexto}>Já resolvi, encerrar</Text>
+              </Pressable>
+            </View>
+          ))}
+          <Text style={styles.ajuda}>
+            Encerre assim que resolver. Um pedido esquecido continua aparecendo para
+            quem está por perto por até 2 horas, e manda gente rodar atrás de você
+            depois de você já ter ido embora.
+          </Text>
+        </View>
+      )}
+
       {chamados.length > 0 && (
         <View style={[styles.card, styles.cardAlerta]}>
           <Text style={styles.tituloCard}>Pedindo ajuda perto de você</Text>
@@ -440,6 +489,8 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   botaoPequenoTexto: { color: COLORS.background, fontSize: 11, fontWeight: '800' },
+  botaoResolver: { backgroundColor: COLORS.success, alignSelf: 'flex-start', marginTop: 8 },
+  botaoResolverTexto: { color: COLORS.background, fontSize: 11, fontWeight: '800' },
   botaoVazado: {
     borderRadius: 9,
     paddingHorizontal: 12,

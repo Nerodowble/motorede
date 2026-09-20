@@ -249,6 +249,9 @@ function Aplicativo() {
             entrando={socorro.entrando}
             posicao={socorro.posicao}
             chamados={socorro.chamados}
+            meusPedidos={socorro.meusPedidos}
+            onRegistrarPedido={socorro.registrarMeuPedido}
+            onEncerrarPedido={(id) => void socorro.encerrarMeuPedido(id)}
             respostas={socorro.respostas}
             onEntrar={socorro.entrar}
             onSair={socorro.sair}

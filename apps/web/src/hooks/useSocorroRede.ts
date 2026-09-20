@@ -27,6 +27,49 @@ import {
  */
 
 const INTERVALO_PRESENCA_MS = 10 * 60 * 1000;
+const CHAVE_MEUS = 'motorede_meus_pedidos';
+/** Mesmo prazo do servidor. Passado isso o pedido já não existe mais lá. */
+const VALIDADE_MS = 2 * 60 * 60 * 1000;
+
+/**
+ * Um pedido que VOCÊ abriu e ainda está de pé.
+ *
+ * Precisa existir separado dos chamados alheios: o seu próprio pedido é
+ * excluído da lista de "quem precisa de ajuda perto de você" — senão você se
+ * veria ali como se fosse outra pessoa parada na mesma estrada. Mas sem um
+ * lugar para ele, você abre um socorro e some com ele de vista, sem saber que
+ * está de pé nem como encerrar.
+ */
+export interface MeuPedido {
+  pedidoId: string;
+  kind: 'emergencia' | 'apoio';
+  referencia: string;
+  em: string;
+  encontrados: number;
+  avisados: number;
+}
+
+function lerMeus(): MeuPedido[] {
+  try {
+    const bruto = localStorage.getItem(CHAVE_MEUS);
+    if (!bruto) return [];
+    const lista = JSON.parse(bruto) as MeuPedido[];
+    // Descarta o que já venceu no servidor. Mostrar um pedido que não existe
+    // mais faria você achar que ainda há gente a caminho.
+    const agora = Date.now();
+    return lista.filter((p) => agora - new Date(p.em).getTime() < VALIDADE_MS);
+  } catch {
+    return [];
+  }
+}
+
+function gravarMeus(lista: MeuPedido[]) {
+  try {
+    localStorage.setItem(CHAVE_MEUS, JSON.stringify(lista));
+  } catch {
+    // Armazenamento bloqueado: vale só para esta sessão.
+  }
+}
 
 export interface ChamadoRecebido {
   pedidoId: string;
@@ -54,6 +97,7 @@ export function useSocorroRede() {
   const [posicao, setPosicao] = useState<GeoPoint | null>(null);
   const [chamados, setChamados] = useState<ChamadoRecebido[]>([]);
   const [respostas, setRespostas] = useState<RespostaRecebida[]>([]);
+  const [meusPedidos, setMeusPedidos] = useState<MeuPedido[]>(() => lerMeus());
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   /**
@@ -95,8 +139,21 @@ export function useSocorroRede() {
     return estado;
   }, [buscarAbertos]);
 
+  const registrarMeuPedido = useCallback((pedido: MeuPedido) => {
+    setMeusPedidos((antes) => {
+      const proximo = [pedido, ...antes.filter((p) => p.pedidoId !== pedido.pedidoId)];
+      gravarMeus(proximo);
+      return proximo;
+    });
+  }, []);
+
   const encerrarMeuPedido = useCallback(async (pedidoId: string) => {
     await encerrarPedido(pedidoId);
+    setMeusPedidos((antes) => {
+      const proximo = antes.filter((p) => p.pedidoId !== pedidoId);
+      gravarMeus(proximo);
+      return proximo;
+    });
   }, []);
 
   const sair = useCallback(async () => {
@@ -210,6 +267,8 @@ export function useSocorroRede() {
     sair,
     marcarRespondido,
     dispensarChamado,
+    meusPedidos,
+    registrarMeuPedido,
     encerrarMeuPedido,
     suportado: pushSuportado(),
     precisaInstalar: precisaInstalarNoIphone(),

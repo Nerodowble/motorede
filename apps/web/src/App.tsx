@@ -6,6 +6,7 @@
 import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react';
 import { UserRole, UserProfile, Motorcycle, SOSAlert, SOSVolunteer, VoiceRoom, Coupon, MaintenanceRecord, EmergencyType, summarizeMaintenance } from '@motorede/shared';
 import { storageService } from './services/storage';
+import { useSocorroRede } from './hooks/useSocorroRede';
 import { GeoPoint, geolocationService, calculateDistanceKm } from './services/geolocation';
 import { audioEngine } from './services/audioEngine';
 import { Header } from './components/Header';
@@ -36,6 +37,7 @@ export default function App() {
   // caso contrário um deploy mal configurado deixaria o app inacessível.
   const auth = useGoogleAuth();
   const theme = useTheme();
+  const socorro = useSocorroRede();
 
   // Authentication & Session State
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => storageService.getCurrentUser());
@@ -265,9 +267,11 @@ export default function App() {
     }
   };
 
-  const activeSOSCount = sosAlerts.filter(
-    (a) => a.status === 'active' || a.status === 'in_progress'
-  ).length;
+  // Conta o que a aba de fato mostra: chamados de outras pessoas ainda não
+  // atendidos por você, mais os seus próprios pedidos de pé. Antes contava o
+  // histórico local, e dizia "2 SOS" com a tela vazia.
+  const activeSOSCount =
+    socorro.chamados.filter((c) => !c.respondido).length + socorro.meusPedidos.length;
 
   if (auth.isConfigured && !auth.user) {
     return <LoginScreen auth={auth} />;
@@ -346,6 +350,7 @@ export default function App() {
               }
               nomeDoPiloto={currentUser?.name || 'Piloto'}
               onRegistrarPedido={handleTriggerSOS}
+              socorro={socorro}
             />
           )}
 
