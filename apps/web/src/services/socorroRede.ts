@@ -194,6 +194,54 @@ export async function sairDaRede(): Promise<void> {
   }
 }
 
+export interface PedidoAberto {
+  pedidoId: string;
+  kind: 'emergencia' | 'apoio';
+  emergency?: string;
+  nome: string;
+  moto?: string;
+  referencia: string;
+  detalhes?: string;
+  celula: GeoPoint;
+  raioKm: number;
+  em: string;
+}
+
+/**
+ * O que ainda está aberto perto de você.
+ *
+ * O push avisa quem estava online no instante do pedido; esta lista é para
+ * todo o resto — quem abriu o app depois, quem estava sem sinal, quem
+ * dispensou a notificação sem querer. Sem ela, chegar um minuto atrasado
+ * significava nunca ficar sabendo.
+ */
+export async function pedidosAbertos(posicao: GeoPoint, raioKm = 25): Promise<PedidoAberto[]> {
+  try {
+    const r = await fetch(
+      `/api/socorro?lat=${posicao.lat}&lng=${posicao.lng}&raioKm=${raioKm}&excluir=${deviceId()}`
+    );
+    if (!r.ok) return [];
+    const corpo = await r.json();
+    return Array.isArray(corpo.pedidos) ? corpo.pedidos : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Tira o próprio pedido da lista. Pedido velho manda gente atrás de quem já foi. */
+export async function encerrarPedido(pedidoId: string): Promise<boolean> {
+  try {
+    const r = await fetch('/api/socorro', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ acao: 'encerrar', deviceId: deviceId(), pedidoId }),
+    });
+    return r.ok;
+  } catch {
+    return false;
+  }
+}
+
 export interface PedidoEnviado {
   pedidoId: string;
   encontrados: number;

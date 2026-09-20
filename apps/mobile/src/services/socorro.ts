@@ -16,8 +16,15 @@ import { API_BASE } from '../config';
  * viajar. O servidor arredonda de novo, porque este código roda no aparelho e
  * pode ser trocado; a promessa não pode depender só daqui.
  *
- * O pedido em si — texto, moto, conversa, endereço exato — nunca é gravado no
- * servidor. Ele passa dentro da notificação e some.
+ * O QUE FICA GUARDADO NO SERVIDOR
+ *
+ * O pedido em aberto: nome, texto e a célula de ~1 km, por até 2 horas. É o
+ * que permite alguém que abriu o app depois ainda enxergar quem precisa de
+ * ajuda — antes o pedido só existia como push, e chegar um minuto atrasado
+ * significava nunca ficar sabendo.
+ *
+ * O que NÃO fica: endereço exato, telefone, conversa. Isso continua só no
+ * aparelho de quem pediu, e o endereço só vai para quem ele aceitar.
  *
  * O LIMITE HONESTO
  *
@@ -207,6 +214,59 @@ export async function sairDaRede(pushToken: string): Promise<void> {
     });
   } catch {
     // Se falhar, a entrada vence sozinha em 45 minutos.
+  }
+}
+
+export interface PedidoAberto {
+  pedidoId: string;
+  kind: 'emergencia' | 'apoio';
+  emergency?: string;
+  nome: string;
+  moto?: string;
+  referencia: string;
+  detalhes?: string;
+  celula: GeoPoint;
+  raioKm: number;
+  em: string;
+}
+
+/**
+ * O que ainda está aberto perto de você.
+ *
+ * O push avisa quem estava online no instante do pedido; esta lista é para
+ * todo o resto — quem abriu o app depois, quem estava sem sinal, quem
+ * dispensou a notificação sem querer. Sem ela, chegar um minuto atrasado
+ * significava nunca ficar sabendo.
+ */
+export async function pedidosAbertos(
+  posicao: GeoPoint,
+  raioKm = 25,
+  pushToken?: string
+): Promise<PedidoAberto[]> {
+  try {
+    const r = await fetch(
+      `${API_BASE}/socorro?lat=${posicao.lat}&lng=${posicao.lng}&raioKm=${raioKm}` +
+        (pushToken ? `&excluir=${deviceIdDe(pushToken)}` : '')
+    );
+    if (!r.ok) return [];
+    const corpo = await r.json();
+    return Array.isArray(corpo.pedidos) ? corpo.pedidos : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Tira o próprio pedido da lista. Pedido velho manda gente atrás de quem já foi. */
+export async function encerrarPedido(pushToken: string, pedidoId: string): Promise<boolean> {
+  try {
+    const r = await fetch(`${API_BASE}/socorro`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ acao: 'encerrar', deviceId: deviceIdDe(pushToken), pedidoId }),
+    });
+    return r.ok;
+  } catch {
+    return false;
   }
 }
 

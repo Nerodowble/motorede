@@ -7,7 +7,11 @@ import http from 'node:http';
  */
 
 const kv = new Map();     // chave -> { valor, expiraEm }
-const geo = new Map();    // membro -> { lat, lng }
+const geos = new Map();   // nome do conjunto -> Map(membro -> { lat, lng })
+const geo = (nome) => {
+  if (!geos.has(nome)) geos.set(nome, new Map());
+  return geos.get(nome);
+};
 
 const vivo = (e) => !e || !e.expiraEm || e.expiraEm > Date.now();
 
@@ -22,9 +26,10 @@ function executar(cmd) {
   const nome = String(cmd[0]).toUpperCase();
 
   if (nome === 'GEOADD') {
-    const [, , lng, lat, membro] = cmd;
-    const novo = !geo.has(membro);
-    geo.set(membro, { lat: Number(lat), lng: Number(lng) });
+    const [, conjunto, lng, lat, membro] = cmd;
+    const g = geo(conjunto);
+    const novo = !g.has(membro);
+    g.set(membro, { lat: Number(lat), lng: Number(lng) });
     return novo ? 1 : 0;
   }
 
@@ -49,8 +54,8 @@ function executar(cmd) {
   }
 
   if (nome === 'DEL') { const n = kv.delete(cmd[1]) ? 1 : 0; return n; }
-  if (nome === 'ZRANGE') return [...geo.keys()];
-  if (nome === 'ZREM') { let n = 0; for (const m of cmd.slice(2)) if (geo.delete(m)) n++; return n; }
+  if (nome === 'ZRANGE') return [...geo(cmd[1]).keys()];
+  if (nome === 'ZREM') { const g = geo(cmd[1]); let n = 0; for (const m of cmd.slice(2)) if (g.delete(m)) n++; return n; }
 
   if (nome === 'GEOSEARCH') {
     const iLonLat = cmd.findIndex((c) => String(c).toUpperCase() === 'FROMLONLAT');
@@ -60,7 +65,7 @@ function executar(cmd) {
     const comDist = cmd.some((c) => String(c).toUpperCase() === 'WITHDIST');
 
     const achados = [];
-    for (const [membro, p] of geo) {
+    for (const [membro, p] of geo(cmd[1])) {
       const d = haversine(centro, p);
       if (d <= raio) achados.push([membro, d]);
     }
@@ -71,9 +76,9 @@ function executar(cmd) {
   throw new Error('comando nao implementado: ' + nome);
 }
 
-export function limpar() { kv.clear(); geo.clear(); }
+export function limpar() { kv.clear(); geos.clear(); }
 export function expirarToken(deviceId) { kv.delete(`mr:tok:${deviceId}`); }
-export function estado() { return { chaves: kv.size, membrosGeo: geo.size }; }
+export function estado() { return { chaves: kv.size, membrosGeo: geo('mr:geo').size }; }
 
 export function subir(porta) {
   const servidor = http.createServer((req, res) => {

@@ -4,6 +4,9 @@ import {
   vizinhosNoRaio,
   lembrarPedido,
   tokenDoPedinte,
+  guardarPedido,
+  pedidosNoRaio,
+  encerrarPedido,
   enviarPush,
   storeConfigured,
   lerPonto,
@@ -14,11 +17,15 @@ import {
 /**
  * Toca o telefone de quem está perto — e devolve a resposta a quem pediu.
  *
- * O SERVIDOR NÃO GUARDA O PEDIDO.
+ * O QUE O SERVIDOR GUARDA DO PEDIDO
  *
- * O texto, a moto, a conversa e o endereço exato ficam no aparelho de quem
- * pediu. Aqui só passa o que cabe numa notificação, e a única coisa retida é
- * para onde devolver a resposta — que vence em 2 horas.
+ * O suficiente para quem chegar depois ainda encontrar: nome, texto e a
+ * célula de ~1 km, por 2 horas. Antes o pedido era só um push, e quem abrisse
+ * o app um minuto atrasado nunca ficava sabendo — para um socorro, esse era o
+ * erro inteiro.
+ *
+ * Continuam fora daqui o endereço exato, o telefone e a conversa. Esses ficam
+ * no aparelho de quem pediu, e o endereço só chega a quem ele aceitar.
  *
  * O QUE VAI NA NOTIFICAÇÃO
  *
@@ -29,7 +36,7 @@ import {
  * aceitar.
  */
 
-type Acao = 'pedir' | 'responder';
+type Acao = 'pedir' | 'responder' | 'encerrar';
 
 interface Corpo {
   acao?: unknown;
@@ -69,7 +76,34 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     res.end(JSON.stringify(corpo));
   };
 
-  if (req.method !== 'POST') return responder(405, { error: 'Use POST.' });
+  if (req.method === 'GET') {
+    if (!storeConfigured()) return responder(503, { error: 'Rede de socorro não configurada.' });
+    const url = new URL(req.url || '/', 'http://local');
+    const lat = url.searchParams.get('lat');
+    const lng = url.searchParams.get('lng');
+
+    // Testar a presença do parâmetro ANTES de converter. `Number(null)` é 0, e
+    // um pedido sem coordenada viraria uma consulta ao ponto (0,0), no golfo
+    // da Guiné — resposta vazia e plausível, com o cliente achando que
+    // simplesmente não há ninguém por perto. Errar calado é pior que falhar.
+    if (lat === null || lng === null) {
+      return responder(400, { error: 'Informe lat e lng.' });
+    }
+    const posicao = lerPonto({ lat: Number(lat), lng: Number(lng) });
+    if (!posicao) return responder(400, { error: 'lat e lng precisam ser números válidos.' });
+    const raioKm = Math.min(Math.max(Number(url.searchParams.get('raioKm')) || 25, 1), 50);
+    try {
+      const excluir = url.searchParams.get('excluir') || undefined;
+      return responder(200, { pedidos: await pedidosNoRaio(posicao, raioKm, excluir) });
+    } catch (erro) {
+      return responder(500, {
+        error: 'Falha ao listar pedidos.',
+        detail: erro instanceof Error ? erro.message : String(erro),
+      });
+    }
+  }
+
+  if (req.method !== 'POST') return responder(405, { error: 'Use GET para listar ou POST para agir.' });
   if (!storeConfigured()) {
     return responder(503, { error: 'Rede de socorro ainda não configurada no servidor.' });
   }
@@ -81,6 +115,12 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
 
   try {
     if (acao === 'responder') return await responderPedido(corpo, responder);
+    if (acao === 'encerrar') {
+      const pedidoId = textoCurto(corpo.pedidoId, 64);
+      if (!pedidoId) return responder(400, { error: 'pedidoId é obrigatório.' });
+      await encerrarPedido(pedidoId);
+      return responder(200, { ok: true, encerrado: true });
+    }
     return await abrirPedido(corpo, deviceId, responder);
   } catch (erro) {
     return responder(500, {
@@ -151,6 +191,24 @@ async function abrirPedido(corpo: Corpo, deviceId: string, responder: Responder)
   }));
 
   if (pushToken) await lembrarPedido(pedidoId, pushToken);
+
+  // Guardado ANTES do push: se a entrega falhar, o pedido ainda existe para
+  // quem abrir o app depois. O contrário — push sem registro — foi o buraco
+  // que este arquivo tinha.
+  await guardarPedido({
+    pedidoId,
+    de: deviceId,
+    kind,
+    emergency: emergency || undefined,
+    nome,
+    moto: moto || undefined,
+    referencia,
+    detalhes: detalhes || undefined,
+    celula,
+    raioKm,
+    em: new Date().toISOString(),
+  });
+
   const { enviados, falhas } = await enviarPush(recados);
 
   return responder(200, {

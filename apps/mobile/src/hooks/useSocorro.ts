@@ -8,6 +8,8 @@ import {
   anunciarPresenca,
   posicaoAtual,
   INTERVALO_PRESENCA_MS,
+  pedidosAbertos,
+  encerrarPedido,
   type EstadoRede,
 } from '../services/socorro';
 
@@ -87,14 +89,52 @@ export function useSocorro() {
   const [respostas, setRespostas] = useState<RespostaRecebida[]>([]);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  /**
+   * Busca o que já está aberto perto daqui.
+   *
+   * O push alcança quem estava online no instante do pedido. Isto alcança todo
+   * o resto: quem abriu o app depois, quem estava sem sinal, quem dispensou a
+   * notificação sem querer.
+   */
+  const buscarAbertos = useCallback(async (onde: GeoPoint) => {
+    const abertos = await pedidosAbertos(onde, 25, rede.pushToken);
+    setChamados((antes) => {
+      const jaTenho = new Set(antes.map((c) => c.pedidoId));
+      const novos = abertos
+        .filter((p) => !jaTenho.has(p.pedidoId))
+        .map((p) => ({
+          pedidoId: p.pedidoId,
+          kind: p.kind,
+          emergency: p.emergency,
+          nome: p.nome,
+          moto: p.moto,
+          referencia: p.referencia,
+          detalhes: p.detalhes,
+          celula: p.celula,
+          em: p.em,
+        }));
+      return novos.length ? [...novos, ...antes] : antes;
+    });
+  }, [rede.pushToken]);
+
   const entrar = useCallback(async () => {
     setEntrando(true);
     const estado = await entrarNaRede();
     setRede(estado);
-    if (estado.posicao) setPosicao(estado.posicao);
+    if (estado.posicao) {
+      setPosicao(estado.posicao);
+      await buscarAbertos(estado.posicao);
+    }
     setEntrando(false);
     return estado;
-  }, []);
+  }, [buscarAbertos]);
+
+  const encerrarMeuPedido = useCallback(
+    async (pedidoId: string) => {
+      if (rede.pushToken) await encerrarPedido(rede.pushToken, pedidoId);
+    },
+    [rede.pushToken]
+  );
 
   const sair = useCallback(async () => {
     if (rede.pushToken) await sairDaRede(rede.pushToken);
@@ -107,7 +147,8 @@ export function useSocorro() {
     if (!p) return;
     setPosicao(p);
     await anunciarPresenca(rede.pushToken, p);
-  }, [rede.disponivel, rede.pushToken]);
+    await buscarAbertos(p);
+  }, [rede.disponivel, rede.pushToken, buscarAbertos]);
 
   // Enquanto o app estiver à vista. Sai de cena, para.
   useEffect(() => {
@@ -199,5 +240,6 @@ export function useSocorro() {
     renovar,
     marcarRespondido,
     dispensarChamado,
+    encerrarMeuPedido,
   };
 }

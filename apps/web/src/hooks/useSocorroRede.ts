@@ -7,6 +7,8 @@ import {
   posicaoAtual,
   pushSuportado,
   precisaInstalarNoIphone,
+  pedidosAbertos,
+  encerrarPedido,
   type EstadoRede,
 } from '../services/socorroRede';
 
@@ -18,8 +20,10 @@ import {
  * na notificação com a aba fechada — o service worker é o mesmo, muda só quem
  * está na frente.
  *
- * Nada disso é guardado no servidor. O que a lista mostra veio dentro da
- * notificação e vive enquanto a página viver.
+ * A lista vem de duas fontes, e precisa das duas: o push traz o que acontece
+ * agora, e a consulta ao servidor traz o que já estava aberto quando você
+ * chegou. Só com push, quem abrisse a página um minuto depois do pedido nunca
+ * ficaria sabendo.
  */
 
 const INTERVALO_PRESENCA_MS = 10 * 60 * 1000;
@@ -52,13 +56,47 @@ export function useSocorroRede() {
   const [respostas, setRespostas] = useState<RespostaRecebida[]>([]);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  /**
+   * Busca o que já está aberto perto daqui.
+   *
+   * O push alcança quem estava online no instante do pedido. Isto alcança
+   * todo o resto: quem abriu depois, quem estava sem sinal, quem dispensou a
+   * notificação sem querer. Roda ao entrar na rede e ao voltar para a aba.
+   */
+  const buscarAbertos = useCallback(async (onde: GeoPoint) => {
+    const abertos = await pedidosAbertos(onde);
+    setChamados((antes) => {
+      const jaTenho = new Set(antes.map((c) => c.pedidoId));
+      const novos = abertos
+        .filter((p) => !jaTenho.has(p.pedidoId))
+        .map((p) => ({
+          pedidoId: p.pedidoId,
+          kind: p.kind,
+          nome: p.nome,
+          moto: p.moto,
+          referencia: p.referencia,
+          detalhes: p.detalhes,
+          celula: p.celula,
+          em: p.em,
+        }));
+      return novos.length ? [...novos, ...antes] : antes;
+    });
+  }, []);
+
   const entrar = useCallback(async () => {
     setEntrando(true);
     const estado = await entrarNaRede();
     setRede(estado);
-    if (estado.posicao) setPosicao(estado.posicao);
+    if (estado.posicao) {
+      setPosicao(estado.posicao);
+      await buscarAbertos(estado.posicao);
+    }
     setEntrando(false);
     return estado;
+  }, [buscarAbertos]);
+
+  const encerrarMeuPedido = useCallback(async (pedidoId: string) => {
+    await encerrarPedido(pedidoId);
   }, []);
 
   const sair = useCallback(async () => {
@@ -72,7 +110,8 @@ export function useSocorroRede() {
     if (!p) return;
     setPosicao(p);
     await anunciarPresenca(rede.inscricao, p);
-  }, [rede.disponivel, rede.inscricao]);
+    await buscarAbertos(p);
+  }, [rede.disponivel, rede.inscricao, buscarAbertos]);
 
   useEffect(() => {
     const parar = () => {
@@ -171,6 +210,7 @@ export function useSocorroRede() {
     sair,
     marcarRespondido,
     dispensarChamado,
+    encerrarMeuPedido,
     suportado: pushSuportado(),
     precisaInstalar: precisaInstalarNoIphone(),
   };

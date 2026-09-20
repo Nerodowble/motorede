@@ -199,6 +199,113 @@ export async function lembrarPedido(pedidoId: string, pushTokenDoPedinte: string
   await redis([['SET', `mr:req:${pedidoId}`, pushTokenDoPedinte, 'EX', PEDIDO_SEGUNDOS]]);
 }
 
+/**
+ * O pedido em aberto, para quem chegar depois.
+ *
+ * POR QUE ISTO EXISTE
+ *
+ * Antes o pedido era só um push: saía para quem estava no raio naquele
+ * segundo e acabava ali. Quem abrisse o app um minuto depois não via nada, e
+ * não havia lista para consultar. Para um socorro isso é o erro inteiro —
+ * quem está parado no acostamento precisa ser achado por quem aparecer na
+ * próxima meia hora, não só por quem por acaso estava com o telefone na mão.
+ *
+ * O que fica guardado é exatamente o que já viajava dentro da notificação: a
+ * célula de ~1 km, o texto e o nome. Endereço exato, telefone e conversa
+ * continuam fora daqui. E vence em 2 horas: um pedido velho na lista é pior
+ * que nenhum, porque manda gente rodar atrás de quem já foi embora.
+ */
+export interface PedidoAberto {
+  pedidoId: string;
+  /** Quem abriu. Serve para não devolver o próprio pedido a quem o criou. */
+  de?: string;
+  kind: 'emergencia' | 'apoio';
+  emergency?: string;
+  nome: string;
+  moto?: string;
+  referencia: string;
+  detalhes?: string;
+  celula: GeoPoint;
+  raioKm: number;
+  em: string;
+}
+
+export async function guardarPedido(pedido: PedidoAberto): Promise<void> {
+  await redis([
+    ['GEOADD', 'mr:pedidos', pedido.celula.lng, pedido.celula.lat, pedido.pedidoId],
+    ['SET', `mr:ped:${pedido.pedidoId}`, JSON.stringify(pedido), 'EX', PEDIDO_SEGUNDOS],
+  ]);
+}
+
+/**
+ * Pedidos ainda abertos perto de um ponto.
+ *
+ * Mesma limpeza-durante-o-uso da presença: o conjunto geográfico não tem
+ * validade por item, então o desaparecimento do corpo do pedido é o sinal de
+ * que ele venceu, e a entrada morta sai durante a própria consulta.
+ */
+export async function pedidosNoRaio(
+  centro: GeoPoint,
+  raioKm: number,
+  excluir?: string
+): Promise<PedidoAberto[]> {
+  const celula = coarsenLocation(centro);
+
+  const [achados] = await redis<unknown[]>([
+    [
+      'GEOSEARCH',
+      'mr:pedidos',
+      'FROMLONLAT',
+      celula.lng,
+      celula.lat,
+      'BYRADIUS',
+      raioKm,
+      'km',
+      'ASC',
+      'COUNT',
+      100,
+    ],
+  ]);
+
+  const ids = (achados || []).map((l) => (Array.isArray(l) ? String(l[0]) : String(l))).filter(Boolean);
+  if (ids.length === 0) return [];
+
+  const [corpos] = await redis<Array<string | null>>([
+    ['MGET', ...ids.map((id) => `mr:ped:${id}`)],
+  ]);
+
+  const abertos: PedidoAberto[] = [];
+  const mortos: string[] = [];
+
+  ids.forEach((id, i) => {
+    const bruto = corpos?.[i];
+    if (!bruto) {
+      mortos.push(id);
+      return;
+    }
+    try {
+      abertos.push(JSON.parse(bruto) as PedidoAberto);
+    } catch {
+      mortos.push(id);
+    }
+  });
+
+  if (mortos.length > 0) void redis([['ZREM', 'mr:pedidos', ...mortos]]).catch(() => {});
+
+  // Ver o próprio pedido na lista de "quem precisa de ajuda perto de você"
+  // faria a pessoa achar que há outra pessoa parada na mesma estrada.
+  return excluir ? abertos.filter((p) => p.de !== excluir) : abertos;
+}
+
+/** Tira o pedido da lista assim que ele é resolvido ou cancelado. */
+export async function encerrarPedido(pedidoId: string): Promise<void> {
+  await redis([
+    ['ZREM', 'mr:pedidos', pedidoId],
+    ['DEL', `mr:ped:${pedidoId}`],
+    ['DEL', `mr:req:${pedidoId}`],
+  ]);
+}
+
 export async function tokenDoPedinte(pedidoId: string): Promise<string | null> {
   const [token] = await redis<string | null>([['GET', `mr:req:${pedidoId}`]]);
   return token ?? null;
