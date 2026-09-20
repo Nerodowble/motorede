@@ -88,6 +88,10 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
   const [resultado, setResultado] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [copiado, setCopiado] = useState<string | null>(null);
+  // Começa com o do perfil, mas é editável: o telefone do cadastro pode estar
+  // velho, ou você pode querer dar o número de quem está com você, ou o do
+  // celular que ainda tem bateria.
+  const [telefone, setTelefone] = useState(telefoneDoPiloto);
 
   const posicao = socorro.posicao ?? userCoords;
 
@@ -138,6 +142,7 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
       pedidoId: r.pedidoId,
       kind: tipo,
       referencia: referencia.trim(),
+      telefone: telefone.trim(),
       em: new Date().toISOString(),
       encontrados: r.encontrados,
       avisados: r.avisados,
@@ -197,7 +202,7 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
       pedidoId: resposta.pedidoId,
       ofertaId: resposta.ofertaId,
       nome: nomeDoPiloto,
-      telefone: telefoneDoPiloto,
+      telefone: meu?.telefone || telefoneDoPiloto,
       referencia: meu?.referencia || '',
       precisa: posicao,
     });
@@ -506,12 +511,14 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
                     Aceitar e enviar meu endereço
                   </button>
                 )}
-                {!telefoneDoPiloto && !r.aceita && (
-                  <p className="text-[11px] text-brand-soft mt-2 leading-relaxed">
-                    Seu perfil está sem telefone. Quem você aceitar vai receber o endereço
-                    e não vai ter como te ligar.
-                  </p>
-                )}
+                {!socorro.meusPedidos.find((p) => p.pedidoId === r.pedidoId)?.telefone &&
+                  !telefoneDoPiloto &&
+                  !r.aceita && (
+                    <p className="text-[11px] text-brand-soft mt-2 leading-relaxed">
+                      Você pediu sem informar telefone. Quem aceitar vai receber o endereço
+                      e não vai ter como te ligar.
+                    </p>
+                  )}
                 <p className="text-[10px] text-ink-faint mt-1.5 leading-relaxed">
                   Aceitar envia seu <strong>endereço exato e telefone</strong> só para esta
                   pessoa. O MotoRede não verifica a identidade de ninguém — aceite quem
@@ -592,6 +599,24 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
             {!!validacao.errors.reference && referencia.length > 0 && (
               <p className="text-[11px] text-red-400 mt-1">{validacao.errors.reference}</p>
             )}
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-ink-muted mb-1 font-mono">
+              Seu telefone
+            </label>
+            <input
+              type="tel"
+              value={telefone}
+              onChange={(e) => setTelefone(e.target.value)}
+              placeholder="(11) 98765-4321"
+              className="w-full bg-surface border border-line-strong rounded-xl p-3 text-xs text-ink placeholder:text-ink-faint focus:outline-none focus:border-red-500"
+            />
+            <p className="text-[10px] text-ink-faint mt-1 leading-relaxed">
+              {telefone.trim()
+                ? 'Não vai no alerta. Só quem você aceitar recebe este número, junto com o endereço exato.'
+                : 'Sem telefone, quem for te ajudar chega pelo endereço mas não consegue te avisar nem confirmar nada.'}
+            </p>
           </div>
 
           <textarea

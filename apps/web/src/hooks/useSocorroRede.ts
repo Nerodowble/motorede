@@ -44,6 +44,8 @@ export interface MeuPedido {
   pedidoId: string;
   kind: 'emergencia' | 'apoio';
   referencia: string;
+  /** O número que VOCÊ informou neste pedido, que pode não ser o do perfil. */
+  telefone?: string;
   em: string;
   encontrados: number;
   avisados: number;

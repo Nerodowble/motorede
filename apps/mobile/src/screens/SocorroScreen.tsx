@@ -91,6 +91,10 @@ export const SocorroScreen: React.FC<SocorroScreenProps> = ({
   const [enviando, setEnviando] = useState(false);
   const [resultado, setResultado] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
+  // Começa com o do perfil, mas é editável: o telefone do cadastro pode estar
+  // velho, ou você pode querer dar o número de quem está com você, ou o do
+  // celular que ainda tem bateria.
+  const [telefone, setTelefone] = useState(profile.phone || '');
 
   const validacao = useMemo(
     () => validateRequest({ reference: referencia, details: detalhes || 'sem detalhes', location: posicao, radiusKm: raioKm }),
@@ -125,6 +129,7 @@ export const SocorroScreen: React.FC<SocorroScreenProps> = ({
       pedidoId: r.pedidoId,
       kind: tipo,
       referencia: referencia.trim(),
+      telefone: telefone.trim(),
       em: new Date().toISOString(),
       encontrados: r.encontrados,
       avisados: r.avisados,
@@ -148,7 +153,8 @@ export const SocorroScreen: React.FC<SocorroScreenProps> = ({
       pedidoId: r.pedidoId,
       ofertaId: r.ofertaId,
       nome: profile.name,
-      telefone: profile.phone || '',
+      // O número daquele pedido, não o do perfil no momento do aceite.
+      telefone: meu?.telefone || profile.phone || '',
       referencia: meu?.referencia || '',
       precisa: posicao,
     });
@@ -396,12 +402,14 @@ export const SocorroScreen: React.FC<SocorroScreenProps> = ({
                   <Text style={styles.botaoResolverTexto}>Aceitar e enviar meu endereço</Text>
                 </Pressable>
               )}
-              {!profile.phone && !r.aceita && (
-                <Text style={styles.avisoPerfil}>
-                  Seu perfil está sem telefone. Quem você aceitar vai receber o endereço e
-                  não vai ter como te ligar.
-                </Text>
-              )}
+              {!meusPedidos.find((p) => p.pedidoId === r.pedidoId)?.telefone &&
+                !profile.phone &&
+                !r.aceita && (
+                  <Text style={styles.avisoPerfil}>
+                    Você pediu sem informar telefone. Quem aceitar vai receber o endereço e
+                    não vai ter como te ligar.
+                  </Text>
+                )}
               <Text style={styles.ajuda}>
                 Aceitar envia seu endereço exato e telefone só para esta pessoa. O app não
                 verifica a identidade de ninguém — aceite quem você tem alguma razão para
@@ -457,6 +465,21 @@ export const SocorroScreen: React.FC<SocorroScreenProps> = ({
         {!!validacao.errors.reference && referencia.length > 0 && (
           <Text style={styles.erro}>{validacao.errors.reference}</Text>
         )}
+
+        <Text style={styles.rotulo}>Seu telefone</Text>
+        <TextInput
+          value={telefone}
+          onChangeText={setTelefone}
+          placeholder="(11) 98765-4321"
+          placeholderTextColor={COLORS.faint}
+          keyboardType="phone-pad"
+          style={styles.input}
+        />
+        <Text style={styles.ajuda}>
+          {telefone.trim()
+            ? 'Não vai no alerta. Só quem você aceitar recebe este número, junto com o endereço exato.'
+            : 'Sem telefone, quem for te ajudar chega pelo endereço mas não consegue te avisar nem confirmar nada.'}
+        </Text>
 
         <Text style={styles.rotulo}>O que houve</Text>
         <TextInput
