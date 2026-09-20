@@ -61,9 +61,27 @@ export interface MeuPedido {
 /** Aviso recebido de alguém que se ofereceu para ajudar no seu pedido. */
 export interface RespostaRecebida {
   pedidoId: string;
+  /** Identifica esta oferta na hora de aceitar. */
+  ofertaId?: string;
   nome: string;
   moto?: string;
   celula: GeoPoint | null;
+  em: string;
+  aceita?: boolean;
+}
+
+/**
+ * Você foi aceito: aqui chega o endereço exato e o telefone.
+ *
+ * Só existe depois que quem pediu escolheu você, nominalmente. Antes disso a
+ * única coisa que você tinha era a região de ~1 km.
+ */
+export interface AceiteRecebido {
+  pedidoId: string;
+  nome: string;
+  telefone: string | null;
+  referencia: string | null;
+  exato: GeoPoint | null;
   em: string;
 }
 
@@ -84,10 +102,23 @@ function comoChamado(dados: Record<string, unknown>): ChamadoRecebido | null {
   };
 }
 
+function comoAceite(dados: Record<string, unknown>): AceiteRecebido | null {
+  if (dados.tipo !== 'aceito' || typeof dados.pedidoId !== 'string') return null;
+  return {
+    pedidoId: dados.pedidoId,
+    nome: typeof dados.nome === 'string' ? dados.nome : 'Quem pediu',
+    telefone: typeof dados.telefone === 'string' ? dados.telefone : null,
+    referencia: typeof dados.referencia === 'string' ? dados.referencia : null,
+    exato: (dados.exato as GeoPoint) ?? null,
+    em: typeof dados.em === 'string' ? dados.em : new Date().toISOString(),
+  };
+}
+
 function comoResposta(dados: Record<string, unknown>): RespostaRecebida | null {
   if (dados.tipo !== 'resposta-socorro' || typeof dados.pedidoId !== 'string') return null;
   return {
     pedidoId: dados.pedidoId,
+    ofertaId: typeof dados.ofertaId === 'string' ? dados.ofertaId : undefined,
     nome: typeof dados.nome === 'string' ? dados.nome : 'Um piloto',
     moto: typeof dados.moto === 'string' ? dados.moto : undefined,
     celula: (dados.celula as GeoPoint) ?? null,
@@ -102,6 +133,7 @@ export function useSocorro() {
   const [chamados, setChamados] = useState<ChamadoRecebido[]>([]);
   const [respostas, setRespostas] = useState<RespostaRecebida[]>([]);
   const [meusPedidos, setMeusPedidos] = useState<MeuPedido[]>([]);
+  const [aceites, setAceites] = useState<AceiteRecebido[]>([]);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   /**
@@ -239,7 +271,12 @@ export function useSocorro() {
         return;
       }
       const resposta = comoResposta(dados);
-      if (resposta) setRespostas((antes) => [resposta, ...antes]);
+      if (resposta) {
+        setRespostas((antes) => [resposta, ...antes]);
+        return;
+      }
+      const aceite = comoAceite(dados);
+      if (aceite) setAceites((antes) => [aceite, ...antes]);
     };
 
     const recebida = Notifications.addNotificationReceivedListener((n) =>
@@ -261,6 +298,12 @@ export function useSocorro() {
     };
   }, []);
 
+  const marcarAceita = useCallback((ofertaId: string) => {
+    setRespostas((antes) =>
+      antes.map((r) => (r.ofertaId === ofertaId ? { ...r, aceita: true } : r))
+    );
+  }, []);
+
   const marcarRespondido = useCallback((pedidoId: string) => {
     setChamados((antes) =>
       antes.map((c) => (c.pedidoId === pedidoId ? { ...c, respondido: true } : c))
@@ -277,6 +320,8 @@ export function useSocorro() {
     posicao,
     chamados,
     respostas,
+    aceites,
+    marcarAceita,
     entrar,
     sair,
     renovar,

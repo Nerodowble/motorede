@@ -11,8 +11,13 @@ import {
   View,
 } from 'react-native';
 import { distanceKm, validateRequest, type GeoPoint, type RiderProfile } from '@motorede/shared';
-import { pedirSocorro, responderChamado } from '../services/socorro';
-import type { ChamadoRecebido, RespostaRecebida, MeuPedido } from '../hooks/useSocorro';
+import { pedirSocorro, responderChamado, aceitarAjuda } from '../services/socorro';
+import type {
+  ChamadoRecebido,
+  RespostaRecebida,
+  MeuPedido,
+  AceiteRecebido,
+} from '../hooks/useSocorro';
 import type { EstadoRede } from '../services/socorro';
 import { COLORS } from '../theme';
 
@@ -52,6 +57,8 @@ interface SocorroScreenProps {
   onRegistrarPedido: (p: MeuPedido) => void;
   onEncerrarPedido: (pedidoId: string) => void;
   respostas: RespostaRecebida[];
+  aceites: AceiteRecebido[];
+  onAceita: (ofertaId: string) => void;
   onEntrar: () => Promise<EstadoRede>;
   onSair: () => Promise<void>;
   onRespondido: (pedidoId: string) => void;
@@ -69,6 +76,8 @@ export const SocorroScreen: React.FC<SocorroScreenProps> = ({
   onRegistrarPedido,
   onEncerrarPedido,
   respostas,
+  aceites,
+  onAceita,
   onEntrar,
   onSair,
   onRespondido,
@@ -131,6 +140,29 @@ export const SocorroScreen: React.FC<SocorroScreenProps> = ({
     setDetalhes('');
   };
 
+  const aceitar = async (r: RespostaRecebida) => {
+    if (!rede.pushToken || !r.ofertaId || !posicao) return;
+    const meu = meusPedidos.find((p) => p.pedidoId === r.pedidoId);
+    const resultado = await aceitarAjuda({
+      pushToken: rede.pushToken,
+      pedidoId: r.pedidoId,
+      ofertaId: r.ofertaId,
+      nome: profile.name,
+      telefone: profile.phone || '',
+      referencia: meu?.referencia || '',
+      precisa: posicao,
+    });
+    if (resultado.ok) {
+      onAceita(r.ofertaId);
+      Alert.alert(
+        'Endereço enviado',
+        `${r.nome} recebeu seu endereço exato e seu telefone. Ninguém mais recebeu.`
+      );
+    } else {
+      Alert.alert('Não deu', resultado.erro || 'Tente de novo.');
+    }
+  };
+
   const atender = async (chamado: ChamadoRecebido) => {
     if (!rede.pushToken) return;
     const r = await responderChamado({
@@ -188,6 +220,68 @@ export const SocorroScreen: React.FC<SocorroScreenProps> = ({
 
   return (
     <ScrollView contentContainerStyle={styles.conteudo}>
+      {aceites.length > 0 && (
+        <View style={[styles.card, styles.cardAceito]}>
+          <Text style={styles.tituloCard}>Aceitaram sua ajuda — vá até lá</Text>
+          {aceites.map((a, i) => (
+            <View key={`${a.pedidoId}-${i}`} style={styles.chamado}>
+              <Text style={styles.chamadoNome}>{a.nome}</Text>
+              {!!a.referencia && <Text style={styles.chamadoRef}>{a.referencia}</Text>}
+
+              {a.telefone ? (
+                <>
+                  {/* `selectable` permite copiar com toque longo, sem depender
+                      de biblioteca de área de transferência. */}
+                  <Text selectable style={styles.telefone}>
+                    {a.telefone}
+                  </Text>
+                  <Text style={styles.ajuda}>Toque e segure o número para copiar.</Text>
+                  <Pressable
+                    onPress={() => void Linking.openURL(`tel:${a.telefone!.replace(/\D/g, '')}`)}
+                    style={[styles.botaoPequeno, styles.botaoResolver]}
+                  >
+                    <Text style={styles.botaoResolverTexto}>Ligar agora</Text>
+                  </Pressable>
+                </>
+              ) : (
+                <Text style={styles.erro}>
+                  Quem pediu está sem telefone no perfil — só dá para chegar pelo endereço.
+                </Text>
+              )}
+
+              {!!a.exato && (
+                <View style={styles.linhaBotoes}>
+                  <Pressable
+                    onPress={() =>
+                      void Linking.openURL(
+                        `https://waze.com/ul?ll=${a.exato!.lat},${a.exato!.lng}&navigate=yes`
+                      )
+                    }
+                    style={styles.botaoVazado}
+                  >
+                    <Text style={styles.botaoVazadoTexto}>Waze</Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() =>
+                      void Linking.openURL(
+                        `https://www.google.com/maps/dir/?api=1&destination=${a.exato!.lat},${a.exato!.lng}`
+                      )
+                    }
+                    style={styles.botaoVazado}
+                  >
+                    <Text style={styles.botaoVazadoTexto}>Google Maps</Text>
+                  </Pressable>
+                </View>
+              )}
+
+              <Text style={styles.ajuda}>
+                Agora a navegação vai até o ponto exato, não mais até a região.
+              </Text>
+            </View>
+          ))}
+        </View>
+      )}
+
       {meusPedidos.length > 0 && (
         <View style={styles.card}>
           <Text style={styles.tituloCard}>Seu pedido está de pé</Text>
@@ -285,9 +379,33 @@ export const SocorroScreen: React.FC<SocorroScreenProps> = ({
                   ? `a ~${distanceKm(posicao, r.celula).toFixed(1)} km de você`
                   : 'região não informada'}
               </Text>
+              {r.aceita ? (
+                <Text style={styles.jaRespondeu}>
+                  Você enviou seu endereço e telefone para {r.nome}
+                </Text>
+              ) : (
+                <Pressable
+                  onPress={() => void aceitar(r)}
+                  disabled={!r.ofertaId || !posicao}
+                  style={[
+                    styles.botaoPequeno,
+                    styles.botaoResolver,
+                    (!r.ofertaId || !posicao) && styles.botaoInativo,
+                  ]}
+                >
+                  <Text style={styles.botaoResolverTexto}>Aceitar e enviar meu endereço</Text>
+                </Pressable>
+              )}
+              {!profile.phone && !r.aceita && (
+                <Text style={styles.avisoPerfil}>
+                  Seu perfil está sem telefone. Quem você aceitar vai receber o endereço e
+                  não vai ter como te ligar.
+                </Text>
+              )}
               <Text style={styles.ajuda}>
-                Combine por telefone antes de passar o endereço exato. O app não verifica
-                quem é ninguém.
+                Aceitar envia seu endereço exato e telefone só para esta pessoa. O app não
+                verifica a identidade de ninguém — aceite quem você tem alguma razão para
+                aceitar.
               </Text>
             </View>
           ))}
@@ -429,6 +547,15 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   cardAlerta: { borderColor: COLORS.danger },
+  cardAceito: { borderColor: COLORS.success },
+  telefone: {
+    color: COLORS.text,
+    fontSize: 20,
+    fontFamily: 'monospace',
+    letterSpacing: 1,
+    marginTop: 6,
+  },
+  avisoPerfil: { color: COLORS.accent, fontSize: 11, lineHeight: 16, marginTop: 6 },
   tituloCard: { color: COLORS.text, fontSize: 15, fontWeight: '800' },
   rotulo: { color: COLORS.muted, fontSize: 11, fontWeight: '700', marginTop: 6 },
   ajuda: { color: COLORS.faint, fontSize: 11, lineHeight: 16 },

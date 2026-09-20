@@ -253,6 +253,8 @@ function Aplicativo() {
             onRegistrarPedido={socorro.registrarMeuPedido}
             onEncerrarPedido={(id) => void socorro.encerrarMeuPedido(id)}
             respostas={socorro.respostas}
+            aceites={socorro.aceites}
+            onAceita={socorro.marcarAceita}
             onEntrar={socorro.entrar}
             onSair={socorro.sair}
             onRespondido={socorro.marcarRespondido}

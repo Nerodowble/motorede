@@ -9,6 +9,9 @@ import {
   CheckCircle2,
   Flame,
   BellRing,
+  Phone,
+  Copy,
+  Check,
   WifiOff,
 } from 'lucide-react';
 import { EmergencyType, distanceKm, validateRequest } from '@motorede/shared';
@@ -84,6 +87,7 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
   const [enviando, setEnviando] = useState(false);
   const [resultado, setResultado] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
+  const [copiado, setCopiado] = useState<string | null>(null);
 
   const posicao = socorro.posicao ?? userCoords;
 
@@ -157,6 +161,35 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
     else setErro(r.erro || 'Não consegui avisar quem pediu.');
   };
 
+  /**
+   * Copia, com reserva.
+   *
+   * `navigator.clipboard` exige contexto seguro e nem sempre está disponível
+   * — e falhar calado num socorro significa a pessoa achando que copiou o
+   * telefone quando não copiou. O caminho antigo funciona em todo lugar.
+   */
+  const copiar = async (texto: string) => {
+    try {
+      await navigator.clipboard.writeText(texto);
+    } catch {
+      const campo = document.createElement('textarea');
+      campo.value = texto;
+      campo.style.position = 'fixed';
+      campo.style.opacity = '0';
+      document.body.appendChild(campo);
+      campo.select();
+      try {
+        document.execCommand('copy');
+      } catch {
+        return;
+      } finally {
+        document.body.removeChild(campo);
+      }
+    }
+    setCopiado(texto);
+    window.setTimeout(() => setCopiado(null), 2000);
+  };
+
   const aceitar = async (resposta: (typeof socorro.respostas)[number]) => {
     if (!resposta.ofertaId || !posicao) return;
     const meu = socorro.meusPedidos.find((p) => p.pedidoId === resposta.pedidoId);
@@ -190,13 +223,43 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
             >
               <p className="text-xs font-bold text-ink">{a.nome}</p>
               {!!a.referencia && <p className="text-xs text-ink mt-1">{a.referencia}</p>}
+
+              {a.telefone ? (
+                <div className="mt-2 flex items-center gap-2 flex-wrap">
+                  <span className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-elevated border border-line-strong">
+                    <Phone className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <span className="font-mono text-sm text-ink select-all">{a.telefone}</span>
+                  </span>
+                  <button
+                    onClick={() => void copiar(a.telefone!)}
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-line-strong text-ink-muted hover:text-ink text-xs font-bold transition"
+                  >
+                    {copiado === a.telefone ? (
+                      <>
+                        <Check className="w-3.5 h-3.5 text-emerald-400" />
+                        Copiado
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3.5 h-3.5" />
+                        Copiar
+                      </>
+                    )}
+                  </button>
+                </div>
+              ) : (
+                <p className="text-[11px] text-red-400 mt-2">
+                  Sem telefone no perfil de quem pediu — só dá para chegar pelo endereço.
+                </p>
+              )}
+
               <div className="flex items-center gap-2 mt-3 flex-wrap">
                 {!!a.telefone && (
                   <a
                     href={`tel:${a.telefone.replace(/\D/g, '')}`}
                     className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs"
                   >
-                    Ligar {a.telefone}
+                    Ligar agora
                   </a>
                 )}
                 {!!a.exato && (
@@ -442,6 +505,12 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
                   >
                     Aceitar e enviar meu endereço
                   </button>
+                )}
+                {!telefoneDoPiloto && !r.aceita && (
+                  <p className="text-[11px] text-brand-soft mt-2 leading-relaxed">
+                    Seu perfil está sem telefone. Quem você aceitar vai receber o endereço
+                    e não vai ter como te ligar.
+                  </p>
                 )}
                 <p className="text-[10px] text-ink-faint mt-1.5 leading-relaxed">
                   Aceitar envia seu <strong>endereço exato e telefone</strong> só para esta
