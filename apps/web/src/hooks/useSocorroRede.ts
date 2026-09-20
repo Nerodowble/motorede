@@ -9,6 +9,8 @@ import {
   precisaInstalarNoIphone,
   pedidosAbertos,
   encerrarPedido,
+  ofertasDoMeuPedido,
+  deviceId,
   type EstadoRede,
 } from '../services/socorroRede';
 
@@ -189,7 +191,8 @@ export function useSocorroRede() {
     setPosicao(p);
     await anunciarPresenca(rede.inscricao, p);
     await buscarAbertos(p);
-  }, [rede.disponivel, rede.inscricao, buscarAbertos]);
+    await buscarOfertas();
+  }, [rede.disponivel, rede.inscricao, buscarAbertos, buscarOfertas]);
 
   useEffect(() => {
     const parar = () => {
@@ -280,6 +283,28 @@ export function useSocorroRede() {
     navigator.serviceWorker.addEventListener('message', ouvir);
     return () => navigator.serviceWorker.removeEventListener('message', ouvir);
   }, []);
+
+  /** Busca quem se ofereceu nos meus pedidos, para o caso do push ter falhado. */
+  const buscarOfertas = useCallback(async () => {
+    for (const meu of meusPedidos) {
+      const ofertas = await ofertasDoMeuPedido(meu.pedidoId, deviceId());
+      if (ofertas.length === 0) continue;
+      setRespostas((antes) => {
+        const jaTenho = new Set(antes.map((r) => r.ofertaId));
+        const novas = ofertas
+          .filter((o) => !jaTenho.has(o.ofertaId))
+          .map((o) => ({
+            pedidoId: meu.pedidoId,
+            ofertaId: o.ofertaId,
+            nome: o.nome,
+            moto: o.moto,
+            celula: o.celula,
+            em: o.em,
+          }));
+        return novas.length ? [...novas, ...antes] : antes;
+      });
+    }
+  }, [meusPedidos]);
 
   const marcarAceita = useCallback((ofertaId: string) => {
     setRespostas((antes) =>

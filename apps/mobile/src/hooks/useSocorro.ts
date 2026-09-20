@@ -10,6 +10,8 @@ import {
   INTERVALO_PRESENCA_MS,
   pedidosAbertos,
   encerrarPedido,
+  deviceIdDe,
+  ofertasDoMeuPedido,
   type EstadoRede,
 } from '../services/socorro';
 import { storage } from '../services/storage';
@@ -224,7 +226,8 @@ export function useSocorro() {
     setPosicao(p);
     await anunciarPresenca(rede.pushToken, p);
     await buscarAbertos(p);
-  }, [rede.disponivel, rede.pushToken, buscarAbertos]);
+    await buscarOfertas();
+  }, [rede.disponivel, rede.pushToken, buscarAbertos, buscarOfertas]);
 
   // Enquanto o app estiver à vista. Sai de cena, para.
   useEffect(() => {
@@ -299,6 +302,29 @@ export function useSocorro() {
       tocada.remove();
     };
   }, []);
+
+  /** Busca quem se ofereceu nos meus pedidos, para o caso do push ter falhado. */
+  const buscarOfertas = useCallback(async () => {
+    if (!rede.pushToken) return;
+    for (const meu of meusPedidos) {
+      const ofertas = await ofertasDoMeuPedido(meu.pedidoId, deviceIdDe(rede.pushToken));
+      if (ofertas.length === 0) continue;
+      setRespostas((antes) => {
+        const jaTenho = new Set(antes.map((r) => r.ofertaId));
+        const novas = ofertas
+          .filter((o) => !jaTenho.has(o.ofertaId))
+          .map((o) => ({
+            pedidoId: meu.pedidoId,
+            ofertaId: o.ofertaId,
+            nome: o.nome,
+            moto: o.moto,
+            celula: o.celula,
+            em: o.em,
+          }));
+        return novas.length ? [...novas, ...antes] : antes;
+      });
+    }
+  }, [meusPedidos, rede.pushToken]);
 
   const marcarAceita = useCallback((ofertaId: string) => {
     setRespostas((antes) =>

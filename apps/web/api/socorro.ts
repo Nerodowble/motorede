@@ -10,6 +10,7 @@ import {
   donoDoPedido,
   guardarOferta,
   acharOferta,
+  ofertasDoPedido,
   enviarPush,
   storeConfigured,
   lerPonto,
@@ -86,6 +87,18 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
   if (req.method === 'GET') {
     if (!storeConfigured()) return responder(503, { error: 'Rede de socorro não configurada.' });
     const url = new URL(req.url || '/', 'http://local');
+
+    // Quem se ofereceu no meu pedido. Só o dono vê, conferido contra o
+    // identificador guardado no próprio pedido.
+    const verOfertas = url.searchParams.get('ofertas');
+    if (verOfertas) {
+      const quem = url.searchParams.get('deviceId') || '';
+      const dono = await donoDoPedido(verOfertas);
+      if (!dono) return responder(404, { error: 'Pedido expirado ou encerrado.', expirado: true });
+      if (dono !== quem) return responder(403, { error: 'Só quem abriu o pedido vê as ofertas.' });
+      return responder(200, { ofertas: await ofertasDoPedido(verOfertas) });
+    }
+
     const lat = url.searchParams.get('lat');
     const lng = url.searchParams.get('lng');
 

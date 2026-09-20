@@ -343,6 +343,32 @@ export async function guardarOferta(pedidoId: string, oferta: Oferta): Promise<v
   ]);
 }
 
+/**
+ * Todas as ofertas de um pedido.
+ *
+ * Existe pelo mesmo motivo da lista de pedidos abertos: o push pode falhar,
+ * chegar com o app fechado, ou ser dispensado sem querer. Sem esta consulta,
+ * quem pediu socorro nunca ficaria sabendo que alguém se ofereceu — e a ajuda
+ * estaria a caminho sem ninguém do outro lado conseguir liberar o endereço.
+ *
+ * O `pushToken` NÃO sai daqui: ele é o endereço de entrega de outra pessoa, e
+ * quem pediu não precisa dele para nada.
+ */
+export async function ofertasDoPedido(pedidoId: string): Promise<Omit<Oferta, 'pushToken'>[]> {
+  const [lista] = await redis<string[]>([['LRANGE', `mr:of:${pedidoId}`, 0, -1]]);
+  const saida: Omit<Oferta, 'pushToken'>[] = [];
+  for (const bruto of lista || []) {
+    try {
+      const { pushToken, ...resto } = JSON.parse(bruto) as Oferta;
+      void pushToken;
+      saida.push(resto);
+    } catch {
+      // Entrada corrompida: ignora.
+    }
+  }
+  return saida;
+}
+
 export async function acharOferta(pedidoId: string, ofertaId: string): Promise<Oferta | null> {
   const [lista] = await redis<string[]>([['LRANGE', `mr:of:${pedidoId}`, 0, -1]]);
   for (const bruto of lista || []) {

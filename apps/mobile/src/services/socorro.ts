@@ -360,6 +360,35 @@ export async function aceitarAjuda(dados: {
   }
 }
 
+export interface OfertaRecebida {
+  ofertaId: string;
+  nome: string;
+  moto?: string;
+  celula: GeoPoint | null;
+  em: string;
+}
+
+/**
+ * Quem se ofereceu no seu pedido.
+ *
+ * Mesmo motivo da lista de pedidos abertos: o push pode falhar, chegar com o
+ * app fechado, ou ser dispensado sem querer. Sem esta consulta, alguém estaria
+ * disposto a te ajudar e você nunca ficaria sabendo — nem teria como liberar
+ * o endereço para essa pessoa.
+ */
+export async function ofertasDoMeuPedido(pedidoId: string, quem: string): Promise<OfertaRecebida[]> {
+  try {
+    const r = await fetch(
+      `${API_BASE}/socorro?ofertas=${encodeURIComponent(pedidoId)}&deviceId=${encodeURIComponent(quem)}`
+    );
+    if (!r.ok) return [];
+    const corpo = await r.json();
+    return Array.isArray(corpo.ofertas) ? corpo.ofertas : [];
+  } catch {
+    return [];
+  }
+}
+
 export async function responderChamado(dados: {
   pushToken: string;
   pedidoId: string;
