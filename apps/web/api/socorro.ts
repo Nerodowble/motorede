@@ -98,7 +98,7 @@ async function abrirPedido(corpo: Corpo, deviceId: string, responder: Responder)
   const referencia = textoCurto(corpo.referencia, 140);
   const detalhes = textoCurto(corpo.detalhes, 200);
   const moto = textoCurto(corpo.moto, 60);
-  const pushToken = textoCurto(corpo.pushToken, 256);
+  const pushToken = textoCurto(corpo.pushToken, 1024);
   const posicao = lerPonto(corpo.position);
   const kind = corpo.kind === 'apoio' ? 'apoio' : 'emergencia';
   const emergency = textoCurto(corpo.emergency, 32);

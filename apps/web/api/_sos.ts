@@ -214,6 +214,22 @@ export interface Recado {
 }
 
 /**
+ * O app e o navegador falam protocolos diferentes.
+ *
+ * O aplicativo dá um `ExponentPushToken[...]`, entregue pelo serviço do Expo.
+ * O navegador dá uma inscrição — um objeto com endpoint e chaves — entregue
+ * pelo servidor de push do próprio navegador, assinada com VAPID. Não há como
+ * mandar um pelo canal do outro.
+ *
+ * Os dois ficam guardados no mesmo lugar, e o formato do que está gravado é
+ * que diz por onde entregar. Assim entrar na rede é uma coisa só: quem pede
+ * socorro não precisa saber se quem está por perto é celular ou computador.
+ */
+export function ehInscricaoWeb(token: string): boolean {
+  return token.startsWith('{');
+}
+
+/**
  * Entrega os recados pelo serviço de push do Expo.
  *
  * Em lotes de 100 porque é o limite da API. Uma entrega que falha não derruba
@@ -221,6 +237,88 @@ export interface Recado {
  * falhar inteiro porque um token venceu.
  */
 export async function enviarPush(recados: Recado[]): Promise<{ enviados: number; falhas: number }> {
+  if (recados.length === 0) return { enviados: 0, falhas: 0 };
+
+  const paraNavegador = recados.filter((r) => ehInscricaoWeb(r.to));
+  const paraApp = recados.filter((r) => !ehInscricaoWeb(r.to));
+
+  const [web, app] = await Promise.all([enviarWebPush(paraNavegador), enviarExpoPush(paraApp)]);
+  return { enviados: web.enviados + app.enviados, falhas: web.falhas + app.falhas };
+}
+
+/**
+ * Push para navegador, assinado com VAPID.
+ *
+ * Uma inscrição morre sozinha: a pessoa limpa os dados do site, revoga a
+ * permissão, troca de navegador. O servidor de push responde 404 ou 410 nesse
+ * caso, e aí a entrada é apagada na hora em vez de ficar sendo tentada para
+ * sempre — é a mesma limpeza-durante-o-uso que o conjunto geográfico já faz.
+ */
+async function enviarWebPush(recados: Recado[]): Promise<{ enviados: number; falhas: number }> {
+  if (recados.length === 0) return { enviados: 0, falhas: 0 };
+
+  const publica = process.env.VAPID_PUBLIC_KEY;
+  const privada = process.env.VAPID_PRIVATE_KEY;
+  if (!publica || !privada) return { enviados: 0, falhas: recados.length };
+
+  const webpush = (await import('web-push')).default;
+  webpush.setVapidDetails(
+    process.env.VAPID_SUBJECT || 'mailto:contato@motorede.app',
+    publica,
+    privada
+  );
+
+  let enviados = 0;
+  let falhas = 0;
+  const mortas: string[] = [];
+
+  await Promise.all(
+    recados.map(async (r) => {
+      try {
+        await webpush.sendNotification(
+          JSON.parse(r.to),
+          JSON.stringify({ title: r.title, body: r.body, data: r.data, urgente: r.urgente }),
+          { TTL: r.urgente ? 900 : 3600, urgency: r.urgente ? 'high' : 'normal' }
+        );
+        enviados++;
+      } catch (erro) {
+        falhas++;
+        const codigo = (erro as { statusCode?: number }).statusCode;
+        if (codigo === 404 || codigo === 410) mortas.push(r.to);
+      }
+    })
+  );
+
+  if (mortas.length > 0) void apagarInscricoes(mortas).catch(() => {});
+  return { enviados, falhas };
+}
+
+/**
+ * Apaga inscrições que o servidor de push recusou definitivamente.
+ *
+ * Precisa varrer porque o que temos em mãos é o valor, não a chave. São
+ * poucos registros e isto só roda quando algo já morreu, então o custo é
+ * proporcional ao problema.
+ */
+async function apagarInscricoes(inscricoes: string[]): Promise<void> {
+  const [ids] = await redis<string[]>([['ZRANGE', 'mr:geo', 0, -1]]);
+  if (!ids || ids.length === 0) return;
+
+  const [valores] = await redis<Array<string | null>>([
+    ['MGET', ...ids.map((id) => `mr:tok:${id}`)],
+  ]);
+
+  const alvo = new Set(inscricoes);
+  const remover = ids.filter((_, i) => valores?.[i] && alvo.has(valores[i] as string));
+  if (remover.length === 0) return;
+
+  await redis([
+    ['ZREM', 'mr:geo', ...remover],
+    ...remover.map((id) => ['DEL', `mr:tok:${id}`]),
+  ]);
+}
+
+async function enviarExpoPush(recados: Recado[]): Promise<{ enviados: number; falhas: number }> {
   if (recados.length === 0) return { enviados: 0, falhas: 0 };
 
   let enviados = 0;

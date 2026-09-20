@@ -49,6 +49,7 @@ function executar(cmd) {
   }
 
   if (nome === 'DEL') { const n = kv.delete(cmd[1]) ? 1 : 0; return n; }
+  if (nome === 'ZRANGE') return [...geo.keys()];
   if (nome === 'ZREM') { let n = 0; for (const m of cmd.slice(2)) if (geo.delete(m)) n++; return n; }
 
   if (nome === 'GEOSEARCH') {

@@ -1,462 +1,473 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   ShieldAlert,
   MapPin,
-  Clock,
   Radio,
-  Navigation,
-  Send,
-  CheckCircle2,
-  AlertTriangle,
-  Flame,
-  Phone,
-  MessageSquare,
-  Wrench,
   Users,
   Compass,
-  ArrowRight,
   ExternalLink,
+  CheckCircle2,
+  Flame,
+  BellRing,
+  WifiOff,
 } from 'lucide-react';
-import { SOSAlert, EmergencyType, SOSVolunteer } from '@motorede/shared';
-import { GeoPoint, calculateDistanceKm, formatDistance, getGoogleMapsNavigationUrl, getWazeNavigationUrl } from '../services/geolocation';
-import { storageService } from '../services/storage';
+import { EmergencyType, distanceKm, validateRequest } from '@motorede/shared';
+import { GeoPoint, getGoogleMapsNavigationUrl, getWazeNavigationUrl } from '../services/geolocation';
+import { useSocorroRede } from '../hooks/useSocorroRede';
+import { pedirSocorro, responderChamado } from '../services/socorroRede';
+
+/**
+ * Socorro na web, ligado na mesma rede do aplicativo.
+ *
+ * Quem pede do computador alcança quem está de celular, e o contrário também.
+ * Os protocolos de entrega são diferentes — o app recebe pelo serviço do Expo,
+ * o navegador pelo push do próprio navegador — mas a rede é uma só, e quem
+ * pede não precisa saber a diferença.
+ *
+ * O QUE ESTA TELA NÃO PROMETE
+ *
+ * Não diz "alerta enviado". Diz quantos aparelhos havia no raio e quantos
+ * receberam, número vindo do servidor. Esta mesma tela já anunciou
+ * "Localização GPS transmitida com sucesso" enquanto nada saía do navegador, e
+ * o estrago dessa frase num pedido de socorro é de outra ordem: a pessoa para
+ * de procurar ajuda porque acredita que já conseguiu.
+ *
+ * Também não esconde onde não funciona: no iPhone, push na web exige o site
+ * instalado na tela de início. Isso está escrito, não silenciado.
+ *
+ * O QUE SUMIU DAQUI
+ *
+ * O "canal temporário de ajuda" com bate-papo e as respostas rápidas. Não
+ * existia transporte nenhum para aquelas mensagens — elas eram gravadas no
+ * próprio aparelho e ninguém do outro lado jamais as leu. Combinar o resgate
+ * se faz por telefone, e a tela agora diz isso.
+ */
 
 interface SOSRescueViewProps {
   userCoords: GeoPoint | null;
   motorcycleInfo: string;
-  sosAlerts: SOSAlert[];
-  onTriggerSOS: (type: EmergencyType, details: string, reference: string, radiusKm: number) => void;
-  onRespondToSOS: (alertId: string) => void;
-  onSendMessage: (alertId: string, text: string) => void;
-  onResolveSOS: (alertId: string) => void;
+  nomeDoPiloto: string;
+  /** Guarda o pedido no histórico local. Nada disso vive no servidor. */
+  onRegistrarPedido: (
+    type: EmergencyType,
+    details: string,
+    reference: string,
+    radiusKm: number
+  ) => void;
 }
+
+const EMERGENCIAS: Array<{ type: EmergencyType; rotulo: string; icone: string; leva: string }> = [
+  { type: 'flat_tire', rotulo: 'Pneu furado', icone: '🛞', leva: 'kit macarrão, bomba' },
+  { type: 'mechanical_breakdown', rotulo: 'Pane mecânica', icone: '⚙️', leva: 'ferramentas' },
+  { type: 'out_of_fuel', rotulo: 'Sem combustível', icone: '⛽', leva: 'galão, mangueira' },
+  { type: 'electrical_battery', rotulo: 'Bateria', icone: '⚡', leva: 'cabo de chupeta' },
+  { type: 'accident_fall', rotulo: 'Queda / acidente', icone: '🚨', leva: 'avisa todos na hora' },
+];
+
+const RAIOS = [5, 10, 15, 25];
 
 export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
   userCoords,
   motorcycleInfo,
-  sosAlerts,
-  onTriggerSOS,
-  onRespondToSOS,
-  onSendMessage,
-  onResolveSOS,
+  nomeDoPiloto,
+  onRegistrarPedido,
 }) => {
-  const [selectedEmergencyType, setSelectedEmergencyType] = useState<EmergencyType>('mechanical_breakdown');
-  const [detailsText, setDetailsText] = useState('');
-  const [locationRefText, setLocationRefText] = useState('');
-  const [radiusKm, setRadiusKm] = useState(15);
-  const [isTriggering, setIsTriggering] = useState(false);
-  const [activeChannelAlertId, setActiveChannelAlertId] = useState<string | null>(
-    sosAlerts.find((a) => a.status === 'in_progress' || a.status === 'active')?.id || null
+  const socorro = useSocorroRede();
+  const [tipo, setTipo] = useState<'emergencia' | 'apoio'>('emergencia');
+  const [emergencia, setEmergencia] = useState<EmergencyType>('flat_tire');
+  const [referencia, setReferencia] = useState('');
+  const [detalhes, setDetalhes] = useState('');
+  const [raioKm, setRaioKm] = useState(15);
+  const [enviando, setEnviando] = useState(false);
+  const [resultado, setResultado] = useState<string | null>(null);
+  const [erro, setErro] = useState<string | null>(null);
+
+  const posicao = socorro.posicao ?? userCoords;
+
+  const validacao = useMemo(
+    () =>
+      validateRequest({
+        reference: referencia,
+        details: detalhes || 'sem detalhes',
+        location: posicao,
+        radiusKm: raioKm,
+      }),
+    [referencia, detalhes, posicao, raioKm]
   );
-  const [chatInput, setChatInput] = useState('');
 
-  const quickPhrases = [
-    'Estou a caminho!',
-    'Levo kit macarrão e bombinha CO2',
-    'Tenho ferramentas e alicate',
-    'Chego em cerca de 10 minutos',
-    'Estou levando galão com gasolina',
-    'Já estou no acostamento com pisca ligado',
-  ];
-
-  const emergencyTypes: { type: EmergencyType; label: string; icon: string; desc: string }[] = [
-    {
-      type: 'mechanical_breakdown',
-      label: 'Pane Mecânica',
-      icon: '⚙️',
-      desc: 'Cabo rompido, corrente, vazamento ou motor apagou',
-    },
-    {
-      type: 'flat_tire',
-      label: 'Pneu Furado',
-      icon: '🛞',
-      desc: 'Sem câmara ou rasgo, precisa de kit macarrão/inflador',
-    },
-    {
-      type: 'out_of_fuel',
-      label: 'Sem Combustível',
-      icon: '⛽',
-      desc: 'Pane seca, precisa de mangueira ou galão de gasolina',
-    },
-    {
-      type: 'electrical_battery',
-      label: 'Elétrica / Bateria',
-      icon: '⚡',
-      desc: 'Sem carga na partida, precisa de cabo de chupeta',
-    },
-    {
-      type: 'accident_fall',
-      label: 'Queda / Acidente',
-      icon: '🚨',
-      desc: 'Sinalização urgente de pista ou socorro médico',
-    },
-  ];
-
-  const handleStartTriggerSOS = (e: React.FormEvent) => {
+  const disparar = async (e: React.FormEvent) => {
     e.preventDefault();
-    const ref = locationRefText.trim();
-    const det = detailsText.trim();
-    // Antes, campos vazios viravam "Coordenadas GPS automáticas via celular" —
-    // uma referência que não ajuda ninguém a te achar. Quem vai socorrer chega
-    // pelo "km 230, depois do posto", não pela quarta casa decimal.
-    if (ref.length < 6) return;
+    if (!socorro.rede.inscricao || !posicao) return;
 
-    onTriggerSOS(selectedEmergencyType, det || 'Sem detalhes informados.', ref, radiusKm);
-    setIsTriggering(false);
-    setDetailsText('');
-    setLocationRefText('');
+    setEnviando(true);
+    setErro(null);
+    setResultado(null);
+
+    const r = await pedirSocorro({
+      inscricao: socorro.rede.inscricao,
+      kind: tipo,
+      emergency: tipo === 'emergencia' ? emergencia : undefined,
+      nome: nomeDoPiloto,
+      moto: motorcycleInfo,
+      referencia: referencia.trim(),
+      detalhes: detalhes.trim(),
+      posicao,
+      raioKm,
+    });
+    setEnviando(false);
+
+    if ('erro' in r) {
+      setErro(r.erro);
+      return;
+    }
+
+    // Número, não adjetivo: "enviado" não diz se havia alguém para receber.
+    setResultado(
+      r.encontrados === 0
+        ? 'Ninguém da rede está no seu raio agora. Nada foi entregue.'
+        : `${r.avisados} de ${r.encontrados} aparelho(s) no raio receberam. A resposta aparece aqui.`
+    );
+    onRegistrarPedido(emergencia, detalhes.trim(), referencia.trim(), raioKm);
+    setReferencia('');
+    setDetalhes('');
   };
 
-  const activeChannelAlert = sosAlerts.find((a) => a.id === activeChannelAlertId);
+  const atender = async (pedidoId: string) => {
+    const r = await responderChamado({
+      pedidoId,
+      nome: nomeDoPiloto,
+      moto: motorcycleInfo,
+      resposta: 'Posso ajudar, estou indo.',
+      posicao,
+    });
+    if (r.ok) socorro.marcarRespondido(pedidoId);
+    else setErro(r.erro || 'Não consegui avisar quem pediu.');
+  };
 
   return (
     <div className="space-y-4 pb-28 sm:pb-24 max-w-4xl mx-auto px-3 sm:px-4 py-3">
-      {/* High Visibility Emergency Trigger Banner */}
-      <div className="rounded-2xl bg-gradient-to-b from-red-500/10 via-surface to-surface border border-red-800/50 p-4 sm:p-5 shadow-2xl">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-red-600/20 border border-red-500/40 flex items-center justify-center text-red-500 shrink-0">
-              <ShieldAlert className="w-7 h-7 animate-pulse" />
-            </div>
-            <div>
-              <h2 className="text-base sm:text-lg font-black text-ink tracking-tight flex items-center gap-2">
-                Rede Comunitária de Socorro SOS
-              </h2>
-              <p className="text-xs text-ink-muted mt-0.5">
-                Em construção: por enquanto o pedido fica só neste aparelho e
-                ninguém é avisado. Para emergência de verdade, 190 ou 192.
+      {!socorro.rede.disponivel && (
+        <div className="rounded-2xl bg-surface border border-line p-4 sm:p-5">
+          <div className="flex items-start gap-3">
+            <span className="p-2 rounded-xl bg-brand/15 text-brand-soft shrink-0">
+              <BellRing className="w-5 h-5" />
+            </span>
+            <div className="min-w-0">
+              <h2 className="text-base font-black text-ink">Rede de socorro</h2>
+              <p className="text-xs text-ink-muted mt-1 leading-relaxed">
+                Pilotos por perto recebem um aviso quando você pede ajuda — e você recebe
+                quando alguém precisa perto de você. Para funcionar nos dois sentidos, o
+                site avisa onde você está de forma aproximada: um quadrado de cerca de
+                1 km, nunca o ponto exato.
               </p>
             </div>
           </div>
 
-          <button
-            onClick={() => setIsTriggering(!isTriggering)}
-            className="w-full sm:w-auto px-5 py-3 rounded-xl bg-red-600 hover:bg-red-500 active:scale-95 text-white font-extrabold text-xs sm:text-sm uppercase tracking-wider flex items-center justify-center gap-2 shadow-xl shadow-red-950 transition border border-red-400/40"
-          >
-            <ShieldAlert className="w-5 h-5" />
-            {isTriggering ? 'Fechar Painel de Disparo' : 'Pedir Ajuda / Disparar SOS'}
-          </button>
-        </div>
+          {!!socorro.rede.motivo && (
+            <p className="text-[11px] text-red-400 mt-3 leading-relaxed">{socorro.rede.motivo}</p>
+          )}
 
-        {/* Emergency Dispatch Form */}
-        {isTriggering && (
-          <form onSubmit={handleStartTriggerSOS} className="mt-4 pt-4 border-t border-red-900/50 space-y-4 animate-in fade-in">
+          <button
+            onClick={() => void socorro.entrar()}
+            disabled={socorro.entrando || !socorro.suportado}
+            className="mt-4 w-full sm:w-auto px-5 py-3 rounded-xl bg-brand hover:opacity-90 disabled:opacity-40 text-on-brand font-bold text-xs uppercase tracking-wider transition active:scale-95"
+          >
+            {socorro.entrando ? 'Entrando…' : 'Entrar na rede'}
+          </button>
+
+          {!socorro.suportado && (
+            <p className="text-[11px] text-ink-faint mt-3 flex items-center gap-1.5">
+              <WifiOff className="w-3.5 h-3.5 shrink-0" />
+              Este navegador não recebe notificações. O aplicativo recebe.
+            </p>
+          )}
+
+          <p className="text-[10px] text-ink-faint mt-3 leading-relaxed">
+            Em emergência com risco de vida, ligue 190 ou 192 primeiro. Isto é ajuda de
+            outros motociclistas e não substitui socorro oficial.
+          </p>
+        </div>
+      )}
+
+      {socorro.chamados.length > 0 && (
+        <div className="rounded-2xl bg-surface border border-red-800/50 p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Radio className="w-4 h-4 text-red-500" />
+            <h3 className="text-xs font-bold text-ink uppercase tracking-wider font-mono">
+              Pedindo ajuda perto de você ({socorro.chamados.length})
+            </h3>
+          </div>
+
+          <div className="space-y-2.5">
+            {socorro.chamados.map((c) => {
+              const longe =
+                c.celula && posicao ? `~${distanceKm(posicao, c.celula).toFixed(1)} km` : null;
+              return (
+                <div key={c.pedidoId} className="rounded-xl bg-canvas/80 border border-line p-3.5">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs font-bold text-ink">{c.nome}</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded font-bold font-mono bg-red-600/20 text-red-300">
+                      {c.kind === 'emergencia' ? 'Socorro' : 'Apoio'}
+                    </span>
+                    {!!longe && (
+                      <span className="text-[11px] text-brand-soft font-mono font-bold">
+                        {longe} · região aproximada
+                      </span>
+                    )}
+                  </div>
+
+                  <p className="text-xs text-ink mt-1 flex items-start gap-1.5">
+                    <MapPin className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />
+                    {c.referencia}
+                  </p>
+                  {!!c.detalhes && <p className="text-[11px] text-ink-muted mt-1">{c.detalhes}</p>}
+                  {!!c.moto && <p className="text-[11px] text-ink-faint mt-0.5">{c.moto}</p>}
+
+                  <div className="flex items-center gap-2 mt-3 flex-wrap">
+                    {c.respondido ? (
+                      <span className="text-[11px] text-emerald-400 font-bold flex items-center gap-1">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        Você avisou que vai
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => void atender(c.pedidoId)}
+                        className="px-3.5 py-2 rounded-xl bg-brand hover:opacity-90 text-on-brand font-bold text-xs transition active:scale-95"
+                      >
+                        Posso ajudar
+                      </button>
+                    )}
+
+                    {!!c.celula && (
+                      <>
+                        <a
+                          href={getWazeNavigationUrl(c.celula.lat, c.celula.lng)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-3 py-1.5 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/40 text-xs font-bold flex items-center gap-1"
+                        >
+                          Waze <ExternalLink className="w-3 h-3" />
+                        </a>
+                        <a
+                          href={getGoogleMapsNavigationUrl(c.celula.lat, c.celula.lng)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-3 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold flex items-center gap-1"
+                        >
+                          Maps <ExternalLink className="w-3 h-3" />
+                        </a>
+                      </>
+                    )}
+
+                    <button
+                      onClick={() => socorro.dispensarChamado(c.pedidoId)}
+                      className="px-3 py-1.5 rounded-lg text-ink-muted hover:text-ink border border-line text-xs"
+                    >
+                      Dispensar
+                    </button>
+                  </div>
+
+                  <p className="text-[10px] text-ink-faint mt-2">
+                    A navegação leva até a região, não até a pessoa. O endereço exato só
+                    aparece se quem pediu aceitar você.
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {socorro.respostas.length > 0 && (
+        <div className="rounded-2xl bg-surface border border-brand/40 p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Users className="w-4 h-4 text-brand" />
+            <h3 className="text-xs font-bold text-ink uppercase tracking-wider font-mono">
+              Quem respondeu ao seu pedido ({socorro.respostas.length})
+            </h3>
+          </div>
+          <div className="space-y-2">
+            {socorro.respostas.map((r, i) => (
+              <div
+                key={`${r.pedidoId}-${i}`}
+                className="rounded-xl bg-canvas/80 border border-line p-3"
+              >
+                <p className="text-xs font-bold text-ink">
+                  {r.nome}
+                  {r.moto ? ` · ${r.moto}` : ''}
+                </p>
+                <p className="text-[11px] text-ink-muted mt-0.5">
+                  {r.celula && posicao
+                    ? `a ~${distanceKm(posicao, r.celula).toFixed(1)} km de você`
+                    : 'região não informada'}
+                </p>
+                <p className="text-[10px] text-ink-faint mt-1.5 leading-relaxed">
+                  Combine por telefone antes de passar o endereço exato. O MotoRede não
+                  verifica a identidade de ninguém.
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {socorro.rede.disponivel && (
+        <form
+          onSubmit={disparar}
+          className="rounded-2xl bg-gradient-to-b from-red-500/10 via-surface to-surface border border-red-800/50 p-4 sm:p-5 space-y-4"
+        >
+          <div className="flex items-center gap-3">
+            <span className="w-11 h-11 rounded-xl bg-red-600/20 border border-red-500/40 flex items-center justify-center text-red-500 shrink-0">
+              <ShieldAlert className="w-6 h-6" />
+            </span>
             <div>
-              <label className="block text-xs font-bold text-red-300 uppercase tracking-wider mb-2 font-mono">
-                1. Selecione o Tipo de Emergência
+              <h2 className="text-base font-black text-ink">Pedir ajuda</h2>
+              <p className="text-[11px] text-ink-muted">Chega no celular de quem está por perto.</p>
+            </div>
+          </div>
+
+          <div className="flex gap-2">
+            {(['emergencia', 'apoio'] as const).map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setTipo(t)}
+                className={`flex-1 py-2 rounded-xl text-xs font-bold transition ${
+                  tipo === t ? 'bg-brand text-on-brand' : 'bg-surface text-ink-muted border border-line'
+                }`}
+              >
+                {t === 'emergencia' ? 'Socorro' : 'Apoio'}
+              </button>
+            ))}
+          </div>
+
+          {tipo === 'emergencia' && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {EMERGENCIAS.map((item) => (
+                <button
+                  key={item.type}
+                  type="button"
+                  onClick={() => setEmergencia(item.type)}
+                  className={`p-3 rounded-xl border text-left transition ${
+                    emergencia === item.type
+                      ? 'bg-red-600/25 border-red-500 text-ink'
+                      : 'bg-surface/80 border-line text-ink-muted hover:border-line-strong'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">{item.icone}</span>
+                    <span className="text-xs font-bold">{item.rotulo}</span>
+                  </div>
+                  <span className="text-[10px] text-ink-muted">{item.leva}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div>
+            <label className="block text-xs font-bold text-ink-muted mb-1 font-mono">
+              Onde você está, com palavras
+            </label>
+            <input
+              type="text"
+              required
+              value={referencia}
+              onChange={(e) => setReferencia(e.target.value)}
+              placeholder="Imigrantes km 28, sentido litoral, acostamento"
+              className="w-full bg-surface border border-line-strong rounded-xl p-3 text-xs text-ink placeholder:text-ink-faint focus:outline-none focus:border-red-500"
+            />
+            {/* O GPS erra, cai, é negado. Quem vai socorrer chega pela frase. */}
+            {!!validacao.errors.reference && referencia.length > 0 && (
+              <p className="text-[11px] text-red-400 mt-1">{validacao.errors.reference}</p>
+            )}
+          </div>
+
+          <textarea
+            value={detalhes}
+            onChange={(e) => setDetalhes(e.target.value)}
+            placeholder={
+              tipo === 'emergencia'
+                ? EMERGENCIAS.find((e) => e.type === emergencia)?.leva
+                : 'Preciso que alguém pegue um pacote no Itaim'
+            }
+            className="w-full bg-surface border border-line-strong rounded-xl p-3 text-xs text-ink placeholder:text-ink-faint focus:outline-none focus:border-red-500 h-20 resize-none"
+          />
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-ink-muted mb-1 font-mono">
+                Quem avisar: <span className="text-brand-soft">{raioKm} km</span>
               </label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {emergencyTypes.map((item) => (
+              <div className="flex items-center gap-2">
+                {RAIOS.map((r) => (
                   <button
-                    key={item.type}
+                    key={r}
                     type="button"
-                    onClick={() => setSelectedEmergencyType(item.type)}
-                    className={`p-3 rounded-xl border text-left transition flex flex-col justify-between ${
-                      selectedEmergencyType === item.type
-                        ? 'bg-red-600/25 border-red-500 text-ink shadow-md'
-                        : 'bg-surface/80 border-line text-ink-muted hover:border-line-strong'
+                    onClick={() => setRaioKm(r)}
+                    className={`flex-1 py-1.5 rounded-lg text-xs font-bold font-mono transition ${
+                      raioKm === r
+                        ? 'bg-brand text-on-brand'
+                        : 'bg-surface text-ink-muted border border-line'
                     }`}
                   >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-base">{item.icon}</span>
-                      <span className="text-xs font-bold">{item.label}</span>
-                    </div>
-                    <span className="text-[10px] text-ink-muted line-clamp-2">{item.desc}</span>
+                    {r} km
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Radius and Coordinates */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-bold text-ink-muted mb-1 font-mono">
-                  2. Raio Geográfico de Notificação: <span className="text-brand-soft font-bold">{radiusKm} km</span>
-                </label>
-                <div className="flex items-center gap-2">
-                  {[5, 10, 15, 25].map((r) => (
-                    <button
-                      key={r}
-                      type="button"
-                      onClick={() => setRadiusKm(r)}
-                      className={`flex-1 py-1.5 rounded-lg text-xs font-bold font-mono transition ${
-                        radiusKm === r
-                          ? 'bg-brand text-on-brand'
-                          : 'bg-surface text-ink-muted border border-line'
-                      }`}
-                    >
-                      {r} km
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-ink-muted mb-1 font-mono">
-                  Sua Posição GPS Atual
-                </label>
-                <div className="bg-surface/90 border border-line rounded-lg p-2 flex items-center justify-between text-xs text-ink-muted">
-                  {userCoords ? (
-                    <>
-                      <span className="flex items-center gap-1.5 text-sky-400">
-                        <Compass className="w-4 h-4" />
-                        GPS ativo:
-                      </span>
-                      <span className="font-mono text-ink">
-                        {userCoords.lat.toFixed(4)}, {userCoords.lng.toFixed(4)}
-                      </span>
-                    </>
-                  ) : (
-                    <span className="flex items-center gap-1.5 text-red-400">
-                      <Compass className="w-4 h-4 shrink-0" />
-                      Sem GPS — escreva bem o ponto de referência abaixo
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Location Reference & Details */}
-            <div className="space-y-2">
-              <input
-                type="text"
-                value={locationRefText}
-                onChange={(e) => setLocationRefText(e.target.value)}
-                required
-                placeholder="Onde você está, com palavras (Ex: Imigrantes km 28, sentido litoral, acostamento)"
-                className="w-full bg-surface border border-line-strong rounded-xl p-3 text-xs text-ink placeholder:text-ink-faint focus:outline-none focus:border-red-500"
-              />
-              <textarea
-                value={detailsText}
-                onChange={(e) => setDetailsText(e.target.value)}
-                placeholder="Detalhes adicionais (Ex: Cabo de embreagem partiu no manete, estou com ferramentas básicas)"
-                className="w-full bg-surface border border-line-strong rounded-xl p-3 text-xs text-ink placeholder:text-ink-faint focus:outline-none focus:border-red-500 h-20 resize-none"
-              />
-            </div>
-
-            {/* Submit SOS Button */}
-            <button
-              type="submit"
-              className="w-full py-3.5 rounded-xl bg-red-600 hover:bg-red-500 active:scale-95 text-white font-extrabold text-sm uppercase tracking-wider shadow-lg shadow-red-950 transition flex items-center justify-center gap-2"
-            >
-              <Flame className="w-5 h-5" />
-              Confirmar e Transmitir Alerta na Região
-            </button>
-          </form>
-        )}
-      </div>
-
-      {/* Temporary Rescue Channel (Dedicated Live Assistance) */}
-      {activeChannelAlert && (
-        <div className="rounded-2xl bg-surface/90 border border-brand/40 p-4 shadow-xl">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-line">
             <div>
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
-                <h3 className="text-sm font-extrabold text-ink">
-                  Canal Temporário de Ajuda: {activeChannelAlert.petitionerName}
-                </h3>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-red-600/20 text-red-300 font-bold">
-                  {activeChannelAlert.type === 'mechanical_breakdown'
-                    ? 'Pane Mecânica'
-                    : activeChannelAlert.type === 'flat_tire'
-                    ? 'Pneu Furado'
-                    : 'Emergência'}
-                </span>
+              <label className="block text-xs font-bold text-ink-muted mb-1 font-mono">
+                Sua posição
+              </label>
+              <div className="bg-surface/90 border border-line rounded-lg p-2 flex items-center justify-between text-xs">
+                {posicao ? (
+                  <>
+                    <span className="flex items-center gap-1.5 text-sky-400">
+                      <Compass className="w-4 h-4" />
+                      GPS ativo
+                    </span>
+                    <span className="font-mono text-ink-muted">
+                      {posicao.lat.toFixed(3)}, {posicao.lng.toFixed(3)}
+                    </span>
+                  </>
+                ) : (
+                  <span className="flex items-center gap-1.5 text-red-400">
+                    <Compass className="w-4 h-4 shrink-0" />
+                    Sem GPS — escreva bem a referência
+                  </span>
+                )}
               </div>
-              <p className="text-xs text-ink-muted mt-1 flex items-center gap-1.5">
-                <MapPin className="w-3.5 h-3.5 text-red-400" />
-                {activeChannelAlert.locationReference} • Veículo: {activeChannelAlert.motorcycleInfo}
-              </p>
-            </div>
-
-            {/* Action buttons: Waze, Maps, and Status */}
-            <div className="flex items-center gap-2 shrink-0">
-              <a
-                href={getWazeNavigationUrl(activeChannelAlert.lat, activeChannelAlert.lng)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-3 py-1.5 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/40 text-xs font-bold flex items-center gap-1"
-              >
-                <span>Waze até o Local</span>
-                <ExternalLink className="w-3 h-3" />
-              </a>
-
-              <a
-                href={getGoogleMapsNavigationUrl(activeChannelAlert.lat, activeChannelAlert.lng)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-3 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold flex items-center gap-1"
-              >
-                <span>Google Maps</span>
-                <ExternalLink className="w-3 h-3" />
-              </a>
-
-              {activeChannelAlert.status !== 'resolved' && (
-                <button
-                  onClick={() => onResolveSOS(activeChannelAlert.id)}
-                  className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1"
-                >
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  Resolvido
-                </button>
-              )}
             </div>
           </div>
 
-          {/* Volunteers status */}
-          <div className="py-2.5 flex items-center justify-between text-xs text-ink-muted border-b border-line/80">
-            <span className="flex items-center gap-1.5">
-              <Users className="w-4 h-4 text-brand" />
-              Voluntários no Resgate: <strong className="text-ink">{activeChannelAlert.volunteers.length} motociclista(s)</strong>
-            </span>
-            <span className="text-[11px] font-mono text-ink-faint">Conversa salva só neste aparelho</span>
-          </div>
-
-          {/* Chat Messages */}
-          <div className="my-3 space-y-2 max-h-56 overflow-y-auto pr-1">
-            {activeChannelAlert.chatMessages.map((msg) => (
-              <div
-                key={msg.id}
-                className={`p-2.5 rounded-xl text-xs ${
-                  msg.senderId === 'system'
-                    ? 'bg-emerald-950/40 border border-emerald-800/40 text-emerald-300 text-center'
-                    : msg.senderName.includes('Você') || msg.senderId.includes('user')
-                    ? 'bg-elevated/90 text-ink ml-6 border border-line-strong'
-                    : 'bg-canvas text-ink mr-6 border border-line'
-                }`}
-              >
-                <div className="flex items-center justify-between text-[10px] text-ink-muted mb-0.5">
-                  <span className="font-bold text-brand-soft">{msg.senderName}</span>
-                  <span className="font-mono">{msg.timestamp}</span>
-                </div>
-                <p className="leading-relaxed">{msg.text}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* Quick Motorcycle Rescue Phrases */}
-          <div className="mb-2">
-            <p className="text-[10px] text-ink-muted font-mono uppercase mb-1">Respostas Rápidas em Trânsito:</p>
-            <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-              {quickPhrases.map((phrase, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => onSendMessage(activeChannelAlert.id, phrase)}
-                  className="px-2.5 py-1 rounded-full bg-elevated hover:bg-line-strong text-ink-muted text-[11px] whitespace-nowrap border border-line-strong active:scale-95 transition"
-                >
-                  {phrase}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Text Input */}
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (chatInput.trim()) {
-                onSendMessage(activeChannelAlert.id, chatInput.trim());
-                setChatInput('');
-              }
-            }}
-            className="flex items-center gap-2 pt-1"
+          <button
+            type="submit"
+            disabled={enviando || !validacao.valid || !posicao}
+            className="w-full py-3.5 rounded-xl bg-red-600 hover:bg-red-500 disabled:opacity-40 active:scale-95 text-white font-extrabold text-sm uppercase tracking-wider transition flex items-center justify-center gap-2"
           >
-            <input
-              type="text"
-              value={chatInput}
-              onChange={(e) => setChatInput(e.target.value)}
-              placeholder="Digite uma mensagem para alinhar o resgate..."
-              className="flex-1 bg-canvas border border-line-strong rounded-xl px-3 py-2 text-xs text-ink focus:outline-none focus:border-brand"
-            />
-            <button
-              type="submit"
-              className="px-4 py-2 bg-brand hover:opacity-90 text-on-brand font-bold text-xs rounded-xl flex items-center gap-1 active:scale-95"
-            >
-              <Send className="w-3.5 h-3.5" />
-              Enviar
-            </button>
-          </form>
-        </div>
+            <Flame className="w-5 h-5" />
+            {enviando ? 'Acionando…' : tipo === 'emergencia' ? 'Pedir socorro agora' : 'Pedir apoio'}
+          </button>
+
+          {!!resultado && <p className="text-xs text-emerald-400 leading-relaxed">{resultado}</p>}
+          {!!erro && <p className="text-xs text-red-400 leading-relaxed">{erro}</p>}
+
+          <p className="text-[10px] text-ink-faint leading-relaxed">
+            Seu endereço exato não vai no aviso — só a região de mais ou menos 1 km, e ele
+            só chega a quem você aceitar. Você fica alcançável por 45 minutos depois de
+            abrir o site. Em risco de vida, 190 ou 192 primeiro.
+          </p>
+
+          <button
+            type="button"
+            onClick={() => void socorro.sair()}
+            className="text-[11px] text-ink-muted hover:text-ink underline"
+          >
+            Sair da rede
+          </button>
+        </form>
       )}
-
-      {/* Community Alerts Radar List */}
-      <div className="rounded-2xl bg-surface/80 border border-line p-4">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <Radio className="w-4 h-4 text-red-500" />
-            <h3 className="text-xs font-bold text-ink uppercase tracking-wider font-mono">
-              Alertas Ativos na Região ({sosAlerts.length})
-            </h3>
-          </div>
-          <span className="text-[11px] text-ink-muted font-mono">Só deste aparelho</span>
-        </div>
-
-        <div className="space-y-2.5">
-          {sosAlerts.map((alert) => {
-            const distance = userCoords
-              ? calculateDistanceKm(userCoords.lat, userCoords.lng, alert.lat, alert.lng)
-              : null;
-            const isResolved = alert.status === 'resolved';
-
-            return (
-              <div
-                key={alert.id}
-                className={`rounded-xl p-3.5 border transition ${
-                  alert.id === activeChannelAlertId
-                    ? 'bg-canvas border-brand/60 shadow-md'
-                    : isResolved
-                    ? 'bg-canvas/40 border-line/60 opacity-70'
-                    : 'bg-canvas/80 border-line hover:border-line-strong'
-                }`}
-              >
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-ink">{alert.petitionerName}</span>
-                      <span className="text-[10px] px-2 py-0.5 rounded font-bold font-mono bg-red-600/20 text-red-300">
-                        {alert.type === 'mechanical_breakdown'
-                          ? 'Pane Mecânica'
-                          : alert.type === 'flat_tire'
-                          ? 'Pneu Furado'
-                          : alert.type === 'out_of_fuel'
-                          ? 'Sem Combustível'
-                          : alert.type === 'electrical_battery'
-                          ? 'Bateria / Elétrica'
-                          : 'Queda / Acidente'}
-                      </span>
-                      {distance !== null && (
-                        <span className="text-[11px] text-brand-soft font-mono font-bold">
-                          ~{formatDistance(distance)} de você
-                        </span>
-                      )}
-                    </div>
-
-                    <p className="text-xs text-ink-muted mt-1">{alert.details}</p>
-                    <p className="text-[11px] text-ink-muted mt-0.5 flex items-center gap-1">
-                      <MapPin className="w-3 h-3 text-red-400" />
-                      {alert.locationReference} ({alert.motorcycleInfo})
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-2 pt-2 sm:pt-0">
-                    <button
-                      onClick={() => {
-                        setActiveChannelAlertId(alert.id);
-                        onRespondToSOS(alert.id);
-                      }}
-                      className="px-3.5 py-2 rounded-xl bg-brand hover:opacity-90 text-on-brand font-bold text-xs flex items-center gap-1.5 transition active:scale-95"
-                    >
-                      <MessageSquare className="w-3.5 h-3.5" />
-                      {alert.id === activeChannelAlertId ? 'Canal Aberto' : 'Prestar Socorro'}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
     </div>
   );
 };

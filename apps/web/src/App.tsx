@@ -179,68 +179,6 @@ export default function App() {
     setActiveTab('sos');
   };
 
-  // Volunteer responding to an SOS alert
-  const handleRespondToSOS = (alertId: string) => {
-    const updated: SOSAlert[] = sosAlerts.map((alert) => {
-      if (alert.id === alertId) {
-        const hasJoined = alert.volunteers.some((v) => v.id === 'user-current');
-        if (hasJoined) return alert;
-
-        const volunteer: SOSVolunteer = {
-          id: 'user-current',
-          name: 'Você (Voluntário)',
-          motorcycle: motorcycle ? `${motorcycle.brand} ${motorcycle.model}` : 'Moto não informada',
-          lat: userCoords?.lat ?? 0,
-          lng: userCoords?.lng ?? 0,
-          distanceKm: userCoords
-            ? calculateDistanceKm(userCoords.lat, userCoords.lng, alert.lat, alert.lng)
-            : 0,
-          status: 'en_route',
-          joinedAt: new Date().toISOString(),
-        };
-
-        return {
-          ...alert,
-          status: 'in_progress' as const,
-          volunteers: [...alert.volunteers, volunteer],
-          // Sem mensagem automática. Antes o app escrevia "já estou a caminho"
-          // em nome de quem clicou, e quem pediu socorro lia isso como promessa
-          // de uma pessoa — mas ninguém tinha dito nada.
-          chatMessages: alert.chatMessages,
-        };
-      }
-      return alert;
-    });
-
-    setSosAlerts(updated);
-    storageService.saveSOSAlerts(updated);
-  };
-
-  // Send message in temporary SOS help channel
-  const handleSendMessage = (alertId: string, text: string) => {
-    const updated = sosAlerts.map((alert) => {
-      if (alert.id === alertId) {
-        return {
-          ...alert,
-          chatMessages: [
-            ...alert.chatMessages,
-            {
-              id: `msg-${Date.now()}`,
-              senderId: 'user-current',
-              senderName: 'Você',
-              text,
-              timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-            },
-          ],
-        };
-      }
-      return alert;
-    });
-
-    setSosAlerts(updated);
-    storageService.saveSOSAlerts(updated);
-  };
-
   // Resolve SOS Alert
   const handleResolveSOS = (alertId: string) => {
     const updated = sosAlerts.map((alert) =>
@@ -406,11 +344,8 @@ export default function App() {
                   ? `${motorcycle.brand} ${motorcycle.model} (${motorcycle.licensePlate})`
                   : 'Moto não informada'
               }
-              sosAlerts={sosAlerts}
-              onTriggerSOS={handleTriggerSOS}
-              onRespondToSOS={handleRespondToSOS}
-              onSendMessage={handleSendMessage}
-              onResolveSOS={handleResolveSOS}
+              nomeDoPiloto={currentUser?.name || 'Piloto'}
+              onRegistrarPedido={handleTriggerSOS}
             />
           )}
 

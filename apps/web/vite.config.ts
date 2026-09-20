@@ -21,7 +21,7 @@ export default defineConfig(() => {
           name: 'MotoRede - Plataforma para Motociclistas',
           short_name: 'MotoRede',
           description: 'Plataforma PWA colaborativa para motociclistas: comboio por voz em tempo real, SOS geolocalizado, manutenção preditiva e cupons de oficinas.',
-          theme_color: '#0f172a',
+          theme_color: '#020617',
           background_color: '#0b0f19',
           display: 'standalone',
           orientation: 'portrait',
@@ -50,6 +50,11 @@ export default defineConfig(() => {
         },
         workbox: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+          // Puxa o tratamento de push para dentro do service worker gerado.
+          // `importScripts` em vez de trocar para `injectManifest` porque a
+          // única coisa que falta é o `push` — não vale reescrever a geração
+          // inteira do Workbox por dois ouvintes de evento.
+          importScripts: ['/push-sw.js'],
         },
         devOptions: {
           enabled: false,

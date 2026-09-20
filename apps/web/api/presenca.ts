@@ -52,6 +52,15 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
   if (req.method === 'GET') {
     return responder(200, {
       rede: storeConfigured() ? 'ligada' : 'desligada',
+      // O navegador precisa desta chave para se inscrever no push. Ela é
+      // pública por definição — o par privado fica só no servidor.
+      //
+      // Servida pela API, não embutida no build: uma variável `VITE_*` é
+      // colada no bundle no momento da compilação, e quando falta o Vite
+      // escreve `undefined` e a eliminação de código morto apaga o bloco
+      // inteiro em silêncio. Foi exatamente assim que o login do Google
+      // sumiu do bundle sem nenhum erro aparecer.
+      vapidPublicKey: process.env.VAPID_PUBLIC_KEY || null,
       // Só o NOME das variáveis, nunca o valor: serve para conferir que a
       // integração da Vercel criou credenciais com um nome que o código acha.
       variaveis: Object.keys(process.env)
@@ -95,7 +104,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       return responder(200, { ok: true, presente: false });
     }
 
-    const pushToken = textoCurto(corpo.pushToken, 256);
+    const pushToken = textoCurto(corpo.pushToken, 1024);
     const posicao = lerPonto(corpo.position);
 
     if (!pushToken) return responder(400, { error: 'pushToken é obrigatório.' });
