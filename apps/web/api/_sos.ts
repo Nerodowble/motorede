@@ -303,7 +303,57 @@ export async function encerrarPedido(pedidoId: string): Promise<void> {
     ['ZREM', 'mr:pedidos', pedidoId],
     ['DEL', `mr:ped:${pedidoId}`],
     ['DEL', `mr:req:${pedidoId}`],
+    ['DEL', `mr:of:${pedidoId}`],
   ]);
+}
+
+/** Quem abriu o pedido. Usado para conferir quem tem direito de aceitar. */
+export async function donoDoPedido(pedidoId: string): Promise<string | null> {
+  const [bruto] = await redis<string | null>([['GET', `mr:ped:${pedidoId}`]]);
+  if (!bruto) return null;
+  try {
+    return (JSON.parse(bruto) as PedidoAberto).de ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Quem se ofereceu para ajudar num pedido.
+ *
+ * Guardado por um motivo só: para o servidor saber em QUAL aparelho tocar
+ * quando quem pediu aceitar alguém. Sem isso, "aceitar" não teria como
+ * alcançar a pessoa escolhida — e o endereço exato nunca sairia do aparelho de
+ * quem pediu, que é justamente o que a tela promete que vai acontecer.
+ */
+export interface Oferta {
+  ofertaId: string;
+  nome: string;
+  moto?: string;
+  /** Para onde mandar o endereço exato, se for aceito. */
+  pushToken: string;
+  celula: GeoPoint | null;
+  em: string;
+}
+
+export async function guardarOferta(pedidoId: string, oferta: Oferta): Promise<void> {
+  await redis([
+    ['RPUSH', `mr:of:${pedidoId}`, JSON.stringify(oferta)],
+    ['EXPIRE', `mr:of:${pedidoId}`, PEDIDO_SEGUNDOS],
+  ]);
+}
+
+export async function acharOferta(pedidoId: string, ofertaId: string): Promise<Oferta | null> {
+  const [lista] = await redis<string[]>([['LRANGE', `mr:of:${pedidoId}`, 0, -1]]);
+  for (const bruto of lista || []) {
+    try {
+      const o = JSON.parse(bruto) as Oferta;
+      if (o.ofertaId === ofertaId) return o;
+    } catch {
+      // Entrada corrompida: ignora e continua procurando.
+    }
+  }
+  return null;
 }
 
 export async function tokenDoPedinte(pedidoId: string): Promise<string | null> {

@@ -291,8 +291,37 @@ export async function pedirSocorro(dados: {
   }
 }
 
+/**
+ * Quem pediu escolhe uma pessoa, e só ela recebe o endereço exato.
+ *
+ * É o único momento em que o ponto preciso e o telefone saem daqui. Eles
+ * passam pelo servidor como um recado e não ficam gravados: até agora todo
+ * mundo viu apenas a célula de ~1 km.
+ */
+export async function aceitarAjuda(dados: {
+  pedidoId: string;
+  ofertaId: string;
+  nome: string;
+  telefone: string;
+  referencia: string;
+  precisa: GeoPoint;
+}): Promise<{ ok: boolean; erro?: string }> {
+  try {
+    const r = await fetch('/api/socorro', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ acao: 'aceitar', deviceId: deviceId(), ...dados }),
+    });
+    const corpo = await r.json();
+    return r.ok ? { ok: true } : { ok: false, erro: corpo.error };
+  } catch (erro) {
+    return { ok: false, erro: erro instanceof Error ? erro.message : 'Sem conexão.' };
+  }
+}
+
 export async function responderChamado(dados: {
   pedidoId: string;
+  inscricao: string;
   nome: string;
   moto: string;
   resposta: string;
@@ -305,6 +334,9 @@ export async function responderChamado(dados: {
       body: JSON.stringify({
         acao: 'responder',
         deviceId: deviceId(),
+        // Precisa ir: é por ele que o servidor alcança você se quem pediu
+        // aceitar sua ajuda e liberar o endereço.
+        pushToken: dados.inscricao,
         pedidoId: dados.pedidoId,
         nome: dados.nome,
         moto: dados.moto,

@@ -7,6 +7,9 @@ import {
   guardarPedido,
   pedidosNoRaio,
   encerrarPedido,
+  donoDoPedido,
+  guardarOferta,
+  acharOferta,
   enviarPush,
   storeConfigured,
   lerPonto,
@@ -36,7 +39,7 @@ import {
  * aceitar.
  */
 
-type Acao = 'pedir' | 'responder' | 'encerrar';
+type Acao = 'pedir' | 'responder' | 'encerrar' | 'aceitar';
 
 interface Corpo {
   acao?: unknown;
@@ -54,6 +57,10 @@ interface Corpo {
   raioKm?: unknown;
   // responder
   resposta?: unknown;
+  // aceitar
+  ofertaId?: unknown;
+  precisa?: unknown;
+  telefone?: unknown;
 }
 
 async function lerCorpo(req: IncomingMessage): Promise<Corpo> {
@@ -114,7 +121,8 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
   if (!deviceId) return responder(400, { error: 'deviceId é obrigatório.' });
 
   try {
-    if (acao === 'responder') return await responderPedido(corpo, responder);
+    if (acao === 'responder') return await responderPedido(corpo, deviceId, responder);
+    if (acao === 'aceitar') return await aceitarOferta(corpo, deviceId, responder);
     if (acao === 'encerrar') {
       const pedidoId = textoCurto(corpo.pedidoId, 64);
       if (!pedidoId) return responder(400, { error: 'pedidoId é obrigatório.' });
@@ -223,12 +231,13 @@ async function abrirPedido(corpo: Corpo, deviceId: string, responder: Responder)
   });
 }
 
-async function responderPedido(corpo: Corpo, responder: Responder) {
+async function responderPedido(corpo: Corpo, deviceId: string, responder: Responder) {
   const pedidoId = textoCurto(corpo.pedidoId, 64);
   const nome = textoCurto(corpo.nome, 40) || 'Um piloto';
   const moto = textoCurto(corpo.moto, 60);
   const resposta = textoCurto(corpo.resposta, 200) || 'Posso ajudar.';
   const posicao = lerPonto(corpo.position);
+  const pushToken = textoCurto(corpo.pushToken, 1024);
 
   if (!pedidoId) return responder(400, { error: 'pedidoId é obrigatório.' });
 
@@ -242,6 +251,22 @@ async function responderPedido(corpo: Corpo, responder: Responder) {
     });
   }
 
+  // O identificador da oferta nasce do aparelho de quem se ofereceu: aceitar
+  // duas vezes a mesma pessoa não cria duas ofertas.
+  const ofertaId = `of-${deviceId.slice(-8)}-${Date.now().toString(36)}`;
+  const celulaDeQuemAjuda = posicao ? coarsenLocation(posicao) : null;
+
+  if (pushToken) {
+    await guardarOferta(pedidoId, {
+      ofertaId,
+      nome,
+      moto: moto || undefined,
+      pushToken,
+      celula: celulaDeQuemAjuda,
+      em: new Date().toISOString(),
+    });
+  }
+
   const { enviados } = await enviarPush([
     {
       to: destino,
@@ -251,11 +276,70 @@ async function responderPedido(corpo: Corpo, responder: Responder) {
       data: {
         tipo: 'resposta-socorro',
         pedidoId,
+        ofertaId,
         nome,
         moto,
         // Quem se oferece também aparece de forma aproximada: a exposição é
         // dos dois lados até o pedinte aceitar.
-        celula: posicao ? coarsenLocation(posicao) : null,
+        celula: celulaDeQuemAjuda,
+        em: new Date().toISOString(),
+      },
+    },
+  ]);
+
+  return responder(200, { ok: true, ofertaId, entregue: enviados === 1 });
+}
+
+/**
+ * Quem pediu escolhe uma pessoa, e só ela recebe o endereço exato.
+ *
+ * É AQUI que a promessa da tela vira mecanismo. Até este ponto todo mundo viu
+ * apenas a célula de ~1 km. O ponto exato e o telefone saem do aparelho de
+ * quem pediu, passam por aqui e vão para um único destino — nunca são
+ * gravados. O servidor é carteiro, não arquivo.
+ *
+ * A checagem de quem está aceitando não é formalidade: sem ela, qualquer um
+ * que soubesse o identificador do pedido poderia mandar um endereço falso a
+ * quem se ofereceu, e despachar um socorrista para o lugar errado — ou para
+ * uma emboscada.
+ */
+async function aceitarOferta(corpo: Corpo, deviceId: string, responder: Responder) {
+  const pedidoId = textoCurto(corpo.pedidoId, 64);
+  const ofertaId = textoCurto(corpo.ofertaId, 64);
+  const precisa = lerPonto(corpo.precisa);
+  const telefone = textoCurto(corpo.telefone, 24);
+  const nome = textoCurto(corpo.nome, 40) || 'Quem pediu';
+  const referencia = textoCurto(corpo.referencia, 140);
+
+  if (!pedidoId || !ofertaId) {
+    return responder(400, { error: 'pedidoId e ofertaId são obrigatórios.' });
+  }
+
+  const dono = await donoDoPedido(pedidoId);
+  if (!dono) return responder(404, { error: 'Este pedido expirou ou já foi encerrado.', expirado: true });
+  if (dono !== deviceId) {
+    return responder(403, { error: 'Só quem abriu o pedido pode aceitar alguém.' });
+  }
+
+  const oferta = await acharOferta(pedidoId, ofertaId);
+  if (!oferta) return responder(404, { error: 'Não encontrei essa oferta de ajuda.' });
+
+  const { enviados } = await enviarPush([
+    {
+      to: oferta.pushToken,
+      title: `${nome} aceitou sua ajuda`,
+      body: referencia
+        ? `${referencia}${telefone ? ` · ${telefone}` : ''}`
+        : 'Toque para ver o endereço exato.',
+      urgente: true,
+      data: {
+        tipo: 'aceito',
+        pedidoId,
+        nome,
+        telefone: telefone || null,
+        referencia: referencia || null,
+        // O ponto EXATO, e só para esta pessoa.
+        exato: precisa,
         em: new Date().toISOString(),
       },
     },

@@ -55,6 +55,24 @@ function executar(cmd) {
 
   if (nome === 'DEL') { const n = kv.delete(cmd[1]) ? 1 : 0; return n; }
   if (nome === 'ZRANGE') return [...geo(cmd[1]).keys()];
+
+  if (nome === 'RPUSH') {
+    const e = kv.get(cmd[1]);
+    const lista = vivo(e) && e ? e.valor : [];
+    lista.push(...cmd.slice(2));
+    kv.set(cmd[1], { valor: lista, expiraEm: e && vivo(e) ? e.expiraEm : null });
+    return lista.length;
+  }
+  if (nome === 'LRANGE') {
+    const e = kv.get(cmd[1]);
+    return vivo(e) && e ? e.valor : [];
+  }
+  if (nome === 'EXPIRE') {
+    const e = kv.get(cmd[1]);
+    if (!e) return 0;
+    e.expiraEm = Date.now() + Number(cmd[2]) * 1000;
+    return 1;
+  }
   if (nome === 'ZREM') { const g = geo(cmd[1]); let n = 0; for (const m of cmd.slice(2)) if (g.delete(m)) n++; return n; }
 
   if (nome === 'GEOSEARCH') {

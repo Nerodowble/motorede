@@ -85,9 +85,27 @@ export interface ChamadoRecebido {
 
 export interface RespostaRecebida {
   pedidoId: string;
+  /** Identifica esta oferta na hora de aceitar. */
+  ofertaId?: string;
   nome: string;
   moto?: string;
   celula: GeoPoint | null;
+  em: string;
+  aceita?: boolean;
+}
+
+/**
+ * Você foi aceito: aqui chega o endereço exato e o telefone.
+ *
+ * Só existe depois que quem pediu escolheu você, nominalmente. Antes disso a
+ * única coisa que você tinha era a região de ~1 km.
+ */
+export interface AceiteRecebido {
+  pedidoId: string;
+  nome: string;
+  telefone: string | null;
+  referencia: string | null;
+  exato: GeoPoint | null;
   em: string;
 }
 
@@ -98,6 +116,7 @@ export function useSocorroRede() {
   const [chamados, setChamados] = useState<ChamadoRecebido[]>([]);
   const [respostas, setRespostas] = useState<RespostaRecebida[]>([]);
   const [meusPedidos, setMeusPedidos] = useState<MeuPedido[]>(() => lerMeus());
+  const [aceites, setAceites] = useState<AceiteRecebido[]>([]);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   /**
@@ -233,9 +252,22 @@ export function useSocorroRede() {
         setRespostas((antes) => [
           {
             pedidoId: d.pedidoId,
+            ofertaId: d.ofertaId,
             nome: d.nome || 'Um piloto',
             moto: d.moto,
             celula: d.celula ?? null,
+            em: d.em || new Date().toISOString(),
+          },
+          ...antes,
+        ]);
+      } else if (d.tipo === 'aceito' && typeof d.pedidoId === 'string') {
+        setAceites((antes) => [
+          {
+            pedidoId: d.pedidoId,
+            nome: d.nome || 'Quem pediu',
+            telefone: d.telefone ?? null,
+            referencia: d.referencia ?? null,
+            exato: d.exato ?? null,
             em: d.em || new Date().toISOString(),
           },
           ...antes,
@@ -245,6 +277,12 @@ export function useSocorroRede() {
 
     navigator.serviceWorker.addEventListener('message', ouvir);
     return () => navigator.serviceWorker.removeEventListener('message', ouvir);
+  }, []);
+
+  const marcarAceita = useCallback((ofertaId: string) => {
+    setRespostas((antes) =>
+      antes.map((r) => (r.ofertaId === ofertaId ? { ...r, aceita: true } : r))
+    );
   }, []);
 
   const marcarRespondido = useCallback((pedidoId: string) => {
@@ -263,6 +301,8 @@ export function useSocorroRede() {
     posicao,
     chamados,
     respostas,
+    aceites,
+    marcarAceita,
     entrar,
     sair,
     marcarRespondido,

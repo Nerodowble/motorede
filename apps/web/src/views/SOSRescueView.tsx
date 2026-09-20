@@ -14,7 +14,7 @@ import {
 import { EmergencyType, distanceKm, validateRequest } from '@motorede/shared';
 import { GeoPoint, getGoogleMapsNavigationUrl, getWazeNavigationUrl } from '../services/geolocation';
 import type { useSocorroRede } from '../hooks/useSocorroRede';
-import { pedirSocorro, responderChamado } from '../services/socorroRede';
+import { pedirSocorro, responderChamado, aceitarAjuda } from '../services/socorroRede';
 
 /**
  * Socorro na web, ligado na mesma rede do aplicativo.
@@ -47,6 +47,7 @@ interface SOSRescueViewProps {
   userCoords: GeoPoint | null;
   motorcycleInfo: string;
   nomeDoPiloto: string;
+  telefoneDoPiloto: string;
   /** Guarda o pedido no histórico local. Nada disso vive no servidor. */
   onRegistrarPedido: (
     type: EmergencyType,
@@ -71,6 +72,7 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
   userCoords,
   motorcycleInfo,
   nomeDoPiloto,
+  telefoneDoPiloto,
   onRegistrarPedido,
   socorro,
 }) => {
@@ -142,8 +144,10 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
   };
 
   const atender = async (pedidoId: string) => {
+    if (!socorro.rede.inscricao) return;
     const r = await responderChamado({
       pedidoId,
+      inscricao: socorro.rede.inscricao,
       nome: nomeDoPiloto,
       moto: motorcycleInfo,
       resposta: 'Posso ajudar, estou indo.',
@@ -153,8 +157,76 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
     else setErro(r.erro || 'Não consegui avisar quem pediu.');
   };
 
+  const aceitar = async (resposta: (typeof socorro.respostas)[number]) => {
+    if (!resposta.ofertaId || !posicao) return;
+    const meu = socorro.meusPedidos.find((p) => p.pedidoId === resposta.pedidoId);
+    const r = await aceitarAjuda({
+      pedidoId: resposta.pedidoId,
+      ofertaId: resposta.ofertaId,
+      nome: nomeDoPiloto,
+      telefone: telefoneDoPiloto,
+      referencia: meu?.referencia || '',
+      precisa: posicao,
+    });
+    if (r.ok) socorro.marcarAceita(resposta.ofertaId);
+    else setErro(r.erro || 'Não consegui avisar a pessoa.');
+  };
+
   return (
     <div className="space-y-4 pb-28 sm:pb-24 max-w-4xl mx-auto px-3 sm:px-4 py-3">
+      {/* Você foi aceito: o único lugar do app onde aparece endereço exato. */}
+      {socorro.aceites.length > 0 && (
+        <div className="rounded-2xl bg-surface border border-emerald-600/50 p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+            <h3 className="text-xs font-bold text-ink uppercase tracking-wider font-mono">
+              Aceitaram sua ajuda — vá até lá
+            </h3>
+          </div>
+          {socorro.aceites.map((a, i) => (
+            <div
+              key={`${a.pedidoId}-${i}`}
+              className="rounded-xl bg-canvas/80 border border-line p-3 mt-2"
+            >
+              <p className="text-xs font-bold text-ink">{a.nome}</p>
+              {!!a.referencia && <p className="text-xs text-ink mt-1">{a.referencia}</p>}
+              <div className="flex items-center gap-2 mt-3 flex-wrap">
+                {!!a.telefone && (
+                  <a
+                    href={`tel:${a.telefone.replace(/\D/g, '')}`}
+                    className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs"
+                  >
+                    Ligar {a.telefone}
+                  </a>
+                )}
+                {!!a.exato && (
+                  <>
+                    <a
+                      href={getWazeNavigationUrl(a.exato.lat, a.exato.lng)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1.5 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/40 text-xs font-bold flex items-center gap-1"
+                    >
+                      Waze <ExternalLink className="w-3 h-3" />
+                    </a>
+                    <a
+                      href={getGoogleMapsNavigationUrl(a.exato.lat, a.exato.lng)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold flex items-center gap-1"
+                    >
+                      Maps <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </>
+                )}
+              </div>
+              <p className="text-[10px] text-ink-faint mt-2">
+                Agora a navegação vai até o ponto exato, não mais até a região.
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
       {!socorro.rede.disponivel && (
         <div className="rounded-2xl bg-surface border border-line p-4 sm:p-5">
           <div className="flex items-start gap-3">
@@ -357,9 +429,24 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
                     ? `a ~${distanceKm(posicao, r.celula).toFixed(1)} km de você`
                     : 'região não informada'}
                 </p>
+                {r.aceita ? (
+                  <p className="text-[11px] text-emerald-400 font-bold mt-2 flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    Você enviou seu endereço e telefone para {r.nome}
+                  </p>
+                ) : (
+                  <button
+                    onClick={() => void aceitar(r)}
+                    disabled={!r.ofertaId || !posicao}
+                    className="mt-2 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white font-bold text-xs transition active:scale-95"
+                  >
+                    Aceitar e enviar meu endereço
+                  </button>
+                )}
                 <p className="text-[10px] text-ink-faint mt-1.5 leading-relaxed">
-                  Combine por telefone antes de passar o endereço exato. O MotoRede não
-                  verifica a identidade de ninguém.
+                  Aceitar envia seu <strong>endereço exato e telefone</strong> só para esta
+                  pessoa. O MotoRede não verifica a identidade de ninguém — aceite quem
+                  você tem alguma razão para aceitar.
                 </p>
               </div>
             ))}

@@ -349,6 +349,7 @@ export default function App() {
                   : 'Moto não informada'
               }
               nomeDoPiloto={currentUser?.name || 'Piloto'}
+              telefoneDoPiloto={currentUser?.phone || ''}
               onRegistrarPedido={handleTriggerSOS}
               socorro={socorro}
             />
