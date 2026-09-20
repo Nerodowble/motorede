@@ -77,6 +77,13 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
         // demais, o problema não é o nome do prefixo, é que nada foi ligado.
         totalDeVariaveis: Object.keys(process.env).length,
         comPrefixoKv: Object.keys(process.env).filter((k) => k.startsWith('KV_')).sort(),
+        // Distingue "não foi criada" de "foi criada com o nome errado" e de
+        // "existe mas está vazia" — três causas com a mesma aparência de fora.
+        // O nome e o tamanho do valor bastam; o valor em si nunca sai daqui.
+        vapid: Object.keys(process.env)
+          .filter((k) => k.toUpperCase().includes('VAPID'))
+          .sort()
+          .map((k) => `${k}=${(process.env[k] || '').length} caracteres`),
       },
     });
   }
