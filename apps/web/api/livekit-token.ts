@@ -101,7 +101,7 @@ export default async function handler(
     name = verified.name;
   } else {
     // O prefixo de plugin é reservado: quem é plugin quem diz é o metadado
-    // gravado pelo servidor, mas um piloto chamado "plugin-musica" confundiria
+    // gravado pelo servidor, mas um piloto chamado "plugin-radio" confundiria
     // a tela de todo mundo.
     if (
       !body.identity ||

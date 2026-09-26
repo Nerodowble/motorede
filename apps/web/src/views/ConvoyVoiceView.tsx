@@ -34,8 +34,8 @@ import QRCode from 'qrcode';
 import { useVoiceConnection } from '../hooks/useVoiceConnection';
 import { useGoogleAuth } from '../hooks/useGoogleAuth';
 import { ConvoyBrowser } from '../components/ConvoyBrowser';
-import { MusicPanel } from '../components/MusicPanel';
-import { useMusicPlugin } from '../hooks/useMusicPlugin';
+import { PluginPanel } from '../components/PluginPanel';
+import { usePluginAudio } from '../hooks/usePluginAudio';
 
 interface ConvoyVoiceViewProps {
   voiceRoom: VoiceRoom;
@@ -60,7 +60,7 @@ export const ConvoyVoiceView: React.FC<ConvoyVoiceViewProps> = ({
   const auth = useGoogleAuth();
   const googleButtonRef = useRef<HTMLDivElement | null>(null);
   const isLive = voice.status === 'connected' || voice.status === 'reconnecting';
-  const music = useMusicPlugin(voice.room, voice.sessionToken);
+  const pluginAudio = usePluginAudio(voice.room, voice.sessionToken);
   const souLider = voice.participants.some(
     (p) => p.isHost && p.id === voice.room?.localParticipant.identity
   );
@@ -648,8 +648,8 @@ ${inviteUrl}`;
         </div>
       )}
 
-      {/* Música do comboio (plugin). Some por completo fora da conversa. */}
-      {isLive && <MusicPanel music={music} souLider={souLider} />}
+      {/* Plugin de áudio do comboio. Some por completo fora da conversa. */}
+      {isLive && <PluginPanel pluginAudio={pluginAudio} souLider={souLider} />}
 
       {/* External Navigation Destination (Waze & Google Maps) */}
       <div className="rounded-2xl bg-surface/80 border border-line p-4 shadow-md">

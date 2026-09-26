@@ -10,7 +10,7 @@ import { redis } from './_redis.js';
  *
  * Os plugins conhecidos vêm da variável `MOTOREDE_PLUGINS`, um JSON:
  *
- *   [{ "id": "musica", "nome": "Música", "chave": "<segredo longo>",
+ *   [{ "id": "meu-plugin", "nome": "Meu plugin", "chave": "<segredo longo>",
  *      "salas": ["MEUCOMBOIO"] }]
  *
  * Registrar é feito UMA vez. Em qual comboio o plugin aparece não fica aqui:

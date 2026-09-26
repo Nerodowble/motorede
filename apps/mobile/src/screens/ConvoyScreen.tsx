@@ -20,8 +20,8 @@ import {
 } from '@motorede/shared';
 import { useVoiceConnection } from '../hooks/useVoiceConnection';
 import { useConvoyBrowser } from '../hooks/useConvoyBrowser';
-import { useMusicPlugin } from '../hooks/useMusicPlugin';
-import { MusicCard } from '../components/MusicCard';
+import { usePluginAudio } from '../hooks/usePluginAudio';
+import { PluginCard } from '../components/PluginCard';
 import { storage } from '../services/storage';
 import { TOKEN_ENDPOINT, WEB_APP_URL } from '../config';
 import { COLORS } from '../theme';
@@ -50,7 +50,7 @@ export const ConvoyScreen: React.FC<ConvoyScreenProps> = ({
   const voice = useVoiceConnection(TOKEN_ENDPOINT);
   const browser = useConvoyBrowser();
   const isLive = voice.status === 'connected' || voice.status === 'reconnecting';
-  const music = useMusicPlugin(voice.room, voice.sessionToken);
+  const pluginAudio = usePluginAudio(voice.room, voice.sessionToken);
   const souLider = voice.participants.some(
     (p) => p.isHost && p.id === voice.room?.localParticipant.identity
   );
@@ -174,7 +174,7 @@ export const ConvoyScreen: React.FC<ConvoyScreenProps> = ({
         )}
       </View>
 
-      {isLive && <MusicCard music={music} souLider={souLider} />}
+      {isLive && <PluginCard pluginAudio={pluginAudio} souLider={souLider} />}
 
       {/* Trocar de comboio some durante a conversa: não se oferece isso a
           alguém pilotando. */}

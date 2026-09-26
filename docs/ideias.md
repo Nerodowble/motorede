@@ -892,3 +892,13 @@ nenhum, e o vínculo acontece no app: o painel do plugin mostra um código
 música. O código só vale com o plugin ligado (ele o anuncia a cada pergunta),
 pode ser trocado a qualquer hora pelo painel e tem limite de 8 tentativas
 erradas por comboio a cada 10 minutos. `salas` continua existindo, mas opcional.
+
+**Ajustes depois do primeiro teste (2026-09-26):**
+- **O MotoRede aceita plugins, não um tipo de conteúdo.** Tela, protocolo e
+  código deixaram de falar do que o plugin toca: "Chamar plugin", campos
+  `lista`/`item` no protocolo, nome exibido é o que o operador registrou.
+  Produto que anuncia um tipo de conteúdo passa a ser conivente com ele.
+- **Sem volume automático.** Abaixar o plugin quando alguém fala foi testado e
+  atrapalhou: a cada frase o áudio quase sumia. O plugin passa a ser tratado
+  como mais um participante — cada um ajusta o volume dele no próprio aparelho
+  (− e + no app, controle deslizante na web) ou silencia só para si.

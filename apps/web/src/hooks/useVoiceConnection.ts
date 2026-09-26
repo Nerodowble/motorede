@@ -290,7 +290,7 @@ export function useVoiceConnection(): UseVoiceConnection {
   const applyVolume = useCallback((value: number) => {
     const room = roomRef.current;
     if (!room) return;
-    // Plugins ficam de fora: o volume da música é do painel de música (abaixa
+    // Plugins ficam de fora: o volume deles é do painel de plugin (abaixa
     // quando alguém fala, silencia só para mim), não deste controle.
     room.remoteParticipants.forEach((p) => {
       if (!isPluginParticipant(p)) p.setVolume(value / 100);

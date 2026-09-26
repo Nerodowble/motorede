@@ -36,12 +36,12 @@ export function normalizePairCode(input: unknown): string | null {
   return PLUGIN_PAIR_PATTERN.test(codigo) ? codigo : null;
 }
 
-/** Volume da faixa do plugin enquanto alguém do comboio fala. */
-export const PLUGIN_DUCK_VOLUME = 0.15;
+/** Passo dos botões de volume do plugin (em %). Botão grande, de luva. */
+export const PLUGIN_VOLUME_STEP = 10;
 
 /** Comandos que o app manda ao plugin. */
 export type PluginCommand =
-  | { tipo: 'tocar'; playlist: string; faixa?: number }
+  | { tipo: 'tocar'; lista: string; item?: number }
   | { tipo: 'pausar' }
   | { tipo: 'continuar' }
   | { tipo: 'pular' }
@@ -61,14 +61,14 @@ export interface PluginMessage {
  */
 export interface PluginState {
   estado: 'tocando' | 'pausado' | 'parado';
-  faixa?: string;
-  playlist?: string;
-  /** Posição da faixa atual na playlist, a partir de 0. */
+  item?: string;
+  lista?: string;
+  /** Posição do item atual na lista, a partir de 0. */
   indice?: number;
   embaralhar?: boolean;
-  playlists: { nome: string; faixas: number }[];
-  /** Títulos da playlist atual, na ordem. */
-  faixas: string[];
+  listas: { nome: string; itens: number }[];
+  /** Títulos da lista atual, na ordem. */
+  itens: string[];
   /** Último comando executado, quem mandou (nome) e quando (ms). */
   ultimo?: { por: string; acao: string; em: number };
   /** Identidade de quem chamou o plugin. Pode dispensá-lo, junto com o líder. */
@@ -78,12 +78,12 @@ export interface PluginState {
 export function encodePluginState(state: PluginState): Record<string, string> {
   return {
     estado: state.estado,
-    faixa: state.faixa ?? '',
-    playlist: state.playlist ?? '',
+    item: state.item ?? '',
+    lista: state.lista ?? '',
     indice: state.indice === undefined ? '' : String(state.indice),
     embaralhar: state.embaralhar ? '1' : '',
-    playlists: JSON.stringify(state.playlists),
-    faixas: JSON.stringify(state.faixas),
+    listas: JSON.stringify(state.listas),
+    itens: JSON.stringify(state.itens),
     ultimo: state.ultimo ? JSON.stringify(state.ultimo) : '',
     chamadoPor: state.chamadoPor ?? '',
   };
@@ -104,12 +104,12 @@ export function decodePluginState(attrs: Record<string, string> | undefined): Pl
   const indice = a.indice ? Number(a.indice) : undefined;
   return {
     estado,
-    faixa: a.faixa || undefined,
-    playlist: a.playlist || undefined,
+    item: a.item || undefined,
+    lista: a.lista || undefined,
     indice: Number.isInteger(indice) ? indice : undefined,
     embaralhar: a.embaralhar === '1',
-    playlists: parseJson(a.playlists, []),
-    faixas: parseJson(a.faixas, []),
+    listas: parseJson(a.listas, []),
+    itens: parseJson(a.itens, []),
     ultimo: parseJson(a.ultimo, undefined),
     chamadoPor: a.chamadoPor || undefined,
   };
@@ -121,11 +121,11 @@ export function parsePluginCommand(raw: unknown): PluginCommand | null {
   const c = raw as Record<string, unknown>;
   switch (c.tipo) {
     case 'tocar':
-      if (typeof c.playlist !== 'string' || !c.playlist) return null;
-      if (c.faixa !== undefined && !(Number.isInteger(c.faixa) && (c.faixa as number) >= 0)) {
+      if (typeof c.lista !== 'string' || !c.lista) return null;
+      if (c.item !== undefined && !(Number.isInteger(c.item) && (c.item as number) >= 0)) {
         return null;
       }
-      return { tipo: 'tocar', playlist: c.playlist, faixa: c.faixa as number | undefined };
+      return { tipo: 'tocar', lista: c.lista, item: c.item as number | undefined };
     case 'embaralhar':
       return { tipo: 'embaralhar', ligado: c.ligado === true };
     case 'pausar':
@@ -147,13 +147,14 @@ export function pluginIdFromIdentity(identity: string): string | null {
 }
 
 /**
- * Volume em que a faixa do plugin deve tocar neste aparelho.
+ * Volume em que a faixa do plugin deve tocar neste aparelho (0 a 1).
  *
- * Silenciar é decisão de cada um e vale só para quem silenciou. Abaixar quando
- * alguém fala é obrigatório: na moto, "buraco à frente" não pode disputar com
- * o refrão.
+ * O plugin é tratado como mais um participante: cada pessoa ajusta o volume
+ * DELE no próprio aparelho, e ninguém mais é afetado. Não há abaixar
+ * automático quando alguém fala — foi tentado e testado: a cada frase o áudio
+ * quase sumia, e quem quer mais baixo prefere decidir quanto.
  */
-export function pluginPlaybackVolume(someoneSpeaking: boolean, mutedByMe: boolean): number {
+export function pluginPlaybackVolume(volumePercent: number, mutedByMe: boolean): number {
   if (mutedByMe) return 0;
-  return someoneSpeaking ? PLUGIN_DUCK_VOLUME : 1;
+  return Math.min(100, Math.max(0, volumePercent)) / 100;
 }

@@ -1,9 +1,9 @@
 # Plugins de áudio do MotoRede
 
 Um plugin é um programa **de terceiros** que entra no comboio como um
-participante a mais e publica uma faixa de áudio — música, avisos de rota, uma
-rádio licenciada. Ele roda na infraestrutura de quem o escreveu. Se cair, some
-só a faixa dele; o comboio continua.
+participante a mais e publica uma faixa de áudio — avisos de rota, uma
+narração, uma rádio licenciada. Ele roda na infraestrutura de quem o escreveu.
+Se cair, some só a faixa dele; o comboio continua.
 
 ## Responsabilidade pelo conteúdo
 
@@ -12,14 +12,10 @@ só a faixa dele; o comboio continua.
 > registrou, que responde integralmente pelo conteúdo que publica.
 >
 > **Não recomendamos — e não apoiamos — plugins que transmitam conteúdo sem
-> autorização dos titulares de direitos**, como música baixada de plataformas
+> autorização dos titulares de direitos**, como conteúdo obtido de plataformas
 > cujos termos proíbem download ou retransmissão. Quem cria ou opera um plugin
 > deve garantir que tem direito de transmitir o que transmite, conforme a lei
 > de direitos autorais e os termos de uso das fontes.
->
-> Fontes com licença que permite redistribuição incluem a Biblioteca de Áudio
-> do YouTube, Free Music Archive, Jamendo e Pixabay Music (confira a licença de
-> cada faixa, que costuma exigir atribuição).
 
 ## O que um plugin pode e não pode
 
@@ -33,8 +29,9 @@ só a faixa dele; o comboio continua.
 Quem garante essas regras é o servidor, ao emitir o token — não o código do
 plugin.
 
-Nos aparelhos, a faixa de qualquer plugin **abaixa sozinha quando alguém fala**
-(`PLUGIN_DUCK_VOLUME`), e cada pessoa pode silenciá-la só para si.
+Nos aparelhos, o plugin é tratado como **mais um participante**: cada pessoa
+ajusta o volume dele no próprio aparelho, ou o silencia só para si. Não há
+volume automático.
 
 ## Registro
 
@@ -44,8 +41,8 @@ na variável de ambiente `MOTOREDE_PLUGINS` da Vercel:
 ```json
 [
   {
-    "id": "musica",
-    "nome": "Música do Fulano",
+    "id": "meu-plugin",
+    "nome": "Nome que aparece no app",
     "chave": "<segredo com pelo menos 24 caracteres>"
   }
 ]
@@ -104,8 +101,8 @@ que é o que o app mostra antes de chamar.
   `packages/shared/src/domain/plugins.ts`). Valide sempre com
   `parsePluginCommand` — qualquer pessoa da sala pode mandar.
 - **Estado** vai nos atributos do participante, no formato de
-  `encodePluginState`: `estado`, `faixa`, `playlist`, `indice`, `embaralhar`,
-  `playlists`, `faixas`, `ultimo`, `chamadoPor`.
+  `encodePluginState`: `estado`, `item`, `lista`, `indice`, `embaralhar`,
+  `listas`, `itens`, `ultimo`, `chamadoPor`.
 - **Dispensar** (`sair`): aceite só de quem chamou (`chamadoPor`) ou do líder
   (quem está há mais tempo na sala).
 - Saia sozinho quando não houver mais nenhum piloto na sala: plugin conta
@@ -114,5 +111,5 @@ que é o que o app mostra antes de chamar.
 ## Custos
 
 Cada plugin na sala consome minutos de participante no LiveKit, como um
-piloto. Música também não se beneficia do DTX (ela não para de tocar), então
-cada ouvinte baixa ~64 kbps a mais enquanto ela toca.
+piloto. Áudio contínuo também não se beneficia do DTX (não para de tocar), então
+cada ouvinte baixa ~64 kbps a mais enquanto o plugin toca.

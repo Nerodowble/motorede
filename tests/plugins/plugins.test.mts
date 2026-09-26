@@ -16,7 +16,7 @@ process.env.LIVEKIT_URL = 'wss://exemplo.livekit.cloud';
 const CHAVE = 'chave-do-plugin-bem-comprida-123';
 const CHAVE_DJ = 'outra-chave-bem-comprida-456789';
 process.env.MOTOREDE_PLUGINS = JSON.stringify([
-  { id: 'musica', nome: 'Música do Willian', chave: CHAVE, salas: ['WILL'] },
+  { id: 'radio', nome: 'Rádio de teste', chave: CHAVE, salas: ['WILL'] },
   { id: 'dj', nome: 'DJ pareável', chave: CHAVE_DJ },
   { id: 'curta', nome: 'Chave curta', chave: 'abc' },
   { id: 'Inválido Id', nome: 'x', chave: CHAVE },
@@ -52,7 +52,7 @@ console.log('\n=== Registro ===');
 limpar();
 const naSala = await chamar(plugins, { acao: 'listar', token: await tokenDePiloto('WILL') });
 const ids = (naSala.json.plugins || []).map((p: any) => p.id);
-ok(naSala.status === 200 && ids.length === 1 && ids[0] === 'musica', 'só entradas válidas: chave curta e id inválido caem', JSON.stringify(ids));
+ok(naSala.status === 200 && ids.length === 1 && ids[0] === 'radio', 'só entradas válidas: chave curta e id inválido caem', JSON.stringify(ids));
 ok(naSala.json.plugins[0].online === false, 'plugin que nunca perguntou aparece desligado');
 ok(!JSON.stringify(naSala.json).includes(CHAVE), 'a chave do plugin nunca sai na listagem');
 
@@ -63,33 +63,33 @@ const semToken = await chamar(plugins, { acao: 'listar', token: 'lixo' });
 ok(semToken.status === 401, 'sem token de sala válido, não lista', String(semToken.status));
 
 console.log('\n=== Convite e entrada ===');
-const semConvite = await chamar(plugins, { acao: 'entrar', plugin: 'musica', chave: CHAVE, sala: 'WILL' });
+const semConvite = await chamar(plugins, { acao: 'entrar', plugin: 'radio', chave: CHAVE, sala: 'WILL' });
 ok(semConvite.status === 403, 'sem convite, plugin não recebe token', String(semConvite.status));
 
-const chaveErrada = await chamar(plugins, { acao: 'aguardar', plugin: 'musica', chave: 'errada' });
+const chaveErrada = await chamar(plugins, { acao: 'aguardar', plugin: 'radio', chave: 'errada' });
 ok(chaveErrada.status === 401, 'chave errada não recolhe convites');
 
-const convidaFora = await chamar(plugins, { acao: 'convidar', plugin: 'musica', token: await tokenDePiloto('OUTRA') });
+const convidaFora = await chamar(plugins, { acao: 'convidar', plugin: 'radio', token: await tokenDePiloto('OUTRA') });
 ok(convidaFora.status === 404, 'não dá para chamar o plugin para um comboio fora da lista');
 
-const convite = await chamar(plugins, { acao: 'convidar', plugin: 'musica', token: await tokenDePiloto('WILL') });
+const convite = await chamar(plugins, { acao: 'convidar', plugin: 'radio', token: await tokenDePiloto('WILL') });
 ok(convite.status === 202, 'piloto do comboio chama o plugin', String(convite.status));
-await chamar(plugins, { acao: 'convidar', plugin: 'musica', token: await tokenDePiloto('WILL', 'piloto-bia', 'Bia') });
+await chamar(plugins, { acao: 'convidar', plugin: 'radio', token: await tokenDePiloto('WILL', 'piloto-bia', 'Bia') });
 
-const espera = await chamar(plugins, { acao: 'aguardar', plugin: 'musica', chave: CHAVE });
+const espera = await chamar(plugins, { acao: 'aguardar', plugin: 'radio', chave: CHAVE });
 ok(espera.status === 200 && espera.json.convites.length === 1, 'dois toques em "chamar" viram um convite só', JSON.stringify(espera.json.convites));
 ok(espera.json.convites[0]?.por === 'piloto-ana', 'o convite diz quem chamou');
 
-const vazio = await chamar(plugins, { acao: 'aguardar', plugin: 'musica', chave: CHAVE });
+const vazio = await chamar(plugins, { acao: 'aguardar', plugin: 'radio', chave: CHAVE });
 ok(vazio.json.convites.length === 0, 'convite recolhido não volta na próxima pergunta');
 
 const online = await chamar(plugins, { acao: 'listar', token: await tokenDePiloto('WILL') });
 ok(online.json.plugins[0].online === true, 'depois de perguntar, o plugin aparece ligado');
 
-const entrada = await chamar(plugins, { acao: 'entrar', plugin: 'musica', chave: CHAVE, sala: 'WILL' });
+const entrada = await chamar(plugins, { acao: 'entrar', plugin: 'radio', chave: CHAVE, sala: 'WILL' });
 ok(entrada.status === 200 && typeof entrada.json.token === 'string', 'com convite, recebe token', String(entrada.status));
 
-const repetida = await chamar(plugins, { acao: 'entrar', plugin: 'musica', chave: CHAVE, sala: 'WILL' });
+const repetida = await chamar(plugins, { acao: 'entrar', plugin: 'radio', chave: CHAVE, sala: 'WILL' });
 ok(repetida.status === 403, 'um convite vale uma entrada só');
 
 console.log('\n=== O que o token do plugin permite ===');
@@ -97,9 +97,9 @@ const claims = await new TokenVerifier(process.env.LIVEKIT_API_KEY!, process.env
 ok(claims.video?.canSubscribe === false, 'plugin NÃO ouve o comboio');
 ok(claims.video?.canPublish === true, 'plugin publica áudio');
 ok(claims.video?.room === 'WILL', 'token vale só para a sala convidada');
-ok(claims.sub === 'plugin-musica', 'identidade com o prefixo reservado', String(claims.sub));
+ok(claims.sub === 'plugin-radio', 'identidade com o prefixo reservado', String(claims.sub));
 
-const tokenDoPlugin = await chamar(plugins, { acao: 'convidar', plugin: 'musica', token: entrada.json.token });
+const tokenDoPlugin = await chamar(plugins, { acao: 'convidar', plugin: 'radio', token: entrada.json.token });
 ok(tokenDoPlugin.status === 401, 'plugin não chama plugin');
 
 console.log('\n=== Plugins não contam como piloto ===');
@@ -107,31 +107,32 @@ const sala = [
   { identity: 'g-1', metadata: '{}' },
   { identity: 'g-2', metadata: '{"adm":true}' },
   // Plugin que apagou a própria marca continua sendo plugin pela identidade.
-  { identity: 'plugin-musica', metadata: '{}' },
+  { identity: 'plugin-radio', metadata: '{}' },
 ];
 const conta = countParticipants(sala as any);
 ok(conta.riders === 1 && conta.total === 2, 'lotação ignora o plugin', JSON.stringify(conta));
-ok(countParticipants([{ identity: 'plugin-musica', metadata: '' }] as any).total === 0, 'sala só com plugin conta como vazia');
+ok(countParticipants([{ identity: 'plugin-radio', metadata: '' }] as any).total === 0, 'sala só com plugin conta como vazia');
 
 const lista = shared.toVoiceParticipants([
-  { identity: 'plugin-musica', isSpeaking: false, isMicrophoneEnabled: true, joinedAt: new Date(1) },
+  { identity: 'plugin-radio', isSpeaking: false, isMicrophoneEnabled: true, joinedAt: new Date(1) },
   { identity: 'g-1', name: 'Ana', isSpeaking: false, isMicrophoneEnabled: true, joinedAt: new Date(2) },
 ]);
 ok(lista.length === 1 && lista[0].isHost, 'plugin fora da lista de pilotos e nunca vira líder');
 
 console.log('\n=== Comandos e volume ===');
-ok(shared.parsePluginCommand({ tipo: 'tocar', playlist: 'Estrada' })?.tipo === 'tocar', 'comando válido passa');
-ok(shared.parsePluginCommand({ tipo: 'tocar' }) === null, 'tocar sem playlist é descartado');
-ok(shared.parsePluginCommand({ tipo: 'tocar', playlist: 'x', faixa: -1 }) === null, 'faixa negativa é descartada');
+ok(shared.parsePluginCommand({ tipo: 'tocar', lista: 'Estrada' })?.tipo === 'tocar', 'comando válido passa');
+ok(shared.parsePluginCommand({ tipo: 'tocar' }) === null, 'tocar sem lista é descartado');
+ok(shared.parsePluginCommand({ tipo: 'tocar', lista: 'x', item: -1 }) === null, 'item negativa é descartada');
 ok(shared.parsePluginCommand({ tipo: 'rm -rf' }) === null, 'comando desconhecido é descartado');
-ok(shared.pluginPlaybackVolume(true, false) === shared.PLUGIN_DUCK_VOLUME, 'alguém falando: música abaixa');
-ok(shared.pluginPlaybackVolume(false, false) === 1, 'ninguém falando: volume cheio');
-ok(shared.pluginPlaybackVolume(false, true) === 0, 'silenciado por mim: zero, falando ou não');
+ok(shared.pluginPlaybackVolume(100, false) === 1, 'volume cheio por padrão');
+ok(shared.pluginPlaybackVolume(40, false) === 0.4, 'volume escolhido pela pessoa');
+ok(shared.pluginPlaybackVolume(150, false) === 1 && shared.pluginPlaybackVolume(-5, false) === 0, 'volume fora da faixa é contido');
+ok(shared.pluginPlaybackVolume(80, true) === 0, 'silenciado por mim: zero, seja qual for o volume');
 
-const estado = { estado: 'tocando', faixa: 'A', playlist: 'P', indice: 2, playlists: [{ nome: 'P', faixas: 3 }], faixas: ['x', 'y', 'A'], chamadoPor: 'g-1' };
+const estado = { estado: 'tocando', item: 'A', lista: 'P', indice: 2, listas: [{ nome: 'P', itens: 3 }], itens: ['x', 'y', 'A'], chamadoPor: 'g-1' };
 const ida = shared.decodePluginState(shared.encodePluginState(estado));
-ok(ida.indice === 2 && ida.playlists[0].faixas === 3 && ida.chamadoPor === 'g-1', 'estado sobrevive à ida e volta pelos atributos');
-ok(shared.decodePluginState({ playlists: '{quebrado' }).playlists.length === 0, 'atributo corrompido vira vazio, não exceção');
+ok(ida.indice === 2 && ida.listas[0].itens === 3 && ida.chamadoPor === 'g-1', 'estado sobrevive à ida e volta pelos atributos');
+ok(shared.decodePluginState({ listas: '{quebrado' }).listas.length === 0, 'atributo corrompido vira vazio, não exceção');
 
 console.log('\n=== Pareamento por código ===');
 limpar();

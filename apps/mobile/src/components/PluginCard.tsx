@@ -1,78 +1,79 @@
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import type { MusicPlugin } from '../hooks/useMusicPlugin';
-import { MusicSheet } from './MusicSheet';
+import { PLUGIN_VOLUME_STEP } from '@motorede/shared';
+import type { PluginAudio } from '../hooks/usePluginAudio';
+import { PluginSheet } from './PluginSheet';
 import { COLORS } from '../theme';
 
 /**
- * Card de música na tela do comboio.
+ * Card do plugin de áudio na tela do comboio.
  *
  * É a parte usada em movimento, então tem no máximo três alvos, todos grandes
- * e com texto. Escolher playlist e buscar ficam na folha, pensada para quando
+ * e com texto. Escolher lista e buscar ficam na folha, pensada para quando
  * a moto está parada.
  *
  * Cores neutras de propósito: âmbar já quer dizer "alguém falando" e verde
- * "microfone aberto". A música é subordinada à voz.
+ * "microfone aberto". O áudio do plugin é subordinado à voz.
  */
 
-interface MusicCardProps {
-  music: MusicPlugin;
+interface PluginCardProps {
+  pluginAudio: PluginAudio;
   souLider: boolean;
 }
 
 const ACOES: Record<string, string> = {
-  tocar: 'trocou de música',
+  tocar: 'trocou a lista',
   pausar: 'pausou',
   continuar: 'continuou',
-  pular: 'pulou a faixa',
-  parar: 'parou a música',
+  pular: 'pulou para o próximo',
+  parar: 'parou',
   embaralhar: 'mexeu no embaralhar',
 };
 
 /** Frase curta do último comando, só nos 8 s seguintes a ele. */
-function ultimaAcao(music: MusicPlugin, agora: number): string | null {
-  const u = music.estado?.ultimo;
+function ultimaAcao(pluginAudio: PluginAudio, agora: number): string | null {
+  const u = pluginAudio.estado?.ultimo;
   if (!u || agora - u.em > 8_000) return null;
   return `${u.por} ${ACOES[u.acao] ?? u.acao}`;
 }
 
-export const MusicCard: React.FC<MusicCardProps> = ({ music, souLider }) => {
+export const PluginCard: React.FC<PluginCardProps> = ({ pluginAudio, souLider }) => {
   const [folhaAberta, setFolhaAberta] = useState(false);
   const [pularTravado, setPularTravado] = useState(false);
   const [agora, setAgora] = useState(Date.now());
 
-  // Relógio só para expirar a frase "Fulano pulou a faixa".
+  // Relógio só para expirar a frase "Fulano pulou para o próximo".
   useEffect(() => {
     const t = setInterval(() => setAgora(Date.now()), 2_000);
     return () => clearInterval(t);
   }, []);
 
-  if (music.fase === 'indisponivel' || !music.plugin) return <ConectarPlugin music={music} />;
-  const nome = music.plugin.nome;
+  if (pluginAudio.fase === 'indisponivel' || !pluginAudio.plugin) return <ConectarPlugin pluginAudio={pluginAudio} />;
+  const nome = pluginAudio.plugin.nome;
 
   const pular = () => {
     if (pularTravado) return;
     setPularTravado(true);
     setTimeout(() => setPularTravado(false), 2_000);
-    void music.enviar({ tipo: 'pular' });
+    void pluginAudio.enviar({ tipo: 'pular' });
   };
 
   let corpo: React.ReactNode;
 
-  if (music.fase === 'fora') {
+  if (pluginAudio.fase === 'fora') {
     corpo = (
       <>
         <Text style={styles.linha1}>{nome}</Text>
-        {!music.plugin.online && (
+        {!pluginAudio.plugin.online && (
           <Text style={styles.linha2}>O computador parece desligado agora.</Text>
         )}
-        {music.aviso && <Text style={styles.linha2}>{music.aviso}</Text>}
-        <Pressable onPress={() => void music.chamar()} style={styles.botaoLargo}>
-          <Text style={styles.botaoTexto}>Chamar música</Text>
+        {pluginAudio.aviso && <Text style={styles.linha2}>{pluginAudio.aviso}</Text>}
+        <Pressable onPress={() => void pluginAudio.chamar()} style={styles.botaoLargo}>
+          <Text style={styles.botaoTexto}>Chamar plugin</Text>
         </Pressable>
       </>
     );
-  } else if (music.fase === 'chamando') {
+  } else if (pluginAudio.fase === 'chamando') {
     corpo = (
       <>
         <View style={styles.linhaStatus}>
@@ -80,30 +81,30 @@ export const MusicCard: React.FC<MusicCardProps> = ({ music, souLider }) => {
           <Text style={styles.linha1}>Chamando… {nome}</Text>
         </View>
         <Text style={styles.linha2}>Costuma responder em até 10 s.</Text>
-        <Pressable onPress={music.cancelar} style={styles.botaoPequeno}>
+        <Pressable onPress={pluginAudio.cancelar} style={styles.botaoPequeno}>
           <Text style={styles.botaoTexto}>Cancelar</Text>
         </Pressable>
       </>
     );
-  } else if (music.fase === 'sem-resposta') {
+  } else if (pluginAudio.fase === 'sem-resposta') {
     corpo = (
       <>
         <Text style={styles.linha1}>{nome} não respondeu.</Text>
         <Text style={styles.linha2}>O computador precisa estar ligado com o plugin aberto.</Text>
-        <Pressable onPress={() => void music.chamar()} style={styles.botaoLargo}>
+        <Pressable onPress={() => void pluginAudio.chamar()} style={styles.botaoLargo}>
           <Text style={styles.botaoTexto}>Tentar de novo</Text>
         </Pressable>
       </>
     );
   } else {
-    const e = music.estado;
+    const e = pluginAudio.estado;
     const tocando = e?.estado === 'tocando';
     const parado = !e || e.estado === 'parado';
     const secundaria =
-      (music.naoConfirmou && 'O computador não confirmou.') ||
-      ultimaAcao(music, agora) ||
-      (music.silenciadoPorMim && 'Silenciada só para você') ||
-      e?.playlist ||
+      (pluginAudio.naoConfirmou && 'O computador não confirmou.') ||
+      ultimaAcao(pluginAudio, agora) ||
+      (pluginAudio.silenciadoPorMim && 'Silenciado só para você') ||
+      e?.lista ||
       null;
 
     corpo = parado ? (
@@ -111,13 +112,13 @@ export const MusicCard: React.FC<MusicCardProps> = ({ music, souLider }) => {
         <Text style={styles.linha1}>Nada tocando</Text>
         {secundaria && <Text style={styles.linha2}>{secundaria}</Text>}
         <Pressable onPress={() => setFolhaAberta(true)} style={styles.botaoLargo}>
-          <Text style={styles.botaoTexto}>Escolher playlist</Text>
+          <Text style={styles.botaoTexto}>Escolher lista</Text>
         </Pressable>
       </>
     ) : (
       <>
-        <Text style={styles.faixa} numberOfLines={1}>
-          {e?.faixa ?? '—'}
+        <Text style={styles.item} numberOfLines={1}>
+          {e?.item ?? '—'}
         </Text>
         {secundaria && (
           <Text style={styles.linha2} numberOfLines={1}>
@@ -126,54 +127,84 @@ export const MusicCard: React.FC<MusicCardProps> = ({ music, souLider }) => {
         )}
         <View style={styles.linhaBotoes}>
           <Pressable
-            onPress={() => void music.enviar({ tipo: tocando ? 'pausar' : 'continuar' })}
-            disabled={music.pendente}
+            onPress={() => void pluginAudio.enviar({ tipo: tocando ? 'pausar' : 'continuar' })}
+            disabled={pluginAudio.pendente}
             style={styles.botaoGrande}
           >
             <Text style={styles.botaoTexto}>
-              {music.pendente ? '…' : tocando ? '❚❚  Pausar' : '▶  Continuar'}
+              {pluginAudio.pendente ? '…' : tocando ? '❚❚  Pausar' : '▶  Continuar'}
             </Text>
           </Pressable>
           <Pressable onPress={pular} disabled={pularTravado} style={styles.botaoGrande}>
             <Text style={styles.botaoTexto}>⏭  Pular</Text>
           </Pressable>
         </View>
-        <Pressable
-          onPress={() => music.setSilenciadoPorMim(!music.silenciadoPorMim)}
-          style={[styles.botaoLargo, music.silenciadoPorMim && styles.botaoAceso]}
-        >
-          <Text style={styles.botaoTexto}>
-            {music.silenciadoPorMim ? 'Ouvir música de novo' : 'Silenciar só para mim'}
-          </Text>
-        </Pressable>
+        <Volume pluginAudio={pluginAudio} />
       </>
     );
   }
 
   const titulo =
-    music.fase === 'na-sala' && music.estado?.estado === 'tocando'
-      ? 'MÚSICA · tocando'
-      : music.fase === 'na-sala' && music.estado?.estado === 'pausado'
-        ? 'MÚSICA · pausada'
-        : 'MÚSICA';
+    pluginAudio.fase === 'na-sala' && pluginAudio.estado?.estado === 'tocando'
+      ? 'PLUGIN · tocando'
+      : pluginAudio.fase === 'na-sala' && pluginAudio.estado?.estado === 'pausado'
+        ? 'PLUGIN · pausado'
+        : 'PLUGIN';
 
   return (
     <View style={styles.card}>
       <View style={styles.cabecalho}>
         <Text style={styles.rotulo}>{titulo}</Text>
-        {music.fase === 'na-sala' && (
+        {pluginAudio.fase === 'na-sala' && (
           <Pressable onPress={() => setFolhaAberta(true)} hitSlop={14}>
             <Text style={styles.abrir}>Abrir ›</Text>
           </Pressable>
         )}
       </View>
       {corpo}
-      <MusicSheet
+      <PluginSheet
         visivel={folhaAberta}
         aoFechar={() => setFolhaAberta(false)}
-        music={music}
-        podeDispensar={souLider || music.estado?.chamadoPor === music.identidadeLocal}
+        pluginAudio={pluginAudio}
+        podeDispensar={souLider || pluginAudio.estado?.chamadoPor === pluginAudio.identidadeLocal}
       />
+    </View>
+  );
+};
+
+/**
+ * Volume do plugin neste aparelho, como o de um participante: − e + de 10 em
+ * 10%, e silenciar. Vale só para quem mexeu. Botões em vez de controle
+ * deslizante: acertam de luva, e não exigem módulo nativo novo no app.
+ */
+const Volume: React.FC<{ pluginAudio: PluginAudio }> = ({ pluginAudio }) => {
+  const { volume, setVolume, silenciadoPorMim, setSilenciadoPorMim } = pluginAudio;
+  return (
+    <View style={styles.linhaBotoes}>
+      <Pressable
+        onPress={() => setVolume(volume - PLUGIN_VOLUME_STEP)}
+        disabled={silenciadoPorMim || volume <= 0}
+        style={styles.botaoVolume}
+        accessibilityLabel="Diminuir volume do plugin"
+      >
+        <Text style={styles.botaoTexto}>−</Text>
+      </Pressable>
+      <Pressable
+        onPress={() => setSilenciadoPorMim(!silenciadoPorMim)}
+        style={[styles.botaoGrande, silenciadoPorMim && styles.botaoAceso]}
+      >
+        <Text style={styles.botaoTexto}>
+          {silenciadoPorMim ? 'Silenciado · ouvir' : `Volume ${volume}%`}
+        </Text>
+      </Pressable>
+      <Pressable
+        onPress={() => setVolume(volume + PLUGIN_VOLUME_STEP)}
+        disabled={silenciadoPorMim || volume >= 100}
+        style={styles.botaoVolume}
+        accessibilityLabel="Aumentar volume do plugin"
+      >
+        <Text style={styles.botaoTexto}>+</Text>
+      </Pressable>
     </View>
   );
 };
@@ -181,9 +212,9 @@ export const MusicCard: React.FC<MusicCardProps> = ({ music, souLider }) => {
 /**
  * Sem plugin no comboio: só uma linha discreta. Quem tem o código (mostrado
  * no painel do computador onde o plugin roda) digita aqui uma vez; o resto do
- * comboio passa a ver a música sem fazer nada.
+ * comboio passa a ver o plugin sem fazer nada.
  */
-const ConectarPlugin: React.FC<{ music: MusicPlugin }> = ({ music }) => {
+const ConectarPlugin: React.FC<{ pluginAudio: PluginAudio }> = ({ pluginAudio }) => {
   const [aberto, setAberto] = useState(false);
   const [codigo, setCodigo] = useState('');
   const [erro, setErro] = useState<string | null>(null);
@@ -192,7 +223,7 @@ const ConectarPlugin: React.FC<{ music: MusicPlugin }> = ({ music }) => {
   if (!aberto) {
     return (
       <Pressable onPress={() => setAberto(true)} style={styles.linhaConectar} hitSlop={6}>
-        <Text style={styles.linha2}>Tem um plugin, como música? Conectar com código</Text>
+        <Text style={styles.linha2}>Conectar plugin com código</Text>
       </Pressable>
     );
   }
@@ -200,7 +231,7 @@ const ConectarPlugin: React.FC<{ music: MusicPlugin }> = ({ music }) => {
   const conectar = async () => {
     setEnviando(true);
     setErro(null);
-    const falha = await music.parear(codigo);
+    const falha = await pluginAudio.parear(codigo);
     setEnviando(false);
     if (falha) setErro(falha);
     else {
@@ -275,7 +306,7 @@ const styles = StyleSheet.create({
   linhaStatus: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   linha1: { color: COLORS.text, fontSize: 14, fontWeight: '700' },
   linha2: { color: COLORS.muted, fontSize: 12 },
-  faixa: { color: COLORS.text, fontSize: 15, fontWeight: '700' },
+  item: { color: COLORS.text, fontSize: 15, fontWeight: '700' },
   linhaBotoes: { flexDirection: 'row', gap: 12 },
   botaoGrande: {
     flex: 1,
@@ -286,6 +317,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   botaoLargo: {
+    minHeight: 56,
+    backgroundColor: COLORS.surfaceAlt,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  botaoVolume: {
+    width: 64,
     minHeight: 56,
     backgroundColor: COLORS.surfaceAlt,
     borderRadius: 12,

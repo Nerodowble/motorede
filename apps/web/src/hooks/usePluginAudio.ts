@@ -9,10 +9,12 @@ import {
   type PluginMessage,
   type PluginState,
 } from '@motorede/shared';
-import { API_BASE } from '../config';
 
 /**
- * Painel do plugin de música na sala do comboio.
+ * Painel do plugin de áudio na sala do comboio.
+ *
+ * Espelho do hook do app (apps/mobile/src/hooks/usePluginAudio.ts): mesma
+ * lógica, só muda o endereço da API. Mudou lá, muda aqui.
  *
  * Três fontes, cada uma com seu papel:
  * - o servidor diz QUAIS plugins servem para este comboio e se estão ligados;
@@ -30,30 +32,37 @@ export interface AvailablePlugin {
   online: boolean;
 }
 
-export type MusicPhase =
+export type PluginPhase =
   | 'indisponivel' // nenhum plugin para este comboio
   | 'fora' // disponível, fora da sala
   | 'chamando'
   | 'sem-resposta'
   | 'na-sala';
 
-const ENDPOINT = `${API_BASE}/plugins`;
+// Mesmo domínio da página.
+const ENDPOINT = '/api/plugins';
 const ESPERA_ENTRADA_MS = 30_000;
 const ESPERA_CONFIRMACAO_MS = 5_000;
 
-export function useMusicPlugin(room: Room | null, sessionToken: string | null) {
+export function usePluginAudio(room: Room | null, sessionToken: string | null) {
   const [plugin, setPlugin] = useState<AvailablePlugin | null>(null);
   const [participante, setParticipante] = useState<RemoteParticipant | null>(null);
   const [estado, setEstado] = useState<PluginState | null>(null);
   const [chamando, setChamando] = useState(false);
   const [semResposta, setSemResposta] = useState(false);
   const [silenciadoPorMim, setSilenciadoPorMim] = useState(false);
+  /** Volume do plugin neste aparelho, 0 a 100. Como o de um participante. */
+  const [volume, setVolumeState] = useState(100);
   const [pendente, setPendente] = useState(false);
   const [naoConfirmou, setNaoConfirmou] = useState(false);
   const [aviso, setAviso] = useState<string | null>(null);
 
   const silenciadoRef = useRef(false);
   silenciadoRef.current = silenciadoPorMim;
+  const volumeRef = useRef(100);
+  volumeRef.current = volume;
+
+  const setVolume = useCallback((v: number) => setVolumeState(Math.min(100, Math.max(0, v))), []);
 
   // Descobre o plugin deste comboio. Repete enquanto ele não está na sala,
   // para o "ligado/desligado" acompanhar o computador de quem o opera.
@@ -93,8 +102,7 @@ export function useMusicPlugin(room: Room | null, sessionToken: string | null) {
     }
 
     const aplicarVolume = () => {
-      const alguemFalando = room.activeSpeakers.some((p) => !isPluginParticipant(p));
-      const volume = pluginPlaybackVolume(alguemFalando, silenciadoRef.current);
+      const volume = pluginPlaybackVolume(volumeRef.current, silenciadoRef.current);
       for (const p of room.remoteParticipants.values()) {
         if (!isPluginParticipant(p)) continue;
         for (const pub of p.audioTrackPublications.values()) {
@@ -123,7 +131,7 @@ export function useMusicPlugin(room: Room | null, sessionToken: string | null) {
 
     const aoSair = (p: RemoteParticipant) => {
       if (p.identity !== plugin.identidade) return;
-      setAviso('A música saiu do comboio.');
+      setAviso('O plugin saiu do comboio.');
       sincronizar();
     };
 
@@ -131,8 +139,7 @@ export function useMusicPlugin(room: Room | null, sessionToken: string | null) {
       .on(RoomEvent.ParticipantConnected, sincronizar)
       .on(RoomEvent.ParticipantDisconnected, aoSair)
       .on(RoomEvent.ParticipantAttributesChanged, aoMudarAtributos)
-      .on(RoomEvent.TrackSubscribed, aplicarVolume)
-      .on(RoomEvent.ActiveSpeakersChanged, aplicarVolume);
+      .on(RoomEvent.TrackSubscribed, aplicarVolume);
     sincronizar();
 
     return () => {
@@ -140,23 +147,21 @@ export function useMusicPlugin(room: Room | null, sessionToken: string | null) {
         .off(RoomEvent.ParticipantConnected, sincronizar)
         .off(RoomEvent.ParticipantDisconnected, aoSair)
         .off(RoomEvent.ParticipantAttributesChanged, aoMudarAtributos)
-        .off(RoomEvent.TrackSubscribed, aplicarVolume)
-        .off(RoomEvent.ActiveSpeakersChanged, aplicarVolume);
+        .off(RoomEvent.TrackSubscribed, aplicarVolume);
     };
   }, [room, plugin]);
 
-  // Reaplica o volume quando a pessoa silencia ou volta a ouvir.
+  // Reaplica quando a pessoa muda o volume, silencia ou volta a ouvir.
   useEffect(() => {
     if (!room) return;
-    const alguemFalando = room.activeSpeakers.some((p) => !isPluginParticipant(p));
-    const volume = pluginPlaybackVolume(alguemFalando, silenciadoPorMim);
+    const efetivo = pluginPlaybackVolume(volume, silenciadoPorMim);
     for (const p of room.remoteParticipants.values()) {
       if (!isPluginParticipant(p)) continue;
       for (const pub of p.audioTrackPublications.values()) {
-        if (pub.track instanceof RemoteAudioTrack) pub.track.setVolume(volume);
+        if (pub.track instanceof RemoteAudioTrack) pub.track.setVolume(efetivo);
       }
     }
-  }, [room, silenciadoPorMim]);
+  }, [room, silenciadoPorMim, volume]);
 
   // Chamou e o plugin não apareceu: o computador provavelmente está desligado.
   useEffect(() => {
@@ -253,7 +258,9 @@ export function useMusicPlugin(room: Room | null, sessionToken: string | null) {
       setNaoConfirmou(false);
       setPendente(true);
       try {
-        await room.localParticipant.publishData(new TextEncoder().encode(JSON.stringify(mensagem)), {
+        // TextEncoder sempre devolve ArrayBuffer comum; o tipo genérico é que é largo.
+        const dados = new TextEncoder().encode(JSON.stringify(mensagem)) as Uint8Array<ArrayBuffer>;
+        await room.localParticipant.publishData(dados, {
           reliable: true,
           topic: PLUGIN_TOPIC,
           destinationIdentities: [plugin.identidade],
@@ -266,7 +273,7 @@ export function useMusicPlugin(room: Room | null, sessionToken: string | null) {
     [room, plugin, participante]
   );
 
-  const fase: MusicPhase = !plugin
+  const fase: PluginPhase = !plugin
     ? 'indisponivel'
     : participante
       ? 'na-sala'
@@ -285,6 +292,8 @@ export function useMusicPlugin(room: Room | null, sessionToken: string | null) {
     naoConfirmou,
     silenciadoPorMim,
     setSilenciadoPorMim,
+    volume,
+    setVolume,
     chamar,
     cancelar,
     enviar,
@@ -294,4 +303,4 @@ export function useMusicPlugin(room: Room | null, sessionToken: string | null) {
   };
 }
 
-export type MusicPlugin = ReturnType<typeof useMusicPlugin>;
+export type PluginAudio = ReturnType<typeof usePluginAudio>;

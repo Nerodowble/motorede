@@ -1,60 +1,60 @@
 import React, { useMemo, useState } from 'react';
 import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import type { MusicPlugin } from '../hooks/useMusicPlugin';
+import type { PluginAudio } from '../hooks/usePluginAudio';
 import { COLORS } from '../theme';
 
 /**
- * Folha de música: escolher playlist, filtrar, embaralhar e dispensar.
+ * Folha do plugin: escolher lista, filtrar, embaralhar e dispensar.
  *
  * Pensada para uso parado (posto, antes de sair). Um toque numa linha já toca,
  * sem confirmação: o erro é barato e desfazer é pular.
  *
- * A busca filtra o que o plugin já publicou (nomes das playlists e faixas da
- * playlist atual). Busca na biblioteca inteira fica para depois.
+ * A busca filtra o que o plugin já publicou (nomes das listas e itens da
+ * lista atual). Busca na biblioteca inteira fica para depois.
  */
 
-interface MusicSheetProps {
+interface PluginSheetProps {
   visivel: boolean;
   aoFechar: () => void;
-  music: MusicPlugin;
-  /** Só o líder e quem chamou dispensam: recolocar a música custa espera. */
+  pluginAudio: PluginAudio;
+  /** Só o líder e quem chamou dispensam: recolocar o plugin custa espera. */
   podeDispensar: boolean;
 }
 
 const normalizar = (t: string) =>
   t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
-export const MusicSheet: React.FC<MusicSheetProps> = ({
+export const PluginSheet: React.FC<PluginSheetProps> = ({
   visivel,
   aoFechar,
-  music,
+  pluginAudio,
   podeDispensar,
 }) => {
   const [busca, setBusca] = useState('');
-  const e = music.estado;
-  const nome = music.plugin?.nome ?? 'plugin';
+  const e = pluginAudio.estado;
+  const nome = pluginAudio.plugin?.nome ?? 'plugin';
 
   const termo = normalizar(busca.trim());
-  const playlists = useMemo(
-    () => (e?.playlists ?? []).filter((p) => !termo || normalizar(p.nome).includes(termo)),
-    [e?.playlists, termo]
+  const listas = useMemo(
+    () => (e?.listas ?? []).filter((p) => !termo || normalizar(p.nome).includes(termo)),
+    [e?.listas, termo]
   );
-  const faixas = useMemo(
+  const itens = useMemo(
     () =>
-      (e?.faixas ?? [])
+      (e?.itens ?? [])
         .map((titulo, indice) => ({ titulo, indice }))
         .filter((f) => !termo || normalizar(f.titulo).includes(termo)),
-    [e?.faixas, termo]
+    [e?.itens, termo]
   );
 
   const dispensar = () =>
-    Alert.alert('Dispensar música?', 'A música sai do comboio para todo mundo.', [
+    Alert.alert('Dispensar o plugin?', 'Ele sai do comboio para todo mundo.', [
       { text: 'Cancelar', style: 'cancel' },
       {
         text: 'Dispensar',
         style: 'destructive',
         onPress: () => {
-          void music.enviar({ tipo: 'sair' });
+          void pluginAudio.enviar({ tipo: 'sair' });
           aoFechar();
         },
       },
@@ -70,22 +70,22 @@ export const MusicSheet: React.FC<MusicSheetProps> = ({
           text: 'Desvincular',
           style: 'destructive',
           onPress: () => {
-            void music.enviar({ tipo: 'sair' });
-            void music.desparear();
+            void pluginAudio.enviar({ tipo: 'sair' });
+            void pluginAudio.desparear();
             aoFechar();
           },
         },
       ]
     );
 
-  const semNada = (e?.playlists.length ?? 0) === 0;
+  const semNada = (e?.listas.length ?? 0) === 0;
 
   return (
     <Modal visible={visivel} transparent animationType="slide" onRequestClose={aoFechar}>
       <View style={styles.fundo}>
         <View style={styles.folha}>
           <View style={styles.cabecalho}>
-            <Text style={styles.titulo}>Música</Text>
+            <Text style={styles.titulo}>{nome}</Text>
             <Pressable onPress={aoFechar} hitSlop={14}>
               <Text style={styles.fechar}>Fechar</Text>
             </Pressable>
@@ -102,39 +102,38 @@ export const MusicSheet: React.FC<MusicSheetProps> = ({
           <ScrollView style={{ flexGrow: 0 }} contentContainerStyle={{ gap: 4 }}>
             {semNada ? (
               <Text style={styles.ajuda}>
-                Nenhuma playlist em {nome}. As playlists são pastas de áudio montadas no
-                computador.
+                {nome} ainda não publicou nenhuma lista.
               </Text>
             ) : (
               <>
-                <Text style={styles.rotulo}>PLAYLISTS</Text>
-                {playlists.map((p) => (
+                <Text style={styles.rotulo}>LISTAS</Text>
+                {listas.map((p) => (
                   <Pressable
                     key={p.nome}
-                    onPress={() => void music.enviar({ tipo: 'tocar', playlist: p.nome })}
+                    onPress={() => void pluginAudio.enviar({ tipo: 'tocar', lista: p.nome })}
                     style={styles.linha}
                   >
                     <Text
-                      style={[styles.linhaTitulo, p.nome === e?.playlist && styles.atual]}
+                      style={[styles.linhaTitulo, p.nome === e?.lista && styles.atual]}
                       numberOfLines={1}
                     >
                       {p.nome}
                     </Text>
-                    <Text style={styles.linhaSub}>{p.faixas} faixas</Text>
+                    <Text style={styles.linhaSub}>{p.itens} itens</Text>
                   </Pressable>
                 ))}
 
-                {e?.playlist && faixas.length > 0 && (
+                {e?.lista && itens.length > 0 && (
                   <>
-                    <Text style={[styles.rotulo, { marginTop: 10 }]}>NESTA PLAYLIST</Text>
-                    {faixas.map((f) => (
+                    <Text style={[styles.rotulo, { marginTop: 10 }]}>NESTA LISTA</Text>
+                    {itens.map((f) => (
                       <Pressable
                         key={f.indice}
                         onPress={() =>
-                          void music.enviar({
+                          void pluginAudio.enviar({
                             tipo: 'tocar',
-                            playlist: e.playlist!,
-                            faixa: f.indice,
+                            lista: e.lista!,
+                            item: f.indice,
                           })
                         }
                         style={styles.linha}
@@ -151,7 +150,7 @@ export const MusicSheet: React.FC<MusicSheetProps> = ({
                   </>
                 )}
 
-                {termo && playlists.length === 0 && faixas.length === 0 && (
+                {termo && listas.length === 0 && itens.length === 0 && (
                   <Text style={styles.ajuda}>
                     Nada com “{busca.trim()}” em {nome}.
                   </Text>
@@ -161,13 +160,13 @@ export const MusicSheet: React.FC<MusicSheetProps> = ({
           </ScrollView>
 
           <Text style={styles.ajuda}>
-            A música abaixa sozinha quando alguém fala. Silenciar só para mim não afeta os
+            O volume do plugin vale só para este aparelho. Silenciar só para mim não afeta os
             outros.
           </Text>
 
           <View style={styles.rodape}>
             <Pressable
-              onPress={() => void music.enviar({ tipo: 'embaralhar', ligado: !e?.embaralhar })}
+              onPress={() => void pluginAudio.enviar({ tipo: 'embaralhar', ligado: !e?.embaralhar })}
               style={styles.botao}
             >
               <Text style={styles.botaoTexto}>
@@ -177,7 +176,7 @@ export const MusicSheet: React.FC<MusicSheetProps> = ({
             {podeDispensar && (
               <Pressable onPress={dispensar} style={styles.botao} hitSlop={8}>
                 <Text style={[styles.botaoTexto, { color: COLORS.danger }]}>
-                  Dispensar música
+                  Dispensar plugin
                 </Text>
               </Pressable>
             )}
