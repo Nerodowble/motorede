@@ -17,6 +17,33 @@ import {
   type VoiceParticipant,
 } from '@motorede/shared';
 
+/**
+ * Traduz a falha do microfone para algo que a pessoa consiga resolver.
+ *
+ * O navegador devolve nomes técnicos em inglês ("NotAllowedError: The request
+ * is not allowed by the user agent..."), que no celular de um amigo não dizem
+ * nada. O caso mais comum é o iPhone negar a permissão.
+ */
+export function explicarErroMicrofone(err: unknown): string {
+  const nome = err instanceof Error ? err.name : '';
+  const iPhone = /iPhone|iPad|iPod/.test(navigator.userAgent);
+  switch (nome) {
+    case 'NotAllowedError':
+    case 'SecurityError':
+      return iPhone
+        ? 'O iPhone bloqueou o microfone. Toque em "aA" na barra de endereço → Ajustes do Site → Microfone → Permitir (ou Ajustes → Safari → Microfone). Depois toque no botão do microfone.'
+        : 'O navegador bloqueou o microfone. Libere a permissão no cadeado da barra de endereço e toque no botão do microfone.';
+    case 'NotReadableError':
+    case 'AbortError':
+      return 'O microfone está ocupado por outro app (uma ligação, gravador, outro navegador). Feche e toque no botão do microfone.';
+    case 'NotFoundError':
+    case 'OverconstrainedError':
+      return 'Nenhum microfone encontrado neste aparelho.';
+    default:
+      return `Não deu para abrir o microfone${err instanceof Error && err.message ? `: ${err.message}` : '.'}`;
+  }
+}
+
 export type VoiceConnectionStatus =
   | 'disconnected'
   | 'connecting'
@@ -119,6 +146,7 @@ export function useVoiceConnection(): UseVoiceConnection {
 
       setStatus('connecting');
       setError(null);
+      let entrando: Room | null = null;
 
       try {
         // O navegador só expõe o microfone em "contexto seguro": https, ou
@@ -126,11 +154,16 @@ export function useVoiceConnection(): UseVoiceConnection {
         // não existe, e o erro nativo ("Cannot read properties of undefined")
         // não diz nada sobre a causa real.
         if (!navigator.mediaDevices?.getUserMedia) {
+          // Em https isso só acontece em navegador embutido (Instagram,
+          // WhatsApp, Facebook), que não dá acesso ao microfone.
           throw new Error(
-            'Microfone indisponível: o navegador exige contexto seguro. ' +
-              'Neste computador use http://localhost:3000. ' +
-              'No celular, libere este endereço em chrome://flags → ' +
-              '"Insecure origins treated as secure".'
+            window.isSecureContext
+              ? 'Este navegador não dá acesso ao microfone. Se abriu pelo WhatsApp ou Instagram, ' +
+                  'use "Abrir no navegador" (Safari ou Chrome).'
+              : 'Microfone indisponível: o navegador exige contexto seguro. ' +
+                  'Neste computador use http://localhost:3000. ' +
+                  'No celular, libere este endereço em chrome://flags → ' +
+                  '"Insecure origins treated as secure".'
           );
         }
 
@@ -188,21 +221,35 @@ export function useVoiceConnection(): UseVoiceConnection {
             setSessionToken(null);
           });
 
+        entrando = room;
         await room.connect(url, token);
-        await room.localParticipant.setMicrophoneEnabled(true);
 
+        // Dentro da sala a partir daqui. Registrar ANTES do microfone: se ele
+        // falhar, a pessoa continua no comboio ouvindo — e o app sabe disso.
+        // Antes, uma falha aqui abandonava a sala sem sair dela: quem estava
+        // no iPhone ouvia todo mundo, aparecia como mudo para os outros, e a
+        // própria tela dizia que não tinha conectado.
         roomRef.current = room;
         setRoom(room);
         setSessionToken(token);
-        setIsMuted(false);
         setNeedsAudioUnlock(!room.canPlaybackAudio);
         setStatus('connected');
+
+        try {
+          await room.localParticipant.setMicrophoneEnabled(true);
+          setIsMuted(false);
+        } catch (errMic) {
+          setIsMuted(true);
+          setError(explicarErroMicrofone(errMic));
+        }
         syncParticipants();
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         setError(message);
         setStatus('error');
         roomRef.current = null;
+        // Se chegou a entrar, sai de verdade: nada de conexão fantasma.
+        void entrando?.disconnect();
       }
     },
     [attachTrack, syncParticipants]
@@ -222,8 +269,15 @@ export function useVoiceConnection(): UseVoiceConnection {
   const setMuted = useCallback(async (muted: boolean) => {
     const room = roomRef.current;
     if (!room) return;
-    await room.localParticipant.setMicrophoneEnabled(!muted);
-    setIsMuted(muted);
+    try {
+      await room.localParticipant.setMicrophoneEnabled(!muted);
+      setIsMuted(muted);
+      setError(null);
+    } catch (err) {
+      // Abrir o microfone pode falhar (permissão negada): continua mudo e diz por quê.
+      setIsMuted(true);
+      setError(explicarErroMicrofone(err));
+    }
   }, []);
 
   /**

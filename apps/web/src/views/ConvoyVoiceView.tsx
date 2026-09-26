@@ -330,7 +330,11 @@ ${inviteUrl}`;
                 {voice.status === 'error' && 'Falha ao conectar'}
                 {voice.status === 'disconnected' && 'Voz ao vivo — desconectado'}
               </p>
-              <p className="text-[11px] text-ink-muted truncate">
+              {/* Erro quebra linha: a explicação (ex.: como liberar o microfone
+                  no iPhone) não pode sumir num "…". */}
+              <p
+                className={`text-[11px] ${voice.error ? 'text-red-400 whitespace-normal' : 'text-ink-muted truncate'}`}
+              >
                 {voice.error
                   ? voice.error
                   : isLive
