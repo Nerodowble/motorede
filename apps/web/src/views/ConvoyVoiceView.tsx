@@ -34,6 +34,8 @@ import QRCode from 'qrcode';
 import { useVoiceConnection } from '../hooks/useVoiceConnection';
 import { useGoogleAuth } from '../hooks/useGoogleAuth';
 import { ConvoyBrowser } from '../components/ConvoyBrowser';
+import { MusicPanel } from '../components/MusicPanel';
+import { useMusicPlugin } from '../hooks/useMusicPlugin';
 
 interface ConvoyVoiceViewProps {
   voiceRoom: VoiceRoom;
@@ -58,6 +60,10 @@ export const ConvoyVoiceView: React.FC<ConvoyVoiceViewProps> = ({
   const auth = useGoogleAuth();
   const googleButtonRef = useRef<HTMLDivElement | null>(null);
   const isLive = voice.status === 'connected' || voice.status === 'reconnecting';
+  const music = useMusicPlugin(voice.room, voice.sessionToken);
+  const souLider = voice.participants.some(
+    (p) => p.isHost && p.id === voice.room?.localParticipant.identity
+  );
 
   // Código do comboio ativo. A ordem de precedência importa: um link de convite
   // (?sala=) tem que vencer o último comboio salvo, senão quem recebe o convite
@@ -637,6 +643,9 @@ ${inviteUrl}`;
           </div>
         </div>
       )}
+
+      {/* Música do comboio (plugin). Some por completo fora da conversa. */}
+      {isLive && <MusicPanel music={music} souLider={souLider} />}
 
       {/* External Navigation Destination (Waze & Google Maps) */}
       <div className="rounded-2xl bg-surface/80 border border-line p-4 shadow-md">

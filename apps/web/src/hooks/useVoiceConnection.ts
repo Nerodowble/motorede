@@ -3,7 +3,6 @@ import {
   AudioPresets,
   ConnectionState,
   Participant,
-  RemoteAudioTrack,
   RemoteTrack,
   RemoteTrackPublication,
   Room,
@@ -12,7 +11,6 @@ import {
 } from 'livekit-client';
 import {
   isPluginParticipant,
-  pluginPlaybackVolume,
   toVoiceParticipants,
   VOICE_CAPTURE_DEFAULTS,
   VOICE_PUBLISH_DEFAULTS,
@@ -49,6 +47,10 @@ interface UseVoiceConnection {
   /** Host do servidor de voz em uso. Exibido para que uma divergência entre
    *  app e web (servidores diferentes) seja vista, e não silenciosa. */
   serverHost: string | null;
+  /** Sala conectada, para quem precisa de eventos dela (painel de plugins). */
+  room: Room | null;
+  /** Token desta sessão. Prova ao servidor em qual comboio a pessoa está. */
+  sessionToken: string | null;
   /** Volume de reprodução dos outros pilotos, 0 a 100. */
   volume: number;
   connect: (options: ConnectOptions) => Promise<void>;
@@ -77,6 +79,8 @@ export function useVoiceConnection(): UseVoiceConnection {
   const [needsAudioUnlock, setNeedsAudioUnlock] = useState(false);
   const [serverHost, setServerHost] = useState<string | null>(null);
   const [volume, setVolumeState] = useState(100);
+  const [room, setRoom] = useState<Room | null>(null);
+  const [sessionToken, setSessionToken] = useState<string | null>(null);
 
   // Contêiner oculto onde os elementos <audio> dos outros pilotos são anexados.
   useEffect(() => {
@@ -101,17 +105,6 @@ export function useVoiceConnection(): UseVoiceConnection {
 
     const all: Participant[] = [room.localParticipant, ...room.remoteParticipants.values()];
     setParticipants(toVoiceParticipants(all));
-
-    // Música de plugin abaixa quando alguém do comboio fala. A web não tem o
-    // painel de controle (é do app), mas não pode deixar a música cobrir a voz.
-    const alguemFalando = room.activeSpeakers.some((p) => !isPluginParticipant(p));
-    const volume = pluginPlaybackVolume(alguemFalando, false);
-    for (const p of room.remoteParticipants.values()) {
-      if (!isPluginParticipant(p)) continue;
-      for (const pub of p.audioTrackPublications.values()) {
-        if (pub.track instanceof RemoteAudioTrack) pub.track.setVolume(volume);
-      }
-    }
   }, []);
 
   const attachTrack = useCallback((track: RemoteTrack) => {
@@ -191,12 +184,16 @@ export function useVoiceConnection(): UseVoiceConnection {
             setStatus('disconnected');
             setParticipants([]);
             roomRef.current = null;
+            setRoom(null);
+            setSessionToken(null);
           });
 
         await room.connect(url, token);
         await room.localParticipant.setMicrophoneEnabled(true);
 
         roomRef.current = room;
+        setRoom(room);
+        setSessionToken(token);
         setIsMuted(false);
         setNeedsAudioUnlock(!room.canPlaybackAudio);
         setStatus('connected');
@@ -216,6 +213,8 @@ export function useVoiceConnection(): UseVoiceConnection {
     if (!room) return;
     await room.disconnect();
     roomRef.current = null;
+    setRoom(null);
+    setSessionToken(null);
     setStatus('disconnected');
     setParticipants([]);
   }, []);
@@ -237,7 +236,11 @@ export function useVoiceConnection(): UseVoiceConnection {
   const applyVolume = useCallback((value: number) => {
     const room = roomRef.current;
     if (!room) return;
-    room.remoteParticipants.forEach((p) => p.setVolume(value / 100));
+    // Plugins ficam de fora: o volume da música é do painel de música (abaixa
+    // quando alguém fala, silencia só para mim), não deste controle.
+    room.remoteParticipants.forEach((p) => {
+      if (!isPluginParticipant(p)) p.setVolume(value / 100);
+    });
   }, []);
 
   const setVolume = useCallback(
@@ -279,6 +282,8 @@ export function useVoiceConnection(): UseVoiceConnection {
     isMuted,
     needsAudioUnlock,
     serverHost,
+    room,
+    sessionToken,
     volume,
     connect,
     disconnect,
