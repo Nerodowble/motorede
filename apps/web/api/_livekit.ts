@@ -1,6 +1,7 @@
 import { createHmac } from 'node:crypto';
 import { RoomServiceClient, type ParticipantInfo } from 'livekit-server-sdk';
 import { OAuth2Client } from 'google-auth-library';
+import { isPluginParticipant } from '@motorede/shared';
 
 /**
  * Peças compartilhadas pelas funções serverless.
@@ -73,6 +74,8 @@ export interface ParticipantMetadata {
   ph?: string;
   /** true quando entrou usando vaga de administrador. */
   adm?: boolean;
+  /** Identificador do plugin, quando o participante é um plugin. */
+  plg?: string;
 }
 
 export function encodeMetadata(meta: ParticipantMetadata): string {
@@ -110,14 +113,23 @@ export function roomService(): RoomServiceClient | null {
   return cachedClient;
 }
 
-/** Conta quantos são pilotos comuns e quantos estão no total. */
+/**
+ * Conta quantos são pilotos comuns e quantos estão no total.
+ *
+ * Plugins não entram em nenhuma das contas: não conversam, então não ocupam
+ * vaga. Uma sala só com plugin conta como vazia.
+ */
 export function countParticipants(participants: ParticipantInfo[]): {
   riders: number;
   total: number;
 } {
   let admins = 0;
+  let total = 0;
   for (const p of participants) {
+    // Pela identidade, que o plugin não consegue trocar (ver isPluginParticipant).
+    if (isPluginParticipant(p)) continue;
+    total++;
     if (decodeMetadata(p.metadata).adm) admins++;
   }
-  return { riders: participants.length - admins, total: participants.length };
+  return { riders: total - admins, total };
 }

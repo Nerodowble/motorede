@@ -43,6 +43,10 @@ interface UseVoiceConnection {
   /** Host do servidor de voz em uso. Exibido para que uma divergência entre
    *  app e web (servidores diferentes) seja vista, e não silenciosa. */
   serverHost: string | null;
+  /** Sala conectada, para quem precisa de eventos dela (painel de plugins). */
+  room: Room | null;
+  /** Token desta sessão. Prova ao servidor em qual comboio a pessoa está. */
+  sessionToken: string | null;
   connect: (options: ConnectOptions) => Promise<void>;
   disconnect: () => Promise<void>;
   setMuted: (muted: boolean) => Promise<void>;
@@ -68,6 +72,8 @@ export function useVoiceConnection(tokenEndpoint: string): UseVoiceConnection {
   const [participants, setParticipants] = useState<VoiceParticipant[]>([]);
   const [isMuted, setIsMuted] = useState(false);
   const [serverHost, setServerHost] = useState<string | null>(null);
+  const [room, setRoom] = useState<Room | null>(null);
+  const [sessionToken, setSessionToken] = useState<string | null>(null);
 
   const syncParticipants = useCallback(() => {
     const room = roomRef.current;
@@ -104,7 +110,6 @@ export function useVoiceConnection(tokenEndpoint: string): UseVoiceConnection {
         }
 
         const { token, url } = (await response.json()) as { token: string; url: string };
-        setServerHost(url.replace(/^wss?:\/\//, '').split('/')[0]);
         setServerHost(url.replace(/^wss?:\/\//, '').split('/')[0]);
 
         // Sobe o serviço em primeiro plano ANTES de conectar. O Android exige
@@ -143,6 +148,8 @@ export function useVoiceConnection(tokenEndpoint: string): UseVoiceConnection {
             setStatus('disconnected');
             setParticipants([]);
             roomRef.current = null;
+            setRoom(null);
+            setSessionToken(null);
             void AudioSession.stopAudioSession();
             void stopVoiceForegroundService();
           });
@@ -151,6 +158,8 @@ export function useVoiceConnection(tokenEndpoint: string): UseVoiceConnection {
         await room.localParticipant.setMicrophoneEnabled(true);
 
         roomRef.current = room;
+        setRoom(room);
+        setSessionToken(token);
         setIsMuted(false);
         setStatus('connected');
         syncParticipants();
@@ -171,6 +180,8 @@ export function useVoiceConnection(tokenEndpoint: string): UseVoiceConnection {
     if (!room) return;
     await room.disconnect();
     roomRef.current = null;
+    setRoom(null);
+    setSessionToken(null);
     setStatus('disconnected');
     setParticipants([]);
     await AudioSession.stopAudioSession();
@@ -193,5 +204,16 @@ export function useVoiceConnection(tokenEndpoint: string): UseVoiceConnection {
     };
   }, []);
 
-  return { status, error, participants, isMuted, serverHost, connect, disconnect, setMuted };
+  return {
+    status,
+    error,
+    participants,
+    isMuted,
+    serverHost,
+    room,
+    sessionToken,
+    connect,
+    disconnect,
+    setMuted,
+  };
 }

@@ -1,6 +1,11 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { AccessToken } from 'livekit-server-sdk';
-import { canJoinConvoy, CONVOY_MAX, normalizePhone } from '@motorede/shared';
+import {
+  canJoinConvoy,
+  CONVOY_MAX,
+  normalizePhone,
+  PLUGIN_IDENTITY_PREFIX,
+} from '@motorede/shared';
 import {
   countParticipants,
   encodeMetadata,
@@ -95,7 +100,14 @@ export default async function handler(
     identity = verified.identity;
     name = verified.name;
   } else {
-    if (!body.identity || !IDENTITY_PATTERN.test(body.identity)) {
+    // O prefixo de plugin é reservado: quem é plugin quem diz é o metadado
+    // gravado pelo servidor, mas um piloto chamado "plugin-musica" confundiria
+    // a tela de todo mundo.
+    if (
+      !body.identity ||
+      !IDENTITY_PATTERN.test(body.identity) ||
+      body.identity.startsWith(PLUGIN_IDENTITY_PREFIX)
+    ) {
       res.status(400).json({ error: 'identidade inválida' });
       return;
     }

@@ -91,6 +91,26 @@ function executar(cmd) {
     return achados.map(([m, d]) => (comDist ? [m, d.toFixed(4)] : m));
   }
 
+  // Conjuntos e contador, usados pelo pareamento de plugins.
+  const conjunto = (chave, criar) => {
+    const e = kv.get(chave);
+    if (e && vivo(e) && e.valor instanceof Set) return e.valor;
+    if (!criar) return new Set();
+    const novo = new Set();
+    kv.set(chave, { valor: novo, expiraEm: null });
+    return novo;
+  };
+  if (nome === 'SADD') { const c = conjunto(cmd[1], true); let n = 0; for (const m of cmd.slice(2)) if (!c.has(m)) { c.add(m); n++; } return n; }
+  if (nome === 'SREM') { const c = conjunto(cmd[1], false); let n = 0; for (const m of cmd.slice(2)) if (c.delete(m)) n++; return n; }
+  if (nome === 'SMEMBERS') return [...conjunto(cmd[1], false)];
+  if (nome === 'SISMEMBER') return conjunto(cmd[1], false).has(cmd[2]) ? 1 : 0;
+  if (nome === 'INCR') {
+    const e = kv.get(cmd[1]);
+    const valor = (vivo(e) && e ? Number(e.valor) : 0) + 1;
+    kv.set(cmd[1], { valor: String(valor), expiraEm: e && vivo(e) ? e.expiraEm : null });
+    return valor;
+  }
+
   throw new Error('comando nao implementado: ' + nome);
 }
 

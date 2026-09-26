@@ -759,3 +759,136 @@ vermelho, e no dia do acidente ninguém olha.
 **Testado nos dois níveis:** `npm run test:socorro` (21 verificações contra um
 Redis de mentira) e fumaça contra o Upstash real em produção — 15 km encontrou
 2, 50 km encontrou 3, e depois da limpeza, 0.
+
+---
+
+## 23. Música no comboio ("bot de música")
+
+**Status:** `em aberto` — tecnicamente viável; o gargalo é de onde vem a música
+**Data:** 2026-09-26
+
+Ideia: ouvir música junto com os amigos durante a chamada, como os bots do
+Discord faziam.
+
+**Tecnicamente cabe no que já existe.** No LiveKit, um "bot" é só mais um
+participante da sala publicando uma faixa de áudio. Três jeitos, do mais simples
+ao mais trabalhoso:
+
+| Caminho | Como | Custo de construção |
+|---|---|---|
+| Cada um ouve o próprio app de música (ex.: Jam do Spotify) | O MotoRede só precisa não "roubar" o áudio do outro app | Quase zero |
+| LiveKit Ingress a partir de URL | O endpoint cria uma entrada apontando para um MP3/rádio; ela entra na sala como participante | Pequeno, sem servidor próprio |
+| Bot próprio (LiveKit Agents) | Processo rodando o tempo todo, com fila, pular, etc. | Alto — precisa de servidor, que a Vercel não dá |
+
+Transmitir a música **de dentro do celular** de um piloto (captura do Spotify)
+não funciona: Spotify e YouTube bloqueiam captura de áudio no Android, e o
+`react-native-webrtc` não publica arquivo como faixa sem módulo nativo.
+
+**O problema real é a fonte, não a tecnologia.** Os bots de música do Discord
+(Groovy, Rythm) foram fechados em 2021 por notificação do Google, porque
+retransmitiam YouTube. Spotify também proíbe retransmitir. Fontes limpas:
+arquivos próprios, música livre de direitos, ou cada um tocando a sua conta.
+
+**Pontos específicos do comboio:**
+- **Abaixar a música quando alguém fala** é obrigatório na moto — recado de
+  "buraco à frente" não pode competir com o refrão. Com a música numa faixa
+  separada, o cliente baixa o volume dela quando o LiveKit marca alguém falando.
+- Música anula o ganho do DTX ([ideia 3](#3-otimização-de-tráfego-de-áudio)):
+  toca sem parar, e em qualidade de música (~64–96 kbps), não de voz.
+- O bot conta como participante: consome minutos do teto gratuito como mais um
+  piloto.
+- Precisa de um botão para cada um desligar a música só para si.
+
+**Ressalva ao caminho 1 (mesmo dia):** o Jam do Spotify exige Premium para
+iniciar e, à distância, também para entrar — então quem não tem Spotify ou não
+paga fica de fora. Isso rebaixa o caminho 1 a "complemento" e faz do caminho 2
+(música viajando pela própria sala) o único que atende todo mundo do comboio:
+quem ouve não precisa de conta em serviço nenhum.
+
+**Variante descartada (mesmo dia): baixar playlists do YouTube e servir do
+próprio computador.** Tecnicamente funciona (baixar o áudio, servir por link,
+o Ingress toca na sala, o usuário guarda a playlist no celular). O problema é
+jurídico, e o arranjo proposto o agrava em vez de contornar:
+
+- Baixar do YouTube viola os termos dele — foi exatamente isso que derrubou o
+  Groovy e o Rythm.
+- Deixar o usuário baixar a playlist para o celular é **distribuir cópias**, que
+  é pior do que só tocar ao vivo.
+- "Não guardar no banco" não muda nada: guardar no computador de casa continua
+  sendo guardar, e quem serve é identificável (IP de casa, repositório público
+  com o nome do dono).
+- O risco cai sobre o projeto inteiro: remoção da loja do Google e notificação
+  contra o repositório derrubariam também a voz e o socorro.
+
+Também esbarra na [ideia 4](#4-servidor-local-na-casa-do-dev): computador de
+casa ligado o tempo todo, com upload de internet doméstica, já foi descartado
+para produção.
+
+**O que se aproveita:** a arquitetura (arquivos servidos por link → Ingress na
+sala → cópia opcional no celular) é boa. Só precisa de catálogo com licença:
+Biblioteca de Áudio do YouTube, Free Music Archive, Jamendo, Pixabay Music.
+
+---
+
+## 24. Plugins de áudio no comboio
+
+**Status:** `decidido` — implementado em 2026-09-26, protocolo em `docs/plugins.md`
+**Data:** 2026-09-26
+
+Nasceu da ideia 23: em vez de o MotoRede tocar música, ele aceita **plugins** —
+serviços de terceiros que entram na sala e publicam áudio. É o modelo do
+Discord: o Groovy caiu, o Discord não.
+
+**Como encaixa no LiveKit:** plugin é um participante com token próprio,
+emitido pelo nosso endpoint, com identidade marcada (`plugin:<nome>`). Roda na
+infraestrutura dele; se cair, some só a faixa dele da sala.
+
+**Regras que o desenho exige:**
+- **Plugin não ouve o comboio** (`canSubscribe: false`). Sem isso, qualquer
+  plugin vira escuta das conversas de todo mundo.
+- Só publica áudio, e o cliente trata toda faixa `plugin:*` como música:
+  abaixa quando alguém fala, cada um silencia só para si.
+- Entra só se alguém do comboio chamar; admin do comboio pode expulsar.
+- Conta como participante no teto de minutos do LiveKit.
+
+**Limite da proteção:** a separação protege o MotoRede de plugins **de
+terceiros**. Se o mesmo dono escreve e opera um plugin que redistribui música do
+YouTube, a separação existe no código mas não na responsabilidade — a
+notificação chega na mesma pessoa. O app não vai para o Google Play (é
+distribuído por download direto), então a loja não é risco; os serviços que
+seguem expostos são LiveKit Cloud, Vercel, GitHub e Expo — este último na conta
+corporativa. Por isso o plugin de YouTube continua fora
+(ver ideia 23); o sistema de plugins, não.
+
+**Implementado (2026-09-26).** O MotoRede ganhou o sistema de plugins
+(`/api/plugins`, card de música no app, abaixar a música quando alguém fala
+também na web) e o primeiro plugin nasceu como **projeto separado**
+(`motorede-plugin-musica`, fora deste repositório), para uso pessoal no comboio
+do dono: roda num computador de casa, toca playlists montadas localmente e
+conversa com o MotoRede só pelo protocolo público. Decisões que valem registrar:
+
+- **Convite por pergunta, não por chamada.** O computador de casa está atrás de
+  roteador; é o plugin que pergunta a cada 5 s. Perguntar também o marca como
+  ligado por 20 s, e o app mostra "computador desligado" antes de alguém
+  esperar 30 s à toa.
+- **Plugin é reconhecido pela identidade, não pelo metadado.** Para publicar o
+  que está tocando ele precisa poder mudar os próprios dados — e com isso
+  poderia apagar a marca e se passar por piloto. A identidade só o servidor
+  define.
+- **Confirmado em teste real:** mensagem de dados chega a um participante sem
+  permissão de ouvir. Então o plugin recebe comandos sem ouvir a conversa.
+- **Quem manda:** qualquer piloto pausa, pula e troca a música (o líder pode
+  estar pilotando); dispensar só quem chamou ou o líder.
+- **Biblioteca indiferente à origem:** playlist é uma pasta de áudio. O plugin
+  traz um comando para baixar a partir de link, mas qualquer arquivo na pasta
+  serve.
+
+**Mudança no mesmo dia: pareamento por código em vez de comboio fixo.** A
+primeira versão prendia o plugin a comboios listados na Vercel (`salas`). O
+dono apontou que isso é inviável: todo passeio novo exigiria editar variável e
+fazer redeploy. Agora o registro na Vercel é feito uma vez, sem comboio
+nenhum, e o vínculo acontece no app: o painel do plugin mostra um código
+(`ABC-1234`), alguém digita dentro do comboio e todo mundo ali passa a ver a
+música. O código só vale com o plugin ligado (ele o anuncia a cada pergunta),
+pode ser trocado a qualquer hora pelo painel e tem limite de 8 tentativas
+erradas por comboio a cada 10 minutos. `salas` continua existindo, mas opcional.

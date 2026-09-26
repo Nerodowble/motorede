@@ -20,6 +20,8 @@ import {
 } from '@motorede/shared';
 import { useVoiceConnection } from '../hooks/useVoiceConnection';
 import { useConvoyBrowser } from '../hooks/useConvoyBrowser';
+import { useMusicPlugin } from '../hooks/useMusicPlugin';
+import { MusicCard } from '../components/MusicCard';
 import { storage } from '../services/storage';
 import { TOKEN_ENDPOINT, WEB_APP_URL } from '../config';
 import { COLORS } from '../theme';
@@ -48,6 +50,10 @@ export const ConvoyScreen: React.FC<ConvoyScreenProps> = ({
   const voice = useVoiceConnection(TOKEN_ENDPOINT);
   const browser = useConvoyBrowser();
   const isLive = voice.status === 'connected' || voice.status === 'reconnecting';
+  const music = useMusicPlugin(voice.room, voice.sessionToken);
+  const souLider = voice.participants.some(
+    (p) => p.isHost && p.id === voice.room?.localParticipant.identity
+  );
 
   const [codigoDigitado, setCodigoDigitado] = useState('');
   const [erroCodigo, setErroCodigo] = useState<string | null>(null);
@@ -167,6 +173,8 @@ export const ConvoyScreen: React.FC<ConvoyScreenProps> = ({
           </Pressable>
         )}
       </View>
+
+      {isLive && <MusicCard music={music} souLider={souLider} />}
 
       {/* Trocar de comboio some durante a conversa: não se oferece isso a
           alguém pilotando. */}

@@ -12,7 +12,8 @@
     "dev:web": "npm run dev --workspace @motorede/web",
     "build:web": "npm run build --workspace @motorede/web",
     "lint": "npm run lint --workspaces --if-present",
-    "test:socorro": "tsx tests/socorro/socorro.test.mts && tsx tests/socorro/prefixo.test.mts && tsx tests/socorro/webpush.test.mts && tsx tests/socorro/abertos.test.mts && tsx tests/socorro/aceitar.test.mts"
+    "test:socorro": "tsx tests/socorro/socorro.test.mts && tsx tests/socorro/prefixo.test.mts && tsx tests/socorro/webpush.test.mts && tsx tests/socorro/abertos.test.mts && tsx tests/socorro/aceitar.test.mts",
+    "test:plugins": "tsx tests/plugins/plugins.test.mts"
   },
   "overrides": {
     "react": "19.2.3",

@@ -3,6 +3,7 @@ import {
   AudioPresets,
   ConnectionState,
   Participant,
+  RemoteAudioTrack,
   RemoteTrack,
   RemoteTrackPublication,
   Room,
@@ -10,6 +11,8 @@ import {
   Track,
 } from 'livekit-client';
 import {
+  isPluginParticipant,
+  pluginPlaybackVolume,
   toVoiceParticipants,
   VOICE_CAPTURE_DEFAULTS,
   VOICE_PUBLISH_DEFAULTS,
@@ -98,6 +101,17 @@ export function useVoiceConnection(): UseVoiceConnection {
 
     const all: Participant[] = [room.localParticipant, ...room.remoteParticipants.values()];
     setParticipants(toVoiceParticipants(all));
+
+    // Música de plugin abaixa quando alguém do comboio fala. A web não tem o
+    // painel de controle (é do app), mas não pode deixar a música cobrir a voz.
+    const alguemFalando = room.activeSpeakers.some((p) => !isPluginParticipant(p));
+    const volume = pluginPlaybackVolume(alguemFalando, false);
+    for (const p of room.remoteParticipants.values()) {
+      if (!isPluginParticipant(p)) continue;
+      for (const pub of p.audioTrackPublications.values()) {
+        if (pub.track instanceof RemoteAudioTrack) pub.track.setVolume(volume);
+      }
+    }
   }, []);
 
   const attachTrack = useCallback((track: RemoteTrack) => {

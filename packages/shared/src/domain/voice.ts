@@ -1,4 +1,5 @@
 import type { VoiceParticipant } from '../types.js';
+import { PLUGIN_IDENTITY_PREFIX } from './plugins.js';
 
 /**
  * Forma mínima de um participante vinda da camada de mídia.
@@ -17,13 +18,28 @@ export interface VoiceSourceParticipant {
 }
 
 /**
+ * true quando o participante é um plugin, e não um piloto.
+ *
+ * Decide pela identidade, que só o servidor define. O metadado não serve: o
+ * plugin tem permissão de atualizar os próprios dados (para publicar o que
+ * está tocando) e poderia apagar a marca para se passar por piloto.
+ */
+export function isPluginParticipant(p: { identity: string }): boolean {
+  return p.identity.startsWith(PLUGIN_IDENTITY_PREFIX);
+}
+
+/**
  * Converte os participantes da camada de mídia para o formato que as telas
  * consomem.
  *
  * Enquanto não existe um dono declarado da sala, quem entrou primeiro é
  * tratado como líder do comboio.
+ *
+ * Plugins ficam de fora: não são pilotos, não podem virar líder e têm painel
+ * próprio na tela.
  */
-export function toVoiceParticipants(source: VoiceSourceParticipant[]): VoiceParticipant[] {
+export function toVoiceParticipants(all: VoiceSourceParticipant[]): VoiceParticipant[] {
+  const source = all.filter((p) => !isPluginParticipant(p));
   const hostIdentity = source
     .slice()
     .sort((a, b) => (a.joinedAt?.getTime() ?? 0) - (b.joinedAt?.getTime() ?? 0))[0]?.identity;

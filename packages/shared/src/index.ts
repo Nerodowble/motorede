@@ -6,3 +6,4 @@ export * from './domain/rooms.js';
 export * from './domain/convoy.js';
 export * from './domain/profile.js';
 export * from './domain/sos.js';
+export * from './domain/plugins.js';
