@@ -49,67 +49,67 @@
 /* Tema escuro: o padrão, pensado para uso noturno e na estrada. */
 :root,
 :root[data-theme='dark'] {
-  --mr-canvas: #020617;
-  --mr-surface: #0f172a;
-  --mr-elevated: #1e293b;
-  --mr-line: #1e293b;
-  --mr-line-strong: #334155;
-  --mr-ink: #f1f5f9;
-  --mr-ink-muted: #94a3b8;
-  --mr-ink-faint: #8296ad;
-  --mr-brand: #f59e0b;
-  --mr-on-brand: #020617;
-  --mr-brand-soft: #fbbf24;
-  /* Estados: no escuro, os mesmos tons que as telas já usavam. */
-  --mr-action: #f59e0b;
-  --mr-on-action: #020617;
+  --mr-canvas: #0a0a0b;
+  --mr-surface: #141417;
+  --mr-elevated: #1f1f23;
+  --mr-line: #26262b;
+  --mr-line-strong: #6b6b74;
+  --mr-ink: #f4f4f5;
+  --mr-ink-muted: #a1a1aa;
+  --mr-ink-faint: #8b8b94;
+  --mr-brand: #fc0d0a;
+  --mr-on-brand: #ffffff;
+  --mr-brand-soft: #ff4a3d;
+  /* Paleta da marca (docs/checklist-marca-e-interface.md): fundo grafite,
+     botão principal branco, vermelho da marca só em detalhes, âmbar = falando,
+     verde = microfone aberto, vermelho cheio = SOS. Igual ao app. */
+  --mr-action: #f4f4f5;
+  --mr-on-action: #0a0a0b;
   --mr-speaking: #fbbf24;
-  --mr-on-speaking: #020617;
-  --mr-code: #fbbf24;
+  --mr-on-speaking: #0a0a0b;
+  --mr-code: #f4f4f5;
   --mr-warning: #fbbf24;
-  --mr-live: #059669;
-  --mr-on-live: #ffffff;
-  --mr-success: #34d399;
+  --mr-live: #22c55e;
+  --mr-on-live: #0a0a0b;
+  --mr-success: #4ade80;
   --mr-sos: #dc2626;
   --mr-on-sos: #ffffff;
   --mr-danger: #f87171;
-  --mr-info: #38bdf8;
+  --mr-info: #60a5fa;
   color-scheme: dark;
 }
 
 /**
- * Tema claro.
- *
- * O âmbar escurece um pouco: sobre fundo claro, o tom original não alcança
- * contraste suficiente para texto pequeno.
+ * Tema claro: a mesma lógica, invertida — botão principal preto, vermelho da
+ * marca e âmbar escurecidos para passar contraste sobre branco.
  */
 :root[data-theme='light'] {
-  --mr-canvas: #f1f5f9;
+  --mr-canvas: #f6f6f7;
   --mr-surface: #ffffff;
-  --mr-elevated: #f1f5f9;
-  --mr-line: #e2e8f0;
-  --mr-line-strong: #cbd5e1;
-  --mr-ink: #0f172a;
-  --mr-ink-muted: #475569;
-  --mr-ink-faint: #5b6472;
-  --mr-brand: #b45309;
+  --mr-elevated: #ededef;
+  --mr-line: #e4e4e7;
+  --mr-line-strong: #8e8e96;
+  --mr-ink: #18181b;
+  --mr-ink-muted: #52525b;
+  --mr-ink-faint: #6b6b75;
+  --mr-brand: #e30b0b;
   --mr-on-brand: #ffffff;
-  --mr-brand-soft: #92400e;
+  --mr-brand-soft: #d70a0a;
   /* Estados: tons escurecidos para passar AA sobre branco (os de antes, como
      emerald-400 e red-400, ficavam entre 1,9 e 2,8:1). */
-  --mr-action: #b45309;
+  --mr-action: #18181b;
   --mr-on-action: #ffffff;
   --mr-speaking: #b45309;
   --mr-on-speaking: #ffffff;
-  --mr-code: #92400e;
+  --mr-code: #18181b;
   --mr-warning: #b45309;
   --mr-live: #15803d;
   --mr-on-live: #ffffff;
-  --mr-success: #047857;
+  --mr-success: #15803d;
   --mr-sos: #b91c1c;
   --mr-on-sos: #ffffff;
   --mr-danger: #b91c1c;
-  --mr-info: #0369a1;
+  --mr-info: #1d4ed8;
   color-scheme: light;
 }
 

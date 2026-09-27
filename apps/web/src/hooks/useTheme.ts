@@ -48,7 +48,7 @@ function aplicar(escolha: ThemeChoice) {
   // A barra do navegador acompanha o fundo, senão fica um recorte destoando
   // no topo da tela do celular.
   const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.setAttribute('content', efetivo === 'dark' ? '#020617' : '#f1f5f9');
+  if (meta) meta.setAttribute('content', efetivo === 'dark' ? '#0a0a0b' : '#f6f6f7');
 }
 
 let escolhaAtual: ThemeChoice = lerSalvo();

@@ -31,21 +31,21 @@ como traço, nunca como fundo de botão.
 
 ## App (`apps/mobile`) — com o especialista em app
 
-- [~] Paleta nova em `src/theme.ts` (nomes alinhados à web) e fim das 11 cores soltas
-- [~] Barra de abas com ícone, rótulo 13px, contraste AA; "Socorro" → "SOS"
-- [~] Cabeçalho com selo + MOTO**REDE**; "Sair" vai para Ajustes
-- [~] Tela do comboio conectada: estado → microfone grande → participantes → plugin → "Sair" com confirmação; sem "servidor: …"
-- [~] Ícones de verdade no card/folha do plugin; "Desvincular" em danger-text
-- [~] Moto, SOS, Ajustes e Perfil com a paleta e hierarquia de cartões
-- [ ] Cor da notificação: `app.json`, `foregroundService.ts:81`, `socorro.ts:96`
-- [ ] Revisar o que o especialista entregou, publicar (OTA) e **build do APK** com o ícone novo
+- [x] Paleta nova em `src/theme.ts` (nomes alinhados à web) e fim das 11 cores soltas
+- [x] Barra de abas com ícone, rótulo 13px, contraste AA; "Socorro" → "SOS"
+- [x] Cabeçalho com selo + MOTO**REDE**; "Sair" vai para Ajustes
+- [x] Tela do comboio conectada: estado → microfone grande → participantes → plugin → "Sair" com confirmação; sem "servidor: …"
+- [x] Ícones de verdade no card/folha do plugin; "Desvincular" em danger-text
+- [x] Moto, SOS, Ajustes e Perfil com a paleta e hierarquia de cartões
+- [x] Cor da notificação: `app.json`, `foregroundService.ts:81`, `socorro.ts:96`
+- [x] Revisar o que o especialista entregou, publicar (OTA) e **build do APK** com o ícone novo
 - [ ] Tema claro no app (`useColorScheme`, duas paletas) — depois
 
 ## Web (`apps/web`)
 
 ### Etapa 1 — base, sem mudança visual
 - [x] Tokens semânticos em `src/index.css`: `action`, `speaking`, `live`, `sos`, `danger`, `success`, `warning`, `info` (cada um com `-soft` / `on-`), nos dois temas; `brand` mantido como alias durante a transição
-- [ ] `line-strong` com contraste ≥ 3:1 para bordas de campo — adiado para a Etapa 3: o token é usado em 105 bordas, clarear agora muda o visual inteiro
+- [x] `line-strong` com contraste ≥ 3:1 para bordas de campo (feito junto com a Etapa 3: #6b6b74 no escuro, #8e8e96 no claro) — adiado para a Etapa 3: o token é usado em 105 bordas, clarear agora muda o visual inteiro
 - [x] Trocar as ~231 classes de cor escritas direto (red/emerald/sky/blue) pelos tokens — 14 arquivos, maiores: `SOSRescueView`, `ConvoyVoiceView`, `AdminView`, `Navigation` — **feito: 206 trocas em 14 arquivos; tema escuro idêntico (conferido por print), tema claro passou a ler**
 - [x] Tirar o sentido de estado de `brand` (~35 pontos) — **feito:** 28 botões principais → `action`; conectando/mudo/offline/lotado/atenção/manutenção/pendente → `warning`; avatar de quem fala → `speaking`; código do comboio → `code`. Barrinha da aba ativa e ícones de identidade seguem `brand`: conectando, falando, mudo, avisos, "lotado", código do comboio, papel "Piloto"
 
@@ -58,7 +58,7 @@ como traço, nunca como fundo de botão.
 - [x] `theme-color` unificado: `index.html:11`, `useTheme.ts:51`, `vite.config.ts:25-26`
 
 ### Etapa 3 — trocar para a marca
-- [ ] Valores novos dos tokens (tabela acima): fundo grafite, botão principal preto/branco, brand vermelho
+- [x] Valores novos dos tokens (tabela acima): fundo grafite, botão principal preto/branco, brand vermelho
 - [x] Waze/Google Maps legíveis no tema claro — `views/ConvoyVoiceView.tsx`
 
 ### Etapa 4 — painel e navegação no celular
