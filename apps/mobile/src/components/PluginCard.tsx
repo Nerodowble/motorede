@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { PLUGIN_VOLUME_STEP } from '@motorede/shared';
 import type { PluginAudio } from '../hooks/usePluginAudio';
 import { PluginSheet } from './PluginSheet';
@@ -161,7 +161,9 @@ export const PluginCard: React.FC<PluginCardProps> = ({ pluginAudio, souLider })
           </Pressable>
         )}
       </View>
+      {pluginAudio.plugins.length > 1 && <Seletor pluginAudio={pluginAudio} />}
       {corpo}
+      <Rodape pluginAudio={pluginAudio} />
       <PluginSheet
         visivel={folhaAberta}
         aoFechar={() => setFolhaAberta(false)}
@@ -209,13 +211,80 @@ const Volume: React.FC<{ pluginAudio: PluginAudio }> = ({ pluginAudio }) => {
   );
 };
 
+/** Mais de um plugin no comboio: escolhe qual o card controla. */
+const Seletor: React.FC<{ pluginAudio: PluginAudio }> = ({ pluginAudio }) => (
+  <View style={styles.seletor}>
+    {pluginAudio.plugins.map((p) => {
+      const ativo = p.id === pluginAudio.plugin?.id;
+      return (
+        <Pressable
+          key={p.id}
+          onPress={() => pluginAudio.selecionar(p.id)}
+          style={[styles.chip, ativo && styles.chipAtivo]}
+          hitSlop={4}
+        >
+          <Text style={[styles.chipTexto, ativo && styles.chipTextoAtivo]} numberOfLines={1}>
+            {p.nome}
+          </Text>
+        </Pressable>
+      );
+    })}
+  </View>
+);
+
+/**
+ * Sempre visível com um plugin pareado — dentro ou fora da sala, computador
+ * ligado ou não: conectar outro, ou desvincular este. Qualquer um do comboio
+ * pode, do mesmo jeito que qualquer um pode conectar.
+ */
+const Rodape: React.FC<{ pluginAudio: PluginAudio }> = ({ pluginAudio }) => {
+  const [conectando, setConectando] = useState(false);
+  const nome = pluginAudio.plugin?.nome ?? 'o plugin';
+
+  if (conectando) {
+    return <ConectarPlugin pluginAudio={pluginAudio} aberto aoFechar={() => setConectando(false)} embutido />;
+  }
+
+  const desvincular = () =>
+    Alert.alert(
+      'Desvincular?',
+      `${nome} some deste comboio para todo mundo. Para voltar, alguém digita o código de novo.`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Desvincular', style: 'destructive', onPress: () => void pluginAudio.desparear() },
+      ]
+    );
+
+  return (
+    <View style={styles.rodape}>
+      <Pressable onPress={() => setConectando(true)} hitSlop={10}>
+        <Text style={styles.linkRodape}>+ Conectar outro plugin</Text>
+      </Pressable>
+      <Pressable onPress={desvincular} hitSlop={10}>
+        <Text style={[styles.linkRodape, { color: COLORS.danger }]}>Desvincular</Text>
+      </Pressable>
+    </View>
+  );
+};
+
 /**
  * Sem plugin no comboio: só uma linha discreta. Quem tem o código (mostrado
  * no painel do computador onde o plugin roda) digita aqui uma vez; o resto do
  * comboio passa a ver o plugin sem fazer nada.
  */
-const ConectarPlugin: React.FC<{ pluginAudio: PluginAudio }> = ({ pluginAudio }) => {
-  const [aberto, setAberto] = useState(false);
+const ConectarPlugin: React.FC<{
+  pluginAudio: PluginAudio;
+  /** Já começa com o campo aberto (quando vem do "Conectar outro"). */
+  aberto?: boolean;
+  aoFechar?: () => void;
+  /** Dentro de outro card: sem moldura própria. */
+  embutido?: boolean;
+}> = ({ pluginAudio, aberto: abertoInicial = false, aoFechar, embutido = false }) => {
+  const [aberto, setAbertoInterno] = useState(abertoInicial);
+  const setAberto = (v: boolean) => {
+    setAbertoInterno(v);
+    if (!v) aoFechar?.();
+  };
   const [codigo, setCodigo] = useState('');
   const [erro, setErro] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
@@ -241,7 +310,7 @@ const ConectarPlugin: React.FC<{ pluginAudio: PluginAudio }> = ({ pluginAudio })
   };
 
   return (
-    <View style={styles.card}>
+    <View style={embutido ? styles.embutido : styles.card}>
       <Text style={styles.rotulo}>CONECTAR PLUGIN</Text>
       <Text style={styles.linha2}>
         Digite o código que aparece no painel do plugin. Vale para todo mundo neste comboio.
@@ -278,6 +347,29 @@ const ConectarPlugin: React.FC<{ pluginAudio: PluginAudio }> = ({ pluginAudio })
 
 const styles = StyleSheet.create({
   linhaConectar: { paddingVertical: 6, alignItems: 'center' },
+  seletor: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  chip: {
+    minHeight: 40,
+    paddingHorizontal: 14,
+    justifyContent: 'center',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.surfaceAlt,
+    maxWidth: '100%',
+  },
+  chipAtivo: { borderColor: COLORS.text },
+  chipTexto: { color: COLORS.muted, fontSize: 13, fontWeight: '700' },
+  chipTextoAtivo: { color: COLORS.text },
+  rodape: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+    paddingTop: 10,
+  },
+  linkRodape: { color: COLORS.muted, fontSize: 12, fontWeight: '700', paddingVertical: 6 },
+  embutido: { gap: 10, borderTopWidth: 1, borderTopColor: COLORS.border, paddingTop: 10 },
   input: {
     backgroundColor: COLORS.background,
     borderWidth: 1,

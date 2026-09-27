@@ -71,6 +71,24 @@ export const PluginPanel: React.FC<PluginPanelProps> = ({ pluginAudio, souLider 
         )}
       </div>
 
+      {pluginAudio.plugins.length > 1 && (
+        <div className="flex flex-wrap gap-2">
+          {pluginAudio.plugins.map((p) => (
+            <button
+              key={p.id}
+              onClick={() => pluginAudio.selecionar(p.id)}
+              className={`px-3 py-1.5 rounded-full border text-xs font-bold transition ${
+                p.id === pluginAudio.plugin?.id
+                  ? 'border-ink text-ink bg-elevated'
+                  : 'border-line text-ink-muted hover:text-ink'
+              }`}
+            >
+              {p.nome}
+            </button>
+          ))}
+        </div>
+      )}
+
       {pluginAudio.fase === 'fora' && (
         <>
           <p className="text-sm font-bold text-ink">{nome}</p>
@@ -166,6 +184,39 @@ export const PluginPanel: React.FC<PluginPanelProps> = ({ pluginAudio, souLider 
           {aberto && <Biblioteca pluginAudio={pluginAudio} podeDispensar={podeDispensar} aoFechar={() => setAberto(false)} />}
         </>
       )}
+
+      <Rodape pluginAudio={pluginAudio} />
+    </div>
+  );
+};
+
+/**
+ * Sempre visível com um plugin pareado — dentro ou fora da sala, computador
+ * ligado ou não: conectar outro, ou desvincular este. Qualquer um do comboio
+ * pode, do mesmo jeito que qualquer um pode conectar.
+ */
+const Rodape: React.FC<{ pluginAudio: PluginAudio }> = ({ pluginAudio }) => {
+  const [conectando, setConectando] = useState(false);
+  const nome = pluginAudio.plugin?.nome ?? 'o plugin';
+
+  if (conectando) {
+    return <Conectar pluginAudio={pluginAudio} abertoInicial aoFechar={() => setConectando(false)} embutido />;
+  }
+
+  return (
+    <div className="flex items-center justify-between pt-3 border-t border-line/80">
+      <button onClick={() => setConectando(true)} className="text-xs font-bold text-ink-muted hover:text-ink py-1">
+        + Conectar outro plugin
+      </button>
+      <button
+        onClick={() => {
+          if (!confirm(`Desvincular ${nome} deste comboio? Ele some para todo mundo aqui. Para voltar, alguém digita o código de novo.`)) return;
+          void pluginAudio.desparear();
+        }}
+        className="text-xs font-bold text-red-400 hover:text-red-300 py-1"
+      >
+        Desvincular
+      </button>
     </div>
   );
 };
@@ -266,16 +317,6 @@ const Biblioteca: React.FC<{ pluginAudio: PluginAudio; podeDispensar: boolean; a
             >
               Dispensar plugin
             </button>
-            <button
-              onClick={() => {
-                if (!confirm(`Desvincular ${nome} deste comboio? Para voltar, alguém digita o código de novo.`)) return;
-                void pluginAudio.enviar({ tipo: 'sair' });
-                void pluginAudio.desparear();
-              }}
-              className="text-xs text-ink-muted hover:text-ink underline px-1"
-            >
-              Desvincular deste comboio
-            </button>
           </>
         )}
       </div>
@@ -284,8 +325,19 @@ const Biblioteca: React.FC<{ pluginAudio: PluginAudio; podeDispensar: boolean; a
 };
 
 /** Sem plugin: uma linha discreta que abre o campo do código. */
-const Conectar: React.FC<{ pluginAudio: PluginAudio }> = ({ pluginAudio }) => {
-  const [aberto, setAberto] = useState(false);
+const Conectar: React.FC<{
+  pluginAudio: PluginAudio;
+  /** Já começa aberto (quando vem do "Conectar outro"). */
+  abertoInicial?: boolean;
+  aoFechar?: () => void;
+  /** Dentro de outro card: sem moldura própria. */
+  embutido?: boolean;
+}> = ({ pluginAudio, abertoInicial = false, aoFechar, embutido = false }) => {
+  const [aberto, setAbertoInterno] = useState(abertoInicial);
+  const setAberto = (v: boolean) => {
+    setAbertoInterno(v);
+    if (!v) aoFechar?.();
+  };
   const [codigo, setCodigo] = useState('');
   const [erro, setErro] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
@@ -315,7 +367,10 @@ const Conectar: React.FC<{ pluginAudio: PluginAudio }> = ({ pluginAudio }) => {
   };
 
   return (
-    <form onSubmit={conectar} className="rounded-2xl bg-surface border border-line p-4 space-y-3">
+    <form
+      onSubmit={conectar}
+      className={embutido ? 'pt-3 border-t border-line/80 space-y-3' : 'rounded-2xl bg-surface border border-line p-4 space-y-3'}
+    >
       <div className="flex items-center justify-between">
         <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-ink-muted">Conectar plugin</span>
         <button type="button" onClick={() => setAberto(false)} className="text-ink-muted hover:text-ink" title="Fechar">

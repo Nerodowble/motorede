@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { RemoteAudioTrack, RoomEvent, type RemoteParticipant, type Room } from 'livekit-client';
 import {
   decodePluginState,
@@ -42,7 +42,16 @@ const ESPERA_ENTRADA_MS = 30_000;
 const ESPERA_CONFIRMACAO_MS = 5_000;
 
 export function usePluginAudio(room: Room | null, sessionToken: string | null) {
-  const [plugin, setPlugin] = useState<AvailablePlugin | null>(null);
+  /** Plugins pareados com este comboio (pode haver mais de um). */
+  const [plugins, setPlugins] = useState<AvailablePlugin[]>([]);
+  /** Qual deles o card está controlando. null = o primeiro. */
+  const [ativoId, setAtivoId] = useState<string | null>(null);
+  const plugin = useMemo(
+    () => plugins.find((p) => p.id === ativoId) ?? plugins[0] ?? null,
+    [plugins, ativoId]
+  );
+  // Os efeitos dependem só da identidade: a lista é recriada a cada consulta.
+  const identidadeAtiva = plugin?.identidade ?? null;
   const [participante, setParticipante] = useState<RemoteParticipant | null>(null);
   const [estado, setEstado] = useState<PluginState | null>(null);
   const [chamando, setChamando] = useState(false);
@@ -61,8 +70,8 @@ export function usePluginAudio(room: Room | null, sessionToken: string | null) {
 
   const setVolume = useCallback((v: number) => setVolumeState(Math.min(100, Math.max(0, v))), []);
 
-  // Descobre o plugin deste comboio. Repete enquanto ele não está na sala,
-  // para o "ligado/desligado" acompanhar o computador de quem o opera.
+  // Descobre os plugins deste comboio. Repete a cada 15 s: acompanha o
+  // "ligado/desligado" de cada computador e quem outro piloto pareou.
   const descobrir = useCallback(async () => {
     if (!sessionToken) return;
     try {
@@ -73,7 +82,7 @@ export function usePluginAudio(room: Room | null, sessionToken: string | null) {
       });
       if (!r.ok) return;
       const { plugins } = (await r.json()) as { plugins: AvailablePlugin[] };
-      setPlugin(plugins[0] ?? null);
+      setPlugins(plugins);
     } catch {
       // sem rede: mantém o que já sabia
     }
@@ -81,18 +90,18 @@ export function usePluginAudio(room: Room | null, sessionToken: string | null) {
 
   useEffect(() => {
     if (!sessionToken) {
-      setPlugin(null);
+      setPlugins([]);
+      setAtivoId(null);
       return;
     }
     void descobrir();
-    if (participante) return;
     const t = setInterval(() => void descobrir(), 15_000);
     return () => clearInterval(t);
-  }, [sessionToken, participante, descobrir]);
+  }, [sessionToken, descobrir]);
 
   // Acha o participante do plugin e acompanha seu estado.
   useEffect(() => {
-    if (!room || !plugin) {
+    if (!room || !identidadeAtiva) {
       setParticipante(null);
       setEstado(null);
       return;
@@ -109,7 +118,7 @@ export function usePluginAudio(room: Room | null, sessionToken: string | null) {
     };
 
     const sincronizar = () => {
-      const p = room.getParticipantByIdentity(plugin.identidade) as RemoteParticipant | undefined;
+      const p = room.getParticipantByIdentity(identidadeAtiva) as RemoteParticipant | undefined;
       setParticipante(p ?? null);
       setEstado(p ? decodePluginState(p.attributes) : null);
       if (p) {
@@ -120,14 +129,14 @@ export function usePluginAudio(room: Room | null, sessionToken: string | null) {
     };
 
     const aoMudarAtributos = (_: Record<string, string>, p: { identity: string }) => {
-      if (p.identity !== plugin.identidade) return;
+      if (p.identity !== identidadeAtiva) return;
       setPendente(false);
       setNaoConfirmou(false);
       sincronizar();
     };
 
     const aoSair = (p: RemoteParticipant) => {
-      if (p.identity !== plugin.identidade) return;
+      if (p.identity !== identidadeAtiva) return;
       setAviso('O plugin saiu do comboio.');
       sincronizar();
     };
@@ -146,7 +155,7 @@ export function usePluginAudio(room: Room | null, sessionToken: string | null) {
         .off(RoomEvent.ParticipantAttributesChanged, aoMudarAtributos)
         .off(RoomEvent.TrackSubscribed, aplicarVolume);
     };
-  }, [room, plugin]);
+  }, [room, identidadeAtiva]);
 
   // Reaplica quando a pessoa muda o volume, silencia ou volta a ouvir.
   useEffect(() => {
@@ -226,7 +235,11 @@ export function usePluginAudio(room: Room | null, sessionToken: string | null) {
           error?: string;
         };
         if (!r.ok || !corpo.plugin) return corpo.error || 'Não deu para conectar agora.';
-        setPlugin(corpo.plugin);
+        const novo = corpo.plugin;
+        setPlugins((lista) => [...lista.filter((p) => p.id !== novo.id), novo]);
+        setAtivoId(novo.id); // o recém-conectado passa a ser o do card
+        setChamando(false);
+        setSemResposta(false);
         return null;
       } catch {
         return 'Sem conexão com o MotoRede.';
@@ -235,18 +248,46 @@ export function usePluginAudio(room: Room | null, sessionToken: string | null) {
     [sessionToken]
   );
 
+  /**
+   * Desvincula o plugin ativo deste comboio: ele some para todo mundo aqui.
+   * Se estiver na sala, é dispensado antes. Para voltar, alguém digita o
+   * código de novo.
+   */
   const desparear = useCallback(async () => {
     if (!plugin || !sessionToken) return;
+    const alvo = plugin;
+    if (room && participante) {
+      try {
+        const mensagem: PluginMessage = { plugin: alvo.id, comando: { tipo: 'sair' } };
+        await room.localParticipant.publishData(new TextEncoder().encode(JSON.stringify(mensagem)), {
+          reliable: true,
+          topic: PLUGIN_TOPIC,
+          destinationIdentities: [alvo.identidade],
+        });
+      } catch {
+        // sem problema: desvincular vale mesmo se o plugin não ouvir
+      }
+    }
     try {
       await fetch(ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ acao: 'desparear', token: sessionToken, plugin: plugin.id }),
+        body: JSON.stringify({ acao: 'desparear', token: sessionToken, plugin: alvo.id }),
       });
     } finally {
-      setPlugin(null);
+      setPlugins((lista) => lista.filter((p) => p.id !== alvo.id));
+      setAtivoId(null);
+      setChamando(false);
+      setSemResposta(false);
     }
-  }, [plugin, sessionToken]);
+  }, [plugin, sessionToken, room, participante]);
+
+  /** Escolhe qual plugin o card controla (quando há mais de um). */
+  const selecionar = useCallback((id: string) => {
+    setAtivoId(id);
+    setChamando(false);
+    setSemResposta(false);
+  }, []);
 
   const enviar = useCallback(
     async (comando: PluginCommand) => {
@@ -281,6 +322,8 @@ export function usePluginAudio(room: Room | null, sessionToken: string | null) {
   return {
     fase,
     plugin,
+    plugins,
+    selecionar,
     estado,
     aviso,
     pendente,

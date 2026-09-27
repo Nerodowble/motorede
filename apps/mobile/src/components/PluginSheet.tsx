@@ -60,24 +60,6 @@ export const PluginSheet: React.FC<PluginSheetProps> = ({
       },
     ]);
 
-  const desvincular = () =>
-    Alert.alert(
-      'Desvincular?',
-      `${nome} some deste comboio. Para voltar, alguém digita o código de novo.`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Desvincular',
-          style: 'destructive',
-          onPress: () => {
-            void pluginAudio.enviar({ tipo: 'sair' });
-            void pluginAudio.desparear();
-            aoFechar();
-          },
-        },
-      ]
-    );
-
   const semNada = (e?.listas.length ?? 0) === 0;
 
   return (
@@ -182,11 +164,6 @@ export const PluginSheet: React.FC<PluginSheetProps> = ({
             )}
           </View>
 
-          {podeDispensar && (
-            <Pressable onPress={desvincular} hitSlop={8} style={{ alignSelf: 'center' }}>
-              <Text style={styles.ajuda}>Desvincular {nome} deste comboio</Text>
-            </Pressable>
-          )}
         </View>
       </View>
     </Modal>
