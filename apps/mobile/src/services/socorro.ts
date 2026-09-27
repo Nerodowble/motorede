@@ -5,6 +5,7 @@ import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import { coarsenLocation, type GeoPoint } from '@motorede/shared';
 import { API_BASE } from '../config';
+import { COLORS } from '../theme';
 
 /**
  * A ponte entre o app e a rede de socorro.
@@ -93,7 +94,10 @@ export async function prepararCanais(): Promise<void> {
     importance: Notifications.AndroidImportance.MAX,
     sound: 'default',
     vibrationPattern: [0, 400, 200, 400],
-    lightColor: '#f59e0b',
+    // Vermelho de emergência no LED. Obs.: o Android guarda o canal na
+    // primeira criação; quem já tem o app instalado mantém a cor antiga até
+    // reinstalar.
+    lightColor: COLORS.sos,
     lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
     bypassDnd: true,
   });

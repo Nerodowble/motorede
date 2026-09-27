@@ -1,7 +1,11 @@
 import React, { useMemo, useState } from 'react';
-import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import type { PluginAudio } from '../hooks/usePluginAudio';
-import { COLORS } from '../theme';
+import { ALVO, COLORS, ESPACO } from '../theme';
+import { Folha } from './ui/Folha';
+import { Botao } from './ui/Botao';
+import { Ajuda, Campo, EstadoVazio, Rotulo, estilosBase } from './ui/Cartao';
 
 /**
  * Folha do plugin: escolher lista, filtrar, embaralhar e dispensar.
@@ -63,155 +67,127 @@ export const PluginSheet: React.FC<PluginSheetProps> = ({
   const semNada = (e?.listas.length ?? 0) === 0;
 
   return (
-    <Modal visible={visivel} transparent animationType="slide" onRequestClose={aoFechar}>
-      <View style={styles.fundo}>
-        <View style={styles.folha}>
-          <View style={styles.cabecalho}>
-            <Text style={styles.titulo}>{nome}</Text>
-            <Pressable onPress={aoFechar} hitSlop={14}>
-              <Text style={styles.fechar}>Fechar</Text>
-            </Pressable>
-          </View>
+    <Folha visivel={visivel} aoFechar={aoFechar} titulo={nome}>
+      <View>
+        <Campo
+          value={busca}
+          onChangeText={setBusca}
+          placeholder={`Buscar em ${nome}`}
+          style={styles.busca}
+        />
+        <Ionicons name="search" size={20} color={COLORS.inkFaint} style={styles.lupa} />
+      </View>
 
-          <TextInput
-            value={busca}
-            onChangeText={setBusca}
-            placeholder={`Buscar em ${nome}`}
-            placeholderTextColor={COLORS.faint}
-            style={styles.input}
-          />
-
-          <ScrollView style={{ flexGrow: 0 }} contentContainerStyle={{ gap: 4 }}>
-            {semNada ? (
-              <Text style={styles.ajuda}>
-                {nome} ainda não publicou nenhuma lista.
-              </Text>
-            ) : (
-              <>
-                <Text style={styles.rotulo}>LISTAS</Text>
-                {listas.map((p) => (
-                  <Pressable
-                    key={p.nome}
-                    onPress={() => void pluginAudio.enviar({ tipo: 'tocar', lista: p.nome })}
-                    style={styles.linha}
-                  >
-                    <Text
-                      style={[styles.linhaTitulo, p.nome === e?.lista && styles.atual]}
-                      numberOfLines={1}
-                    >
+      <ScrollView style={{ flexGrow: 0 }} contentContainerStyle={{ gap: ESPACO.xs }}>
+        {semNada ? (
+          <EstadoVazio icone="albums-outline" texto={`${nome} ainda não publicou nenhuma lista.`} />
+        ) : (
+          <>
+            <Rotulo icone="albums-outline">Listas</Rotulo>
+            {listas.map((p) => {
+              const atual = p.nome === e?.lista;
+              return (
+                <Pressable
+                  key={p.nome}
+                  onPress={() => void pluginAudio.enviar({ tipo: 'tocar', lista: p.nome })}
+                  accessibilityRole="button"
+                  style={({ pressed }) => [styles.linha, pressed && styles.pressionado]}
+                >
+                  <Ionicons
+                    name={atual ? 'disc' : 'disc-outline'}
+                    size={22}
+                    color={atual ? COLORS.brand : COLORS.inkMuted}
+                  />
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.linhaTitulo, atual && styles.atual]} numberOfLines={1}>
                       {p.nome}
                     </Text>
                     <Text style={styles.linhaSub}>{p.itens} itens</Text>
-                  </Pressable>
-                ))}
+                  </View>
+                </Pressable>
+              );
+            })}
 
-                {e?.lista && itens.length > 0 && (
-                  <>
-                    <Text style={[styles.rotulo, { marginTop: 10 }]}>NESTA LISTA</Text>
-                    {itens.map((f) => (
-                      <Pressable
-                        key={f.indice}
-                        onPress={() =>
-                          void pluginAudio.enviar({
-                            tipo: 'tocar',
-                            lista: e.lista!,
-                            item: f.indice,
-                          })
-                        }
-                        style={styles.linha}
+            {e?.lista && itens.length > 0 && (
+              <>
+                <View style={{ marginTop: ESPACO.md }}>
+                  <Rotulo icone="list-outline">Nesta lista</Rotulo>
+                </View>
+                {itens.map((f) => {
+                  const atual = f.indice === e.indice;
+                  return (
+                    <Pressable
+                      key={f.indice}
+                      onPress={() =>
+                        void pluginAudio.enviar({
+                          tipo: 'tocar',
+                          lista: e.lista!,
+                          item: f.indice,
+                        })
+                      }
+                      accessibilityRole="button"
+                      style={({ pressed }) => [styles.linha, pressed && styles.pressionado]}
+                    >
+                      {/* O item atual leva o ícone de tocando e a cor da marca, em vez
+                          do "▶" em texto de antes. */}
+                      <Ionicons
+                        name={atual ? 'play' : 'musical-note-outline'}
+                        size={20}
+                        color={atual ? COLORS.brand : COLORS.inkFaint}
+                      />
+                      <Text
+                        style={[styles.linhaTitulo, { flex: 1 }, atual && styles.atual]}
+                        numberOfLines={1}
                       >
-                        <Text
-                          style={[styles.linhaTitulo, f.indice === e.indice && styles.atual]}
-                          numberOfLines={1}
-                        >
-                          {f.indice === e.indice ? '▶  ' : ''}
-                          {f.titulo}
-                        </Text>
-                      </Pressable>
-                    ))}
-                  </>
-                )}
-
-                {termo && listas.length === 0 && itens.length === 0 && (
-                  <Text style={styles.ajuda}>
-                    Nada com “{busca.trim()}” em {nome}.
-                  </Text>
-                )}
+                        {f.titulo}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
               </>
             )}
-          </ScrollView>
 
-          <Text style={styles.ajuda}>
-            O volume do plugin vale só para este aparelho. Silenciar só para mim não afeta os
-            outros.
-          </Text>
-
-          <View style={styles.rodape}>
-            <Pressable
-              onPress={() => void pluginAudio.enviar({ tipo: 'embaralhar', ligado: !e?.embaralhar })}
-              style={styles.botao}
-            >
-              <Text style={styles.botaoTexto}>
-                Embaralhar: {e?.embaralhar ? 'ligado' : 'desligado'}
-              </Text>
-            </Pressable>
-            {podeDispensar && (
-              <Pressable onPress={dispensar} style={styles.botao} hitSlop={8}>
-                <Text style={[styles.botaoTexto, { color: COLORS.danger }]}>
-                  Dispensar plugin
-                </Text>
-              </Pressable>
+            {termo && listas.length === 0 && itens.length === 0 && (
+              <EstadoVazio icone="search-outline" texto={`Nada com “${busca.trim()}” em ${nome}.`} />
             )}
-          </View>
+          </>
+        )}
+      </ScrollView>
 
-        </View>
+      <Ajuda>
+        O volume do plugin vale só para este aparelho. Silenciar só para mim não afeta os
+        outros.
+      </Ajuda>
+
+      <View style={estilosBase.linhaBotoes}>
+        <Botao
+          rotulo={`Embaralhar: ${e?.embaralhar ? 'ligado' : 'desligado'}`}
+          icone="shuffle"
+          flex
+          onPress={() => void pluginAudio.enviar({ tipo: 'embaralhar', ligado: !e?.embaralhar })}
+        />
+        {podeDispensar && (
+          <Botao rotulo="Dispensar plugin" icone="log-out-outline" variante="perigo" flex onPress={dispensar} />
+        )}
       </View>
-    </Modal>
+    </Folha>
   );
 };
 
 const styles = StyleSheet.create({
-  fundo: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.8)' },
-  folha: {
-    maxHeight: '92%',
-    backgroundColor: COLORS.surface,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-    padding: 20,
-    gap: 12,
-  },
-  cabecalho: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  titulo: { color: COLORS.text, fontSize: 15, fontWeight: '800' },
-  fechar: { color: COLORS.muted, fontSize: 12 },
-  input: {
-    backgroundColor: COLORS.background,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    color: COLORS.text,
-    fontSize: 14,
-  },
-  rotulo: { color: COLORS.muted, fontSize: 10, fontWeight: '800', letterSpacing: 1 },
+  busca: { paddingLeft: 44 },
+  lupa: { position: 'absolute', left: ESPACO.md + 2, top: 16 },
   linha: {
-    minHeight: 56,
-    justifyContent: 'center',
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-  },
-  linhaTitulo: { color: COLORS.text, fontSize: 14, fontWeight: '600' },
-  linhaSub: { color: COLORS.muted, fontSize: 12 },
-  atual: { color: COLORS.text, fontWeight: '800', textDecorationLine: 'underline' },
-  ajuda: { color: COLORS.muted, fontSize: 12, lineHeight: 17 },
-  rodape: { flexDirection: 'row', gap: 12 },
-  botao: {
-    flex: 1,
-    minHeight: 48,
-    backgroundColor: COLORS.surfaceAlt,
-    borderRadius: 12,
+    minHeight: ALVO.botao,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: ESPACO.md,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.line,
+    paddingVertical: ESPACO.xs,
   },
-  botaoTexto: { color: COLORS.text, fontWeight: '700', fontSize: 13 },
+  pressionado: { opacity: 0.7 },
+  linhaTitulo: { color: COLORS.ink, fontSize: 16, fontWeight: '600' },
+  linhaSub: { color: COLORS.inkMuted, fontSize: 13 },
+  atual: { fontWeight: '800' },
 });

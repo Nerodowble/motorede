@@ -3,13 +3,12 @@ import {
   Image,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   createLocalProfile,
@@ -17,7 +16,9 @@ import {
   type ProfileInput,
   type RiderProfile,
 } from '@motorede/shared';
-import { COLORS } from '../theme';
+import { COLORS, ESPACO, TIPO } from '../theme';
+import { Botao } from '../components/ui/Botao';
+import { Ajuda, Campo, Cartao, estilosBase } from '../components/ui/Cartao';
 
 /**
  * Cadastro de entrada.
@@ -65,25 +66,24 @@ export const ProfileSetupScreen: React.FC<ProfileSetupScreenProps> = ({
     opcional = false,
     teclado: 'default' | 'email-address' | 'phone-pad' = 'default'
   ) => (
-    <View style={{ gap: 6 }}>
+    <View style={{ gap: ESPACO.sm }}>
       <Text style={styles.rotulo}>
         {rotulo}
         {opcional && <Text style={styles.opcional}> (opcional)</Text>}
       </Text>
-      <TextInput
+      <Campo
         value={dados[chave]}
         onChangeText={(t) => {
           setDados((d) => ({ ...d, [chave]: t }));
           setErros((e) => ({ ...e, [chave]: undefined }));
         }}
         placeholder={placeholder}
-        placeholderTextColor={COLORS.faint}
         keyboardType={teclado}
         autoCapitalize={chave === 'name' ? 'words' : 'none'}
         autoCorrect={false}
-        style={[styles.input, erros[chave] && styles.inputErro]}
+        erro={!!erros[chave]}
       />
-      {erros[chave] && <Text style={styles.erro}>{erros[chave]}</Text>}
+      {erros[chave] && <Text style={estilosBase.erro}>{erros[chave]}</Text>}
     </View>
   );
 
@@ -104,35 +104,47 @@ export const ProfileSetupScreen: React.FC<ProfileSetupScreenProps> = ({
             style={styles.logo}
             accessibilityLabel="MotoRede"
           />
-          <Text style={styles.subtitulo}>Como você aparece no comboio</Text>
+          <Text style={styles.titulo}>Como você aparece no comboio</Text>
+          <Text style={styles.subtitulo}>
+            Voz entre motos, socorro de quem está perto e a manutenção em dia.
+          </Text>
 
-          <View style={styles.card}>
+          <Cartao style={styles.card}>
             {campo('name', 'Nome', 'Como te chamam na estrada')}
             {campo('phone', 'Telefone', '(11) 98765-4321', true, 'phone-pad')}
-            <Text style={styles.ajuda}>
+            <Ajuda>
               O telefone fica só neste aparelho. Serve para um amigo que já tem seu
               número te encontrar entre os comboios de um evento.
-            </Text>
+            </Ajuda>
 
             {campo('email', 'E-mail', 'voce@exemplo.com', true, 'email-address')}
 
-            <Pressable onPress={salvar} style={styles.botaoPrincipal}>
-              <Text style={styles.botaoPrincipalTexto}>Começar</Text>
-            </Pressable>
-          </View>
+            <Botao
+              rotulo="Começar"
+              icone="arrow-forward"
+              variante="action"
+              altura={60}
+              onPress={salvar}
+            />
+          </Cartao>
 
           {googleDisponivel && (
-            <View style={styles.card}>
-              <Text style={styles.rotulo}>Ou entre com o Google</Text>
-              <Text style={styles.ajuda}>
+            <Cartao style={styles.card}>
+              <View style={styles.linhaGoogle}>
+                <Ionicons name="shield-checkmark-outline" size={18} color={COLORS.inkMuted} />
+                <Text style={TIPO.rotulo}>Ou entre com o Google</Text>
+              </View>
+              <Ajuda>
                 Com o Google sua identidade é verificada pelo servidor — necessário
                 para organizar eventos e comboios.
-              </Text>
-              <Pressable onPress={onEntrarComGoogle} style={styles.botaoSecundario}>
-                <Text style={styles.botaoSecundarioTexto}>Continuar com Google</Text>
-              </Pressable>
-              {erroGoogle && <Text style={styles.erro}>{erroGoogle}</Text>}
-            </View>
+              </Ajuda>
+              <Botao
+                rotulo="Continuar com Google"
+                icone="logo-google"
+                onPress={() => onEntrarComGoogle?.()}
+              />
+              {erroGoogle && <Text style={estilosBase.erro}>{erroGoogle}</Text>}
+            </Cartao>
           )}
 
           <Text style={styles.rodape}>
@@ -146,60 +158,25 @@ export const ProfileSetupScreen: React.FC<ProfileSetupScreenProps> = ({
 };
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: COLORS.background },
-  conteudo: { padding: 20, gap: 14, justifyContent: 'center', flexGrow: 1 },
-  titulo: { color: COLORS.text, fontSize: 28, fontWeight: '800', textAlign: 'center' },
-  logo: { width: 150, height: 150, alignSelf: 'center' },
+  screen: { flex: 1, backgroundColor: COLORS.canvas },
+  conteudo: { padding: ESPACO.xl - 4, gap: ESPACO.lg, justifyContent: 'center', flexGrow: 1 },
+  logo: { width: 168, height: 168, alignSelf: 'center' },
+  titulo: { ...TIPO.titulo, textAlign: 'center', marginTop: -ESPACO.sm },
   subtitulo: {
-    color: COLORS.muted,
-    fontSize: 13,
+    ...TIPO.apoio,
     textAlign: 'center',
-    marginTop: -10,
-    marginBottom: 6,
+    marginBottom: ESPACO.sm,
+    paddingHorizontal: ESPACO.lg,
   },
-  card: {
-    backgroundColor: COLORS.surface,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    padding: 18,
-    gap: 12,
-  },
-  rotulo: { color: COLORS.muted, fontSize: 12, fontWeight: '700' },
-  opcional: { color: COLORS.faint, fontWeight: '400' },
-  input: {
-    backgroundColor: COLORS.background,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    color: COLORS.text,
-    fontSize: 15,
-  },
-  inputErro: { borderColor: COLORS.danger },
-  erro: { color: COLORS.danger, fontSize: 11 },
-  ajuda: { color: COLORS.faint, fontSize: 11, lineHeight: 16, marginTop: -4 },
-  botaoPrincipal: {
-    backgroundColor: COLORS.accent,
-    borderRadius: 12,
-    paddingVertical: 15,
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  botaoPrincipalTexto: { color: COLORS.background, fontWeight: '800', fontSize: 15 },
-  botaoSecundario: {
-    backgroundColor: COLORS.surfaceAlt,
-    borderRadius: 12,
-    paddingVertical: 13,
-    alignItems: 'center',
-  },
-  botaoSecundarioTexto: { color: COLORS.text, fontWeight: '700', fontSize: 13 },
+  card: { padding: ESPACO.xl - 4, gap: ESPACO.lg },
+  rotulo: { color: COLORS.ink, fontSize: 14, fontWeight: '700' },
+  opcional: { color: COLORS.inkFaint, fontWeight: '400' },
+  linhaGoogle: { flexDirection: 'row', alignItems: 'center', gap: ESPACO.sm },
   rodape: {
-    color: COLORS.faint,
-    fontSize: 10,
+    color: COLORS.inkFaint,
+    fontSize: 12,
     textAlign: 'center',
-    lineHeight: 15,
-    paddingHorizontal: 10,
+    lineHeight: 18,
+    paddingHorizontal: ESPACO.md,
   },
 });

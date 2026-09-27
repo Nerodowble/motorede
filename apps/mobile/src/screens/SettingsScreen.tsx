@@ -1,16 +1,11 @@
 import React, { useCallback, useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Updates from 'expo-updates';
 import type { RiderProfile } from '@motorede/shared';
-import { COLORS } from '../theme';
+import { COLORS, ESPACO, TIPO } from '../theme';
+import { Botao, type NomeIcone } from '../components/ui/Botao';
+import { Ajuda, Cartao, TituloCartao, estilosBase } from '../components/ui/Cartao';
 
 /**
  * Ajustes.
@@ -90,63 +85,77 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ profile, onSair 
   }, []);
 
   const ocupado = estado.fase === 'procurando' || estado.fase === 'baixando';
+  const verificado = profile.source === 'google';
 
   return (
-    <ScrollView contentContainerStyle={styles.conteudo}>
-      <View style={styles.card}>
-        <Text style={styles.tituloCard}>Você</Text>
-        <Linha rotulo="Nome" valor={profile.name} />
-        {!!profile.email && <Linha rotulo="E-mail" valor={profile.email} />}
-        {!!profile.phone && <Linha rotulo="Telefone" valor={profile.phone} />}
-        <Linha
-          rotulo="Identidade"
-          valor={profile.source === 'google' ? 'Verificada pelo Google' : 'Perfil local'}
-        />
+    <ScrollView contentContainerStyle={estilosBase.conteudo}>
+      <Cartao>
+        <View style={styles.perfil}>
+          <View style={styles.avatar}>
+            <Text style={styles.avatarTexto}>{profile.name.charAt(0).toUpperCase()}</Text>
+          </View>
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text style={TIPO.tituloCard} numberOfLines={1}>
+              {profile.name}
+            </Text>
+            <View style={styles.identidade}>
+              <Ionicons
+                name={verificado ? 'shield-checkmark' : 'person-outline'}
+                size={14}
+                color={COLORS.inkMuted}
+              />
+              <Text style={TIPO.apoio}>
+                {verificado ? 'Verificada pelo Google' : 'Perfil local'}
+              </Text>
+            </View>
+          </View>
+        </View>
+        {!!profile.email && <Linha icone="mail-outline" rotulo="E-mail" valor={profile.email} />}
+        {!!profile.phone && <Linha icone="call-outline" rotulo="Telefone" valor={profile.phone} />}
         {profile.source === 'local' && (
-          <Text style={styles.ajuda}>
+          <Ajuda>
             O perfil local serve para os outros te reconhecerem no comboio. Ele não
             prova quem você é — isso só o Google faz, e será exigido para organizar
             eventos.
-          </Text>
+          </Ajuda>
         )}
-      </View>
+      </Cartao>
 
-      <View style={styles.card}>
-        <Text style={styles.tituloCard}>Atualização</Text>
+      <Cartao>
+        <TituloCartao icone="cloud-download-outline">Atualização</TituloCartao>
 
-        <Pressable
-          onPress={procurarAtualizacao}
-          disabled={ocupado}
-          style={[styles.botao, ocupado && styles.botaoOcupado]}
-        >
-          {ocupado ? (
-            <ActivityIndicator color={COLORS.background} />
-          ) : (
-            <Text style={styles.botaoTexto}>Procurar atualizações</Text>
-          )}
-        </Pressable>
+        <Botao
+          rotulo="Procurar atualizações"
+          icone="refresh"
+          variante="action"
+          carregando={ocupado}
+          onPress={() => void procurarAtualizacao()}
+        />
 
         {estado.fase === 'procurando' && <Text style={styles.status}>Procurando…</Text>}
         {estado.fase === 'baixando' && (
           <Text style={styles.status}>Baixando a nova versão…</Text>
         )}
         {estado.fase === 'em-dia' && (
-          <Text style={[styles.status, styles.statusBom]}>
-            Você já está na versão mais recente.
-          </Text>
+          <View style={styles.linhaStatus}>
+            <Ionicons name="checkmark-circle" size={18} color={COLORS.ink} />
+            <Text style={[styles.status, styles.statusBom]}>
+              Você já está na versão mais recente.
+            </Text>
+          </View>
         )}
         {estado.fase === 'erro' && (
           <Text style={[styles.status, styles.statusRuim]}>{estado.mensagem}</Text>
         )}
 
-        <Text style={styles.ajuda}>
+        <Ajuda>
           Isso troca só o que é JavaScript. Mudança em biblioteca ou em permissão do
           aparelho continua exigindo um APK novo.
-        </Text>
-      </View>
+        </Ajuda>
+      </Cartao>
 
-      <View style={styles.card}>
-        <Text style={styles.tituloCard}>Versão</Text>
+      <Cartao>
+        <TituloCartao icone="information-circle-outline">Versão</TituloCartao>
         <Linha rotulo="App" valor={Updates.runtimeVersion ?? '—'} />
         <Linha rotulo="Canal" valor={Updates.channel ?? 'nenhum (build local)'} />
         <Linha
@@ -154,21 +163,26 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ profile, onSair 
           valor={Updates.isEmbeddedLaunch ? 'o que veio no APK' : 'baixado depois'}
         />
         <Linha rotulo="Identificador" valor={Updates.updateId ?? '—'} />
-        <Text style={styles.ajuda}>
+        <Ajuda>
           O identificador muda a cada atualização aplicada. Se ele continuar igual
           depois de reiniciar, a atualização não entrou.
-        </Text>
-      </View>
+        </Ajuda>
+      </Cartao>
 
-      <Pressable onPress={onSair} style={styles.botaoSair}>
-        <Text style={styles.botaoSairTexto}>Sair da conta</Text>
-      </Pressable>
+      {/* Sair mora aqui, e não mais no cabeçalho: apaga o perfil deste
+          aparelho, então fica longe do toque acidental. */}
+      <Botao rotulo="Sair da conta" icone="log-out-outline" variante="perigo" onPress={onSair} />
     </ScrollView>
   );
 };
 
-const Linha: React.FC<{ rotulo: string; valor: string }> = ({ rotulo, valor }) => (
+const Linha: React.FC<{ rotulo: string; valor: string; icone?: NomeIcone }> = ({
+  rotulo,
+  valor,
+  icone,
+}) => (
   <View style={styles.linha}>
+    {icone && <Ionicons name={icone} size={16} color={COLORS.inkFaint} />}
     <Text style={styles.linhaRotulo}>{rotulo}</Text>
     <Text style={styles.linhaValor} numberOfLines={1} ellipsizeMode="middle">
       {valor}
@@ -177,38 +191,31 @@ const Linha: React.FC<{ rotulo: string; valor: string }> = ({ rotulo, valor }) =
 );
 
 const styles = StyleSheet.create({
-  conteudo: { padding: 16, gap: 12, paddingBottom: 32 },
-  card: {
-    backgroundColor: COLORS.surface,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    padding: 16,
-    gap: 8,
-  },
-  tituloCard: { color: COLORS.text, fontSize: 15, fontWeight: '800', marginBottom: 2 },
-  linha: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  linhaRotulo: { color: COLORS.faint, fontSize: 12, width: 104 },
-  linhaValor: { color: COLORS.text, fontSize: 12, flex: 1, textAlign: 'right' },
-  ajuda: { color: COLORS.faint, fontSize: 11, lineHeight: 16, marginTop: 4 },
-  status: { fontSize: 12, marginTop: 8, color: COLORS.muted, lineHeight: 17 },
-  statusBom: { color: COLORS.success },
-  statusRuim: { color: COLORS.danger },
-  botao: {
-    backgroundColor: COLORS.accent,
-    borderRadius: 12,
-    paddingVertical: 13,
+  perfil: { flexDirection: 'row', alignItems: 'center', gap: ESPACO.md },
+  avatar: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: COLORS.elevated,
+    borderWidth: 2,
+    borderColor: COLORS.brand,
     alignItems: 'center',
-    marginTop: 4,
+    justifyContent: 'center',
   },
-  botaoOcupado: { opacity: 0.7 },
-  botaoTexto: { color: COLORS.background, fontSize: 13, fontWeight: '800' },
-  botaoSair: {
-    borderRadius: 12,
-    paddingVertical: 13,
+  avatarTexto: { color: COLORS.ink, fontSize: 22, fontWeight: '800' },
+  identidade: { flexDirection: 'row', alignItems: 'center', gap: ESPACO.xs },
+  linha: {
+    flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    gap: ESPACO.sm,
+    minHeight: 44,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.line,
   },
-  botaoSairTexto: { color: COLORS.danger, fontSize: 13, fontWeight: '700' },
+  linhaRotulo: { color: COLORS.inkMuted, fontSize: 14, width: 110 },
+  linhaValor: { color: COLORS.ink, fontSize: 14, flex: 1, textAlign: 'right' },
+  linhaStatus: { flexDirection: 'row', alignItems: 'center', gap: ESPACO.sm },
+  status: { fontSize: 14, color: COLORS.inkMuted, lineHeight: 20 },
+  statusBom: { color: COLORS.ink, flex: 1 },
+  statusRuim: { color: COLORS.dangerText },
 });

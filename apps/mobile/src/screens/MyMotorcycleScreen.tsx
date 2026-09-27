@@ -1,13 +1,6 @@
 import React, { useState } from 'react';
-import {
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import {
   MAINTENANCE_LABELS,
   describeIntervalSource,
@@ -17,7 +10,10 @@ import {
   type MaintenanceRecord,
   type Motorcycle,
 } from '@motorede/shared';
-import { COLORS } from '../theme';
+import { Botao, BotaoIcone, type NomeIcone } from '../components/ui/Botao';
+import { Ajuda, Campo, Cartao, Rotulo, TituloCartao, estilosBase } from '../components/ui/Cartao';
+import { Folha } from '../components/ui/Folha';
+import { COLORS, ESPACO, FONTE_CONDENSADA, RAIO, TIPO } from '../theme';
 
 /**
  * Minha moto — a mesma tela da web, adaptada ao app.
@@ -39,11 +35,24 @@ interface MyMotorcycleScreenProps {
   onSaveMotorcycle: (moto: Motorcycle) => void;
 }
 
+/*
+ * Status sem âmbar e sem verde: essas duas cores já querem dizer "falando" e
+ * "microfone aberto". O que distingue o status é ícone + palavra + cor da
+ * barra, em escala de atenção: vencido (vermelho claro), se aproximando
+ * (branco, cheio), em dia (cinza, calmo).
+ */
 const CORES_STATUS: Record<MaintenanceItemStatus['status'], string> = {
-  vencido: COLORS.danger,
-  proximo: COLORS.accent,
-  ok: COLORS.success,
-  'sem-registro': COLORS.faint,
+  vencido: COLORS.dangerText,
+  proximo: COLORS.ink,
+  ok: COLORS.inkFaint,
+  'sem-registro': COLORS.inkFaint,
+};
+
+const ICONES_STATUS: Record<MaintenanceItemStatus['status'], NomeIcone> = {
+  vencido: 'alert-circle',
+  proximo: 'time',
+  ok: 'checkmark-circle',
+  'sem-registro': 'ellipse-outline',
 };
 
 const ROTULOS_STATUS: Record<MaintenanceItemStatus['status'], string> = {
@@ -90,47 +99,38 @@ export const MyMotorcycleScreen: React.FC<MyMotorcycleScreenProps> = ({
   // problema que esta tela tinha antes.
   if (!motorcycle) {
     return (
-      <ScrollView contentContainerStyle={styles.conteudo}>
-        <View style={styles.card}>
-          <Text style={styles.titulo}>Você ainda não cadastrou a moto</Text>
-          <Text style={styles.ajuda}>
-            Cadastre marca, modelo e quilometragem para começar a acompanhar as trocas.
+      <ScrollView contentContainerStyle={estilosBase.conteudo} keyboardShouldPersistTaps="handled">
+        <Cartao style={styles.convite}>
+          <View style={styles.conviteIcone}>
+            <Ionicons name="speedometer" size={36} color={COLORS.ink} />
+          </View>
+          <Text style={[TIPO.titulo, styles.centro]}>Cadastre sua moto</Text>
+          <Text style={[TIPO.apoio, styles.centro]}>
+            Marca, modelo e quilometragem para começar a acompanhar as trocas.
           </Text>
 
           {cadastrando ? (
-            <View style={{ gap: 10 }}>
-              <TextInput
-                value={marca}
-                onChangeText={setMarca}
-                placeholder="Marca (ex: Honda)"
-                placeholderTextColor={COLORS.faint}
-                style={styles.input}
-              />
-              <TextInput
-                value={modelo}
-                onChangeText={setModelo}
-                placeholder="Modelo (ex: CB 500X)"
-                placeholderTextColor={COLORS.faint}
-                style={styles.input}
-              />
-              <TextInput
+            <View style={styles.formulario}>
+              <Campo value={marca} onChangeText={setMarca} placeholder="Marca (ex: Honda)" />
+              <Campo value={modelo} onChangeText={setModelo} placeholder="Modelo (ex: CB 500X)" />
+              <Campo
                 value={kmInicial}
                 onChangeText={setKmInicial}
                 placeholder="Quilometragem atual"
-                placeholderTextColor={COLORS.faint}
                 keyboardType="number-pad"
-                style={styles.input}
               />
-              <Pressable onPress={salvarCadastro} style={styles.botaoPrincipal}>
-                <Text style={styles.botaoPrincipalTexto}>Salvar</Text>
-              </Pressable>
+              <Botao rotulo="Salvar" variante="action" onPress={salvarCadastro} />
             </View>
           ) : (
-            <Pressable onPress={() => setCadastrando(true)} style={styles.botaoPrincipal}>
-              <Text style={styles.botaoPrincipalTexto}>Cadastrar minha moto</Text>
-            </Pressable>
+            <Botao
+              rotulo="Cadastrar minha moto"
+              icone="add"
+              variante="action"
+              style={styles.largura}
+              onPress={() => setCadastrando(true)}
+            />
           )}
-        </View>
+        </Cartao>
       </ScrollView>
     );
   }
@@ -168,44 +168,53 @@ export const MyMotorcycleScreen: React.FC<MyMotorcycleScreenProps> = ({
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.conteudo}>
-      <View style={styles.card}>
-        <Text style={styles.nomeMoto}>
+    <ScrollView contentContainerStyle={estilosBase.conteudo} keyboardShouldPersistTaps="handled">
+      {/* Painel da moto: nome em cima, o odômetro como número grande. */}
+      <Cartao>
+        <TituloCartao icone="speedometer">
           {motorcycle.brand} {motorcycle.model}
-        </Text>
+        </TituloCartao>
         {editandoKm ? (
-          <View style={styles.linhaKm}>
-            <TextInput
+          <View style={styles.linha}>
+            <Campo
               value={kmMoto}
               onChangeText={setKmMoto}
               keyboardType="number-pad"
               autoFocus
-              style={[styles.input, { flex: 1 }]}
+              style={[styles.campoKm, { flex: 1 }]}
             />
-            <Pressable
+            <Botao
+              rotulo="Salvar"
+              variante="action"
+              compacto
+              altura={52}
               onPress={() => {
                 const v = parseInt(kmMoto, 10);
                 if (!isNaN(v) && v > 0) onUpdateKm(v);
                 setEditandoKm(false);
               }}
-              style={styles.botaoPequeno}
-            >
-              <Text style={styles.botaoPequenoTexto}>Salvar</Text>
-            </Pressable>
+            />
           </View>
         ) : (
-          <Pressable
-            onPress={() => {
-              setKmMoto(motorcycle.currentKm.toString());
-              setEditandoKm(true);
-            }}
-          >
-            <Text style={styles.km}>
-              {motorcycle.currentKm.toLocaleString('pt-BR')} km · tocar para editar
-            </Text>
-          </Pressable>
+          <View style={styles.linha}>
+            <View style={{ flex: 1 }}>
+              <Rotulo>Odômetro</Rotulo>
+              <Text style={styles.km}>
+                {motorcycle.currentKm.toLocaleString('pt-BR')}
+                <Text style={styles.kmUnidade}> km</Text>
+              </Text>
+            </View>
+            <BotaoIcone
+              icone="pencil"
+              rotulo="Editar quilometragem"
+              onPress={() => {
+                setKmMoto(motorcycle.currentKm.toString());
+                setEditandoKm(true);
+              }}
+            />
+          </View>
         )}
-      </View>
+      </Cartao>
 
       {sortByUrgency(maintenance).map((item) => {
         const cor = CORES_STATUS[item.status];
@@ -216,35 +225,47 @@ export const MyMotorcycleScreen: React.FC<MyMotorcycleScreenProps> = ({
             : 0;
 
         return (
-          <View key={item.category} style={styles.card}>
-            <View style={styles.cabecalhoItem}>
-              <Text style={styles.rotuloItem}>{item.label.toUpperCase()}</Text>
-              {ROTULOS_STATUS[item.status] !== '' && (
-                <Text style={[styles.statusItem, { color: cor }]}>
-                  {ROTULOS_STATUS[item.status]}
-                </Text>
-              )}
-            </View>
+          <Cartao
+            key={item.category}
+            destaque={item.status === 'vencido' ? COLORS.dangerText : undefined}
+          >
+            <Rotulo
+              direita={
+                ROTULOS_STATUS[item.status] !== '' && (
+                  <View style={styles.status}>
+                    <Ionicons name={ICONES_STATUS[item.status]} size={16} color={cor} />
+                    <Text style={[styles.statusTexto, { color: cor }]}>
+                      {ROTULOS_STATUS[item.status]}
+                    </Text>
+                  </View>
+                )
+              }
+            >
+              {item.label.toUpperCase()}
+            </Rotulo>
 
             {semRegistro ? (
-              <Text style={styles.ajuda}>Sem registro ainda.</Text>
+              <Ajuda>Sem registro ainda.</Ajuda>
             ) : (
               <>
-                <View style={styles.trilha}>
-                  <View
-                    style={[styles.barra, { width: `${progresso}%`, backgroundColor: cor }]}
-                  />
-                </View>
-
                 {/* As duas metades da frase: o que passou e o que falta. */}
                 <Text style={styles.frase}>
                   rodou {item.kmSinceLast!.toLocaleString('pt-BR')} km
-                  <Text style={{ color: cor, fontWeight: '400' }}>
+                  <Text
+                    style={[
+                      styles.fraseResto,
+                      { color: item.status === 'ok' ? COLORS.inkMuted : cor },
+                    ]}
+                  >
                     {item.kmRemaining! > 0
                       ? ` · faltam ${item.kmRemaining!.toLocaleString('pt-BR')}`
                       : ` · ${Math.abs(item.kmRemaining!).toLocaleString('pt-BR')} km além`}
                   </Text>
                 </Text>
+
+                <View style={styles.trilha}>
+                  <View style={[styles.barra, { width: `${progresso}%`, backgroundColor: cor }]} />
+                </View>
 
                 <Text style={styles.detalhe}>
                   última: {item.last!.km.toLocaleString('pt-BR')} km ·{' '}
@@ -253,160 +274,107 @@ export const MyMotorcycleScreen: React.FC<MyMotorcycleScreenProps> = ({
                 </Text>
 
                 <Text style={styles.origem}>
-                  {describeIntervalSource(
-                    item.intervalSource!,
-                    item.intervalKm!,
-                    item.recordCount
-                  )}
+                  {describeIntervalSource(item.intervalSource!, item.intervalKm!, item.recordCount)}
                 </Text>
               </>
             )}
 
-            <Pressable
+            <Botao
+              rotulo={semRegistro ? 'Registrar primeira' : `Troquei: ${item.label.toLowerCase()}`}
+              icone="add"
+              compacto
               onPress={() => abrirRegistro(item.category)}
-              style={({ pressed }) => [styles.botaoSecundario, pressed && styles.pressionado]}
-            >
-              <Text style={styles.botaoSecundarioTexto}>
-                {semRegistro
-                  ? '+ Registrar primeira'
-                  : `+ Troquei: ${item.label.toLowerCase()}`}
-              </Text>
-            </Pressable>
-          </View>
+            />
+          </Cartao>
         );
       })}
 
       {records.length > 0 && (
-        <View style={styles.card}>
-          <Text style={styles.rotuloItem}>HISTÓRICO ({records.length})</Text>
+        <Cartao>
+          <Rotulo icone="time-outline">HISTÓRICO · {records.length}</Rotulo>
           {[...records]
             .sort((a, b) => b.km - a.km)
             .slice(0, 10)
             .map((r) => (
               <View key={r.id} style={styles.linhaHistorico}>
+                <View style={styles.pontoHistorico} />
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.detalhe}>{r.title}</Text>
+                  <Text style={styles.historicoTitulo}>{r.title}</Text>
                   <Text style={styles.origem}>
                     {new Date(r.date).toLocaleDateString('pt-BR')}
                     {r.product ? ` · ${r.product}` : ''}
                   </Text>
                 </View>
-                <Text style={styles.detalhe}>{r.km.toLocaleString('pt-BR')} km</Text>
+                <Text style={styles.historicoKm}>{r.km.toLocaleString('pt-BR')} km</Text>
               </View>
             ))}
-        </View>
+        </Cartao>
       )}
 
-      <Modal visible={registrando !== null} transparent animationType="slide">
-        <View style={styles.fundoModal}>
-          <View style={styles.modal}>
-            <Text style={styles.titulo}>
-              Troquei: {registrando ? MAINTENANCE_LABELS[registrando].toLowerCase() : ''}
-            </Text>
+      <Folha
+        visivel={registrando !== null}
+        aoFechar={() => setRegistrando(null)}
+        titulo={`Troquei: ${registrando ? MAINTENANCE_LABELS[registrando].toLowerCase() : ''}`}
+      >
+        <Rotulo>QUILOMETRAGEM NA TROCA</Rotulo>
+        <Campo value={km} onChangeText={setKm} keyboardType="number-pad" style={styles.campoKm} />
 
-            <Text style={styles.rotuloCampo}>Quilometragem na troca</Text>
-            <TextInput
-              value={km}
-              onChangeText={setKm}
-              keyboardType="number-pad"
-              style={styles.input}
-            />
+        <Rotulo>PRODUTO USADO (OPCIONAL)</Rotulo>
+        <Campo value={produto} onChangeText={setProduto} placeholder="ex: Motul 5100 10W40" />
 
-            <Text style={styles.rotuloCampo}>Produto usado (opcional)</Text>
-            <TextInput
-              value={produto}
-              onChangeText={setProduto}
-              placeholder="ex: Motul 5100 10W40"
-              placeholderTextColor={COLORS.faint}
-              style={styles.input}
-            />
-
-            <Pressable onPress={salvarRegistro} style={styles.botaoPrincipal}>
-              <Text style={styles.botaoPrincipalTexto}>Salvar</Text>
-            </Pressable>
-            <Pressable onPress={() => setRegistrando(null)} style={styles.botaoTexto}>
-              <Text style={styles.ajuda}>Cancelar</Text>
-            </Pressable>
-          </View>
-        </View>
-      </Modal>
+        <Botao rotulo="Salvar" variante="action" onPress={salvarRegistro} />
+        <Botao rotulo="Cancelar" variante="fantasma" onPress={() => setRegistrando(null)} />
+      </Folha>
     </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  conteudo: { padding: 16, gap: 12, paddingBottom: 28 },
-  card: {
-    backgroundColor: COLORS.surface,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    padding: 16,
-    gap: 8,
-  },
-  nomeMoto: { color: COLORS.text, fontSize: 16, fontWeight: '800' },
-  km: { color: COLORS.accent, fontSize: 13, fontFamily: 'monospace' },
-  linhaKm: { flexDirection: 'row', gap: 8, alignItems: 'center' },
-  cabecalhoItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  rotuloItem: { color: COLORS.muted, fontSize: 10, fontWeight: '800', letterSpacing: 1 },
-  statusItem: { fontSize: 10, fontWeight: '800' },
-  trilha: { height: 5, borderRadius: 3, backgroundColor: COLORS.surfaceAlt, overflow: 'hidden' },
-  barra: { height: '100%' },
-  frase: { color: COLORS.text, fontSize: 14, fontWeight: '700' },
-  detalhe: { color: COLORS.muted, fontSize: 11 },
-  origem: { color: COLORS.faint, fontSize: 10 },
-  ajuda: { color: COLORS.muted, fontSize: 11, lineHeight: 16 },
-  titulo: { color: COLORS.text, fontSize: 15, fontWeight: '800' },
-  rotuloCampo: { color: COLORS.muted, fontSize: 11, marginTop: 4 },
-  input: {
-    backgroundColor: COLORS.background,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    color: COLORS.text,
-    fontSize: 14,
-  },
-  botaoPrincipal: {
-    backgroundColor: COLORS.accent,
-    borderRadius: 12,
-    paddingVertical: 13,
+  convite: { alignItems: 'center', paddingVertical: ESPACO.xl, gap: ESPACO.lg },
+  conviteIcone: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: COLORS.elevated,
     alignItems: 'center',
-    marginTop: 4,
+    justifyContent: 'center',
   },
-  botaoPrincipalTexto: { color: COLORS.background, fontWeight: '800', fontSize: 14 },
-  botaoSecundario: {
-    backgroundColor: COLORS.surfaceAlt,
-    borderRadius: 12,
-    paddingVertical: 11,
-    alignItems: 'center',
-    marginTop: 4,
+  centro: { textAlign: 'center' },
+  formulario: { gap: ESPACO.md, alignSelf: 'stretch' },
+  largura: { alignSelf: 'stretch' },
+  linha: { flexDirection: 'row', gap: ESPACO.sm, alignItems: 'center' },
+  km: {
+    color: COLORS.ink,
+    fontSize: 40,
+    fontWeight: '800',
+    fontFamily: FONTE_CONDENSADA,
+    letterSpacing: 1,
+    marginTop: ESPACO.xs,
   },
-  botaoSecundarioTexto: { color: COLORS.text, fontWeight: '700', fontSize: 12 },
-  botaoPequeno: {
-    backgroundColor: COLORS.accent,
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+  kmUnidade: { color: COLORS.inkMuted, fontSize: 18, fontWeight: '700' },
+  campoKm: { fontSize: 20, fontWeight: '700' },
+  status: { flexDirection: 'row', alignItems: 'center', gap: ESPACO.xs },
+  statusTexto: { fontSize: 13, fontWeight: '800' },
+  trilha: {
+    height: 8,
+    borderRadius: RAIO.pill,
+    backgroundColor: COLORS.elevated,
+    overflow: 'hidden',
   },
-  botaoPequenoTexto: { color: COLORS.background, fontWeight: '800', fontSize: 12 },
-  botaoTexto: { alignItems: 'center', paddingVertical: 8 },
-  pressionado: { opacity: 0.7 },
+  barra: { height: '100%', borderRadius: RAIO.pill },
+  frase: { color: COLORS.ink, fontSize: 18, fontWeight: '800' },
+  fraseResto: { fontWeight: '600' },
+  detalhe: { color: COLORS.inkMuted, fontSize: 13 },
+  origem: { color: COLORS.inkFaint, fontSize: 12 },
   linhaHistorico: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    paddingVertical: 6,
+    gap: ESPACO.md,
+    minHeight: 52,
     borderTopWidth: 1,
-    borderTopColor: COLORS.border,
+    borderTopColor: COLORS.line,
   },
-  fundoModal: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.8)' },
-  modal: {
-    backgroundColor: COLORS.surface,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-    padding: 20,
-    gap: 8,
-  },
+  pontoHistorico: { width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.lineStrong },
+  historicoTitulo: { color: COLORS.ink, fontSize: 15, fontWeight: '600' },
+  historicoKm: { color: COLORS.inkMuted, fontSize: 14, fontWeight: '700' },
 });

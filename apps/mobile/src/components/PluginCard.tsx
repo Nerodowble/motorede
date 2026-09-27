@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { PLUGIN_VOLUME_STEP } from '@motorede/shared';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import type { PluginAudio } from '../hooks/usePluginAudio';
 import { PluginSheet } from './PluginSheet';
-import { COLORS } from '../theme';
+import { ConectarPlugin, Rodape, Seletor, Volume } from './PluginPartes';
+import { Botao } from './ui/Botao';
+import { Ajuda, Cartao, Rotulo, estilosBase } from './ui/Cartao';
+import { ALVO, COLORS, ESPACO, RAIO } from '../theme';
 
 /**
  * Card do plugin de áudio na tela do comboio.
@@ -64,36 +67,32 @@ export const PluginCard: React.FC<PluginCardProps> = ({ pluginAudio, souLider })
     corpo = (
       <>
         <Text style={styles.linha1}>{nome}</Text>
-        {!pluginAudio.plugin.online && (
-          <Text style={styles.linha2}>O computador parece desligado agora.</Text>
-        )}
-        {pluginAudio.aviso && <Text style={styles.linha2}>{pluginAudio.aviso}</Text>}
-        <Pressable onPress={() => void pluginAudio.chamar()} style={styles.botaoLargo}>
-          <Text style={styles.botaoTexto}>Chamar plugin</Text>
-        </Pressable>
+        {!pluginAudio.plugin.online && <Ajuda>O computador parece desligado agora.</Ajuda>}
+        {pluginAudio.aviso && <Ajuda>{pluginAudio.aviso}</Ajuda>}
+        <Botao
+          rotulo="Chamar plugin"
+          icone="enter-outline"
+          onPress={() => void pluginAudio.chamar()}
+        />
       </>
     );
   } else if (pluginAudio.fase === 'chamando') {
     corpo = (
       <>
         <View style={styles.linhaStatus}>
-          <ActivityIndicator size="small" color={COLORS.muted} />
+          <ActivityIndicator size="small" color={COLORS.inkMuted} />
           <Text style={styles.linha1}>Chamando… {nome}</Text>
         </View>
-        <Text style={styles.linha2}>Costuma responder em até 10 s.</Text>
-        <Pressable onPress={pluginAudio.cancelar} style={styles.botaoPequeno}>
-          <Text style={styles.botaoTexto}>Cancelar</Text>
-        </Pressable>
+        <Ajuda>Costuma responder em até 10 s.</Ajuda>
+        <Botao rotulo="Cancelar" compacto style={styles.alinhaInicio} onPress={pluginAudio.cancelar} />
       </>
     );
   } else if (pluginAudio.fase === 'sem-resposta') {
     corpo = (
       <>
         <Text style={styles.linha1}>{nome} não respondeu.</Text>
-        <Text style={styles.linha2}>O computador precisa estar ligado com o plugin aberto.</Text>
-        <Pressable onPress={() => void pluginAudio.chamar()} style={styles.botaoLargo}>
-          <Text style={styles.botaoTexto}>Tentar de novo</Text>
-        </Pressable>
+        <Ajuda>O computador precisa estar ligado com o plugin aberto.</Ajuda>
+        <Botao rotulo="Tentar de novo" icone="refresh" onPress={() => void pluginAudio.chamar()} />
       </>
     );
   } else {
@@ -109,35 +108,47 @@ export const PluginCard: React.FC<PluginCardProps> = ({ pluginAudio, souLider })
 
     corpo = parado ? (
       <>
-        <Text style={styles.linha1}>Nada tocando</Text>
-        {secundaria && <Text style={styles.linha2}>{secundaria}</Text>}
-        <Pressable onPress={() => setFolhaAberta(true)} style={styles.botaoLargo}>
-          <Text style={styles.botaoTexto}>Escolher lista</Text>
-        </Pressable>
+        <View style={styles.faixa}>
+          <View style={styles.capa}>
+            <Ionicons name="musical-notes" size={24} color={COLORS.inkMuted} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.linha1}>Nada tocando</Text>
+            {secundaria && <Ajuda>{secundaria}</Ajuda>}
+          </View>
+        </View>
+        <Botao rotulo="Escolher lista" icone="albums-outline" onPress={() => setFolhaAberta(true)} />
       </>
     ) : (
       <>
-        <Text style={styles.item} numberOfLines={1}>
-          {e?.item ?? '—'}
-        </Text>
-        {secundaria && (
-          <Text style={styles.linha2} numberOfLines={1}>
-            {secundaria}
-          </Text>
-        )}
-        <View style={styles.linhaBotoes}>
-          <Pressable
-            onPress={() => void pluginAudio.enviar({ tipo: tocando ? 'pausar' : 'continuar' })}
-            disabled={pluginAudio.pendente}
-            style={styles.botaoGrande}
-          >
-            <Text style={styles.botaoTexto}>
-              {pluginAudio.pendente ? '…' : tocando ? '❚❚  Pausar' : '▶  Continuar'}
+        <View style={styles.faixa}>
+          <View style={styles.capa}>
+            <Ionicons name="musical-note" size={24} color={COLORS.ink} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.item} numberOfLines={1}>
+              {e?.item ?? '—'}
             </Text>
-          </Pressable>
-          <Pressable onPress={pular} disabled={pularTravado} style={styles.botaoGrande}>
-            <Text style={styles.botaoTexto}>⏭  Pular</Text>
-          </Pressable>
+            {secundaria && (
+              <Text style={styles.secundaria} numberOfLines={1}>
+                {secundaria}
+              </Text>
+            )}
+          </View>
+        </View>
+        <View style={estilosBase.linhaBotoes}>
+          <ControleGrande
+            icone={tocando ? 'pause' : 'play'}
+            rotulo={tocando ? 'Pausar' : 'Continuar'}
+            pendente={pluginAudio.pendente}
+            onPress={() => void pluginAudio.enviar({ tipo: tocando ? 'pausar' : 'continuar' })}
+          />
+          <ControleGrande
+            icone="play-skip-forward"
+            rotulo="Pular"
+            disabled={pularTravado}
+            onPress={pular}
+          />
         </View>
         <Volume pluginAudio={pluginAudio} />
       </>
@@ -146,21 +157,32 @@ export const PluginCard: React.FC<PluginCardProps> = ({ pluginAudio, souLider })
 
   const titulo =
     pluginAudio.fase === 'na-sala' && pluginAudio.estado?.estado === 'tocando'
-      ? 'PLUGIN · tocando'
+      ? 'Plugin · tocando'
       : pluginAudio.fase === 'na-sala' && pluginAudio.estado?.estado === 'pausado'
-        ? 'PLUGIN · pausado'
-        : 'PLUGIN';
+        ? 'Plugin · pausado'
+        : 'Plugin';
 
   return (
-    <View style={styles.card}>
-      <View style={styles.cabecalho}>
-        <Text style={styles.rotulo}>{titulo}</Text>
-        {pluginAudio.fase === 'na-sala' && (
-          <Pressable onPress={() => setFolhaAberta(true)} hitSlop={14}>
-            <Text style={styles.abrir}>Abrir ›</Text>
-          </Pressable>
-        )}
-      </View>
+    <Cartao>
+      <Rotulo
+        icone="musical-notes-outline"
+        direita={
+          pluginAudio.fase === 'na-sala' && (
+            <Pressable
+              onPress={() => setFolhaAberta(true)}
+              hitSlop={12}
+              accessibilityRole="button"
+              accessibilityLabel="Abrir plugin"
+              style={styles.abrir}
+            >
+              <Text style={styles.abrirTexto}>Abrir</Text>
+              <Ionicons name="chevron-forward" size={16} color={COLORS.inkMuted} />
+            </Pressable>
+          )
+        }
+      >
+        {titulo}
+      </Rotulo>
       {pluginAudio.plugins.length > 1 && <Seletor pluginAudio={pluginAudio} />}
       {corpo}
       <Rodape pluginAudio={pluginAudio} />
@@ -170,267 +192,65 @@ export const PluginCard: React.FC<PluginCardProps> = ({ pluginAudio, souLider })
         pluginAudio={pluginAudio}
         podeDispensar={souLider || pluginAudio.estado?.chamadoPor === pluginAudio.identidadeLocal}
       />
-    </View>
+    </Cartao>
   );
 };
 
-/**
- * Volume do plugin neste aparelho, como o de um participante: − e + de 10 em
- * 10%, e silenciar. Vale só para quem mexeu. Botões em vez de controle
- * deslizante: acertam de luva, e não exigem módulo nativo novo no app.
- */
-const Volume: React.FC<{ pluginAudio: PluginAudio }> = ({ pluginAudio }) => {
-  const { volume, setVolume, silenciadoPorMim, setSilenciadoPorMim } = pluginAudio;
-  return (
-    <View style={styles.linhaBotoes}>
-      <Pressable
-        onPress={() => setVolume(volume - PLUGIN_VOLUME_STEP)}
-        disabled={silenciadoPorMim || volume <= 0}
-        style={styles.botaoVolume}
-        accessibilityLabel="Diminuir volume do plugin"
-      >
-        <Text style={styles.botaoTexto}>−</Text>
-      </Pressable>
-      <Pressable
-        onPress={() => setSilenciadoPorMim(!silenciadoPorMim)}
-        style={[styles.botaoGrande, silenciadoPorMim && styles.botaoAceso]}
-      >
-        <Text style={styles.botaoTexto}>
-          {silenciadoPorMim ? 'Silenciado · ouvir' : `Volume ${volume}%`}
-        </Text>
-      </Pressable>
-      <Pressable
-        onPress={() => setVolume(volume + PLUGIN_VOLUME_STEP)}
-        disabled={silenciadoPorMim || volume >= 100}
-        style={styles.botaoVolume}
-        accessibilityLabel="Aumentar volume do plugin"
-      >
-        <Text style={styles.botaoTexto}>+</Text>
-      </Pressable>
-    </View>
-  );
-};
-
-/** Mais de um plugin no comboio: escolhe qual o card controla. */
-const Seletor: React.FC<{ pluginAudio: PluginAudio }> = ({ pluginAudio }) => (
-  <View style={styles.seletor}>
-    {pluginAudio.plugins.map((p) => {
-      const ativo = p.id === pluginAudio.plugin?.id;
-      return (
-        <Pressable
-          key={p.id}
-          onPress={() => pluginAudio.selecionar(p.id)}
-          style={[styles.chip, ativo && styles.chipAtivo]}
-          hitSlop={4}
-        >
-          <Text style={[styles.chipTexto, ativo && styles.chipTextoAtivo]} numberOfLines={1}>
-            {p.nome}
-          </Text>
-        </Pressable>
-      );
-    })}
-  </View>
+/** Botão de 64 px com ícone em cima e verbo embaixo: acerta de luva. */
+const ControleGrande: React.FC<{
+  icone: React.ComponentProps<typeof Ionicons>['name'];
+  rotulo: string;
+  onPress: () => void;
+  disabled?: boolean;
+  pendente?: boolean;
+}> = ({ icone, rotulo, onPress, disabled = false, pendente = false }) => (
+  <Pressable
+    onPress={onPress}
+    disabled={disabled || pendente}
+    accessibilityRole="button"
+    accessibilityLabel={rotulo}
+    style={({ pressed }) => [
+      styles.controle,
+      disabled && { opacity: 0.4 },
+      pressed && { opacity: 0.75 },
+    ]}
+  >
+    {pendente ? (
+      <ActivityIndicator color={COLORS.ink} />
+    ) : (
+      <>
+        <Ionicons name={icone} size={28} color={COLORS.ink} />
+        <Text style={styles.controleTexto}>{rotulo}</Text>
+      </>
+    )}
+  </Pressable>
 );
 
-/**
- * Sempre visível com um plugin pareado — dentro ou fora da sala, computador
- * ligado ou não: conectar outro, ou desvincular este. Qualquer um do comboio
- * pode, do mesmo jeito que qualquer um pode conectar.
- */
-const Rodape: React.FC<{ pluginAudio: PluginAudio }> = ({ pluginAudio }) => {
-  const [conectando, setConectando] = useState(false);
-  const nome = pluginAudio.plugin?.nome ?? 'o plugin';
-
-  if (conectando) {
-    return <ConectarPlugin pluginAudio={pluginAudio} aberto aoFechar={() => setConectando(false)} embutido />;
-  }
-
-  const desvincular = () =>
-    Alert.alert(
-      'Desvincular?',
-      `${nome} some deste comboio para todo mundo. Para voltar, alguém digita o código de novo.`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Desvincular', style: 'destructive', onPress: () => void pluginAudio.desparear() },
-      ]
-    );
-
-  return (
-    <View style={styles.rodape}>
-      <Pressable onPress={() => setConectando(true)} hitSlop={10}>
-        <Text style={styles.linkRodape}>+ Conectar outro plugin</Text>
-      </Pressable>
-      <Pressable onPress={desvincular} hitSlop={10}>
-        <Text style={[styles.linkRodape, { color: COLORS.danger }]}>Desvincular</Text>
-      </Pressable>
-    </View>
-  );
-};
-
-/**
- * Sem plugin no comboio: só uma linha discreta. Quem tem o código (mostrado
- * no painel do computador onde o plugin roda) digita aqui uma vez; o resto do
- * comboio passa a ver o plugin sem fazer nada.
- */
-const ConectarPlugin: React.FC<{
-  pluginAudio: PluginAudio;
-  /** Já começa com o campo aberto (quando vem do "Conectar outro"). */
-  aberto?: boolean;
-  aoFechar?: () => void;
-  /** Dentro de outro card: sem moldura própria. */
-  embutido?: boolean;
-}> = ({ pluginAudio, aberto: abertoInicial = false, aoFechar, embutido = false }) => {
-  const [aberto, setAbertoInterno] = useState(abertoInicial);
-  const setAberto = (v: boolean) => {
-    setAbertoInterno(v);
-    if (!v) aoFechar?.();
-  };
-  const [codigo, setCodigo] = useState('');
-  const [erro, setErro] = useState<string | null>(null);
-  const [enviando, setEnviando] = useState(false);
-
-  if (!aberto) {
-    return (
-      <Pressable onPress={() => setAberto(true)} style={styles.linhaConectar} hitSlop={6}>
-        <Text style={styles.linha2}>Conectar plugin com código</Text>
-      </Pressable>
-    );
-  }
-
-  const conectar = async () => {
-    setEnviando(true);
-    setErro(null);
-    const falha = await pluginAudio.parear(codigo);
-    setEnviando(false);
-    if (falha) setErro(falha);
-    else {
-      setAberto(false);
-      setCodigo('');
-    }
-  };
-
-  return (
-    <View style={embutido ? styles.embutido : styles.card}>
-      <Text style={styles.rotulo}>CONECTAR PLUGIN</Text>
-      <Text style={styles.linha2}>
-        Digite o código que aparece no painel do plugin. Vale para todo mundo neste comboio.
-      </Text>
-      <TextInput
-        value={codigo}
-        onChangeText={(t) => {
-          setCodigo(t);
-          setErro(null);
-        }}
-        placeholder="ABC-1234"
-        placeholderTextColor={COLORS.faint}
-        autoCapitalize="characters"
-        autoCorrect={false}
-        maxLength={9}
-        style={styles.input}
-      />
-      {erro && <Text style={styles.erro}>{erro}</Text>}
-      <View style={styles.linhaBotoes}>
-        <Pressable onPress={() => setAberto(false)} style={styles.botaoGrande}>
-          <Text style={styles.botaoTexto}>Cancelar</Text>
-        </Pressable>
-        <Pressable
-          onPress={() => void conectar()}
-          disabled={enviando || codigo.replace(/[^a-z0-9]/gi, '').length < 7}
-          style={styles.botaoGrande}
-        >
-          <Text style={styles.botaoTexto}>{enviando ? '…' : 'Conectar'}</Text>
-        </Pressable>
-      </View>
-    </View>
-  );
-};
-
 const styles = StyleSheet.create({
-  linhaConectar: { paddingVertical: 6, alignItems: 'center' },
-  seletor: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: {
-    minHeight: 40,
-    paddingHorizontal: 14,
+  abrir: { flexDirection: 'row', alignItems: 'center', gap: 2, minHeight: 32 },
+  abrirTexto: { color: COLORS.inkMuted, fontSize: 14, fontWeight: '700' },
+  linhaStatus: { flexDirection: 'row', alignItems: 'center', gap: ESPACO.sm },
+  linha1: { color: COLORS.ink, fontSize: 16, fontWeight: '700' },
+  item: { color: COLORS.ink, fontSize: 17, fontWeight: '800' },
+  secundaria: { color: COLORS.inkMuted, fontSize: 13, marginTop: 2 },
+  faixa: { flexDirection: 'row', alignItems: 'center', gap: ESPACO.md },
+  capa: {
+    width: 48,
+    height: 48,
+    borderRadius: RAIO.sm,
+    backgroundColor: COLORS.elevated,
+    alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    backgroundColor: COLORS.surfaceAlt,
-    maxWidth: '100%',
   },
-  chipAtivo: { borderColor: COLORS.text },
-  chipTexto: { color: COLORS.muted, fontSize: 13, fontWeight: '700' },
-  chipTextoAtivo: { color: COLORS.text },
-  rodape: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-    paddingTop: 10,
-  },
-  linkRodape: { color: COLORS.muted, fontSize: 12, fontWeight: '700', paddingVertical: 6 },
-  embutido: { gap: 10, borderTopWidth: 1, borderTopColor: COLORS.border, paddingTop: 10 },
-  input: {
-    backgroundColor: COLORS.background,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    color: COLORS.text,
-    fontSize: 18,
-    fontWeight: '700',
-    letterSpacing: 3,
-    textAlign: 'center',
-  },
-  erro: { color: COLORS.danger, fontSize: 12 },
-  card: {
-    backgroundColor: COLORS.surface,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    padding: 16,
-    gap: 10,
-  },
-  cabecalho: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  rotulo: { color: COLORS.muted, fontSize: 10, fontWeight: '800', letterSpacing: 1 },
-  abrir: { color: COLORS.muted, fontSize: 12, fontWeight: '700' },
-  linhaStatus: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  linha1: { color: COLORS.text, fontSize: 14, fontWeight: '700' },
-  linha2: { color: COLORS.muted, fontSize: 12 },
-  item: { color: COLORS.text, fontSize: 15, fontWeight: '700' },
-  linhaBotoes: { flexDirection: 'row', gap: 12 },
-  botaoGrande: {
+  alinhaInicio: { alignSelf: 'flex-start' },
+  controle: {
     flex: 1,
-    minHeight: 64,
-    backgroundColor: COLORS.surfaceAlt,
-    borderRadius: 12,
+    minHeight: ALVO.grande + 8,
+    backgroundColor: COLORS.elevated,
+    borderRadius: RAIO.md,
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 2,
   },
-  botaoLargo: {
-    minHeight: 56,
-    backgroundColor: COLORS.surfaceAlt,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  botaoVolume: {
-    width: 64,
-    minHeight: 56,
-    backgroundColor: COLORS.surfaceAlt,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  botaoAceso: { borderWidth: 1, borderColor: COLORS.muted },
-  botaoPequeno: {
-    alignSelf: 'flex-start',
-    minHeight: 48,
-    paddingHorizontal: 18,
-    backgroundColor: COLORS.surfaceAlt,
-    borderRadius: 12,
-    justifyContent: 'center',
-  },
-  botaoTexto: { color: COLORS.text, fontWeight: '800', fontSize: 14 },
+  controleTexto: { color: COLORS.ink, fontWeight: '800', fontSize: 14 },
 });

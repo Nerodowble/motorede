@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 import ReactNativeForegroundService from '@supersami/rn-foreground-service';
+import { COLORS } from '../theme';
 
 /**
  * Serviço em primeiro plano que mantém o canal de voz vivo com a tela
@@ -78,7 +79,9 @@ export async function startVoiceForegroundService(roomCode: string): Promise<voi
     icon: 'ic_launcher',
     importance: 'low', // sem som nem vibração a cada atualização
     visibility: 'public',
-    color: '#f59e0b',
+    // Cor da marca (o vermelho do pino), a mesma do ícone de notificação do
+    // app.json. Âmbar agora quer dizer só "alguém falando".
+    color: COLORS.brand,
     setOnlyAlertOnce: 'true',
   };
 

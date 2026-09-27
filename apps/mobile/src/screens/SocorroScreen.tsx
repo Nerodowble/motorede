@@ -1,16 +1,7 @@
 import React, { useMemo, useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  Linking,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
-import { distanceKm, validateRequest, type GeoPoint, type RiderProfile } from '@motorede/shared';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { validateRequest, type GeoPoint, type RiderProfile } from '@motorede/shared';
 import { pedirSocorro, responderChamado, aceitarAjuda } from '../services/socorro';
 import type {
   ChamadoRecebido,
@@ -19,7 +10,15 @@ import type {
   AceiteRecebido,
 } from '../hooks/useSocorro';
 import type { EstadoRede } from '../services/socorro';
-import { COLORS } from '../theme';
+import { ALVO, COLORS, ESPACO, RAIO, TIPO } from '../theme';
+import { Botao, type NomeIcone } from '../components/ui/Botao';
+import { Ajuda, Campo, Cartao, Rotulo, TituloCartao, estilosBase } from '../components/ui/Cartao';
+import {
+  CartaoAceites,
+  CartaoChamados,
+  CartaoMeusPedidos,
+  CartaoRespostas,
+} from '../components/socorro/CartoesSocorro';
 
 /**
  * Pedir ajuda, e atender quem pede.
@@ -36,12 +35,12 @@ import { COLORS } from '../theme';
  * o app na última hora, e isso está escrito na tela, não escondido.
  */
 
-const EMERGENCIAS: Array<{ id: string; rotulo: string; leva: string }> = [
-  { id: 'flat_tire', rotulo: 'Pneu furado', leva: 'kit macarrão, bomba' },
-  { id: 'mechanical_breakdown', rotulo: 'Pane mecânica', leva: 'ferramentas' },
-  { id: 'out_of_fuel', rotulo: 'Sem combustível', leva: 'galão, mangueira' },
-  { id: 'electrical_battery', rotulo: 'Bateria', leva: 'cabo de chupeta' },
-  { id: 'accident_fall', rotulo: 'Queda / acidente', leva: 'avisa todo mundo na hora' },
+const EMERGENCIAS: Array<{ id: string; rotulo: string; leva: string; icone: NomeIcone }> = [
+  { id: 'flat_tire', rotulo: 'Pneu furado', leva: 'kit macarrão, bomba', icone: 'disc-outline' },
+  { id: 'mechanical_breakdown', rotulo: 'Pane mecânica', leva: 'ferramentas', icone: 'construct-outline' },
+  { id: 'out_of_fuel', rotulo: 'Sem combustível', leva: 'galão, mangueira', icone: 'water-outline' },
+  { id: 'electrical_battery', rotulo: 'Bateria', leva: 'cabo de chupeta', icone: 'battery-dead-outline' },
+  { id: 'accident_fall', rotulo: 'Queda / acidente', leva: 'avisa todo mundo na hora', icone: 'alert-circle-outline' },
 ];
 
 const RAIOS = [5, 10, 15, 25];
@@ -192,481 +191,298 @@ export const SocorroScreen: React.FC<SocorroScreenProps> = ({
 
   if (!rede.disponivel) {
     return (
-      <ScrollView contentContainerStyle={styles.conteudo}>
-        <View style={styles.card}>
-          <Text style={styles.tituloCard}>Rede de socorro</Text>
-          <Text style={styles.ajuda}>
+      <ScrollView contentContainerStyle={estilosBase.conteudo}>
+        <Cartao style={styles.convite}>
+          <View style={styles.conviteIcone}>
+            <Ionicons name="people" size={34} color={COLORS.ink} />
+          </View>
+          <Text style={[TIPO.titulo, styles.centro]}>Rede de socorro</Text>
+          <Ajuda>
             Pilotos por perto recebem um aviso no celular quando você pede ajuda — e
             você recebe quando alguém precisa perto de você.
-          </Text>
-          <Text style={styles.ajuda}>
-            Para funcionar nos dois sentidos, o app precisa avisar onde você está, de
-            forma aproximada: um quadrado de cerca de 1 km, nunca o ponto exato. Seu
-            endereço só vai para quem você aceitar.
-          </Text>
+          </Ajuda>
+          <View style={styles.linhaIcone}>
+            <Ionicons name="lock-closed-outline" size={18} color={COLORS.inkMuted} />
+            <Text style={[TIPO.apoio, { flex: 1 }]}>
+              Para funcionar nos dois sentidos, o app precisa avisar onde você está, de
+              forma aproximada: um quadrado de cerca de 1 km, nunca o ponto exato. Seu
+              endereço só vai para quem você aceitar.
+            </Text>
+          </View>
 
-          {rede.motivo && <Text style={styles.erro}>{rede.motivo}</Text>}
+          {rede.motivo && <Text style={estilosBase.erro}>{rede.motivo}</Text>}
 
-          <Pressable onPress={() => void onEntrar()} disabled={entrando} style={styles.botao}>
-            {entrando ? (
-              <ActivityIndicator color={COLORS.background} />
-            ) : (
-              <Text style={styles.botaoTexto}>Entrar na rede</Text>
-            )}
-          </Pressable>
-
-          <Text style={styles.rodape}>
-            Em emergência com risco de vida, ligue 190 ou 192 primeiro. Isto aqui é
-            ajuda de outros motociclistas, não substitui socorro oficial.
-          </Text>
-        </View>
+          <Botao
+            rotulo="Entrar na rede"
+            icone="enter-outline"
+            variante="action"
+            carregando={entrando}
+            style={styles.largura}
+            onPress={() => void onEntrar()}
+          />
+        </Cartao>
+        <Aviso190 />
       </ScrollView>
     );
   }
 
+  const emergenciaAtual = EMERGENCIAS.find((e) => e.id === emergencia);
+  const bloqueado = enviando || !validacao.valid || !posicao;
+
   return (
-    <ScrollView contentContainerStyle={styles.conteudo}>
-      {aceites.length > 0 && (
-        <View style={[styles.card, styles.cardAceito]}>
-          <Text style={styles.tituloCard}>Aceitaram sua ajuda — vá até lá</Text>
-          {aceites.map((a, i) => (
-            <View key={`${a.pedidoId}-${i}`} style={styles.chamado}>
-              <Text style={styles.chamadoNome}>{a.nome}</Text>
-              {!!a.referencia && <Text style={styles.chamadoRef}>{a.referencia}</Text>}
-
-              {a.telefone ? (
-                <>
-                  {/* `selectable` permite copiar com toque longo, sem depender
-                      de biblioteca de área de transferência. */}
-                  <Text selectable style={styles.telefone}>
-                    {a.telefone}
-                  </Text>
-                  <Text style={styles.ajuda}>Toque e segure o número para copiar.</Text>
-                  <Pressable
-                    onPress={() => void Linking.openURL(`tel:${a.telefone!.replace(/\D/g, '')}`)}
-                    style={[styles.botaoPequeno, styles.botaoResolver]}
-                  >
-                    <Text style={styles.botaoResolverTexto}>Ligar agora</Text>
-                  </Pressable>
-                </>
-              ) : (
-                <Text style={styles.erro}>
-                  Quem pediu está sem telefone no perfil — só dá para chegar pelo endereço.
-                </Text>
-              )}
-
-              {!!a.exato && (
-                <View style={styles.linhaBotoes}>
-                  <Pressable
-                    onPress={() =>
-                      void Linking.openURL(
-                        `https://waze.com/ul?ll=${a.exato!.lat},${a.exato!.lng}&navigate=yes`
-                      )
-                    }
-                    style={styles.botaoVazado}
-                  >
-                    <Text style={styles.botaoVazadoTexto}>Waze</Text>
-                  </Pressable>
-                  <Pressable
-                    onPress={() =>
-                      void Linking.openURL(
-                        `https://www.google.com/maps/dir/?api=1&destination=${a.exato!.lat},${a.exato!.lng}`
-                      )
-                    }
-                    style={styles.botaoVazado}
-                  >
-                    <Text style={styles.botaoVazadoTexto}>Google Maps</Text>
-                  </Pressable>
-                </View>
-              )}
-
-              <Text style={styles.ajuda}>
-                Agora a navegação vai até o ponto exato, não mais até a região.
-              </Text>
-            </View>
-          ))}
-        </View>
-      )}
-
+    <ScrollView contentContainerStyle={estilosBase.conteudo} keyboardShouldPersistTaps="handled">
+      {aceites.length > 0 && <CartaoAceites aceites={aceites} />}
       {meusPedidos.length > 0 && (
-        <View style={styles.card}>
-          <Text style={styles.tituloCard}>Seu pedido está de pé</Text>
-          {meusPedidos.map((p) => (
-            <View key={p.pedidoId} style={styles.chamado}>
-              <Text style={styles.chamadoNome}>
-                {p.kind === 'emergencia' ? 'Socorro' : 'Apoio'} ·{' '}
-                {new Date(p.em).toLocaleTimeString('pt-BR', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}
-              </Text>
-              <Text style={styles.chamadoRef}>{p.referencia}</Text>
-              <Text style={styles.chamadoMeta}>
-                {p.encontrados === 0
-                  ? 'Ninguém estava no seu raio quando você pediu.'
-                  : `${p.avisados} de ${p.encontrados} aparelho(s) avisados.`}
-              </Text>
-              <Pressable
-                onPress={() => onEncerrarPedido(p.pedidoId)}
-                style={[styles.botaoPequeno, styles.botaoResolver]}
-              >
-                <Text style={styles.botaoResolverTexto}>Já resolvi, encerrar</Text>
-              </Pressable>
-            </View>
-          ))}
-          <Text style={styles.ajuda}>
-            Encerre assim que resolver. Um pedido esquecido continua aparecendo para
-            quem está por perto por até 2 horas, e manda gente rodar atrás de você
-            depois de você já ter ido embora.
-          </Text>
-        </View>
+        <CartaoMeusPedidos pedidos={meusPedidos} aoEncerrar={onEncerrarPedido} />
+      )}
+      {chamados.length > 0 && (
+        <CartaoChamados
+          chamados={chamados}
+          posicao={posicao}
+          aoAtender={(c) => void atender(c)}
+          aoDispensar={onDispensar}
+        />
+      )}
+      {respostas.length > 0 && (
+        <CartaoRespostas
+          respostas={respostas}
+          posicao={posicao}
+          meusPedidos={meusPedidos}
+          profile={profile}
+          aoAceitar={(r) => void aceitar(r)}
+        />
       )}
 
-      {chamados.length > 0 && (
-        <View style={[styles.card, styles.cardAlerta]}>
-          <Text style={styles.tituloCard}>Pedindo ajuda perto de você</Text>
-          {chamados.map((c) => {
-            const longe =
-              c.celula && posicao ? distanceKm(posicao, c.celula).toFixed(1) + ' km' : '—';
-            return (
-              <View key={c.pedidoId} style={styles.chamado}>
-                <Text style={styles.chamadoNome}>
-                  {c.nome}
-                  {c.moto ? ` · ${c.moto}` : ''}
-                </Text>
-                <Text style={styles.chamadoRef}>{c.referencia}</Text>
-                {!!c.detalhes && <Text style={styles.ajuda}>{c.detalhes}</Text>}
-                <Text style={styles.chamadoMeta}>
-                  ~{longe} daqui · {c.kind === 'emergencia' ? 'Socorro' : 'Apoio'} · região
-                  aproximada
-                </Text>
+      <Cartao>
+        <TituloCartao icone="medkit">Pedir ajuda</TituloCartao>
 
-                <View style={styles.linhaBotoes}>
-                  {c.respondido ? (
-                    <Text style={styles.jaRespondeu}>Você avisou que vai</Text>
-                  ) : (
-                    <Pressable onPress={() => void atender(c)} style={styles.botaoPequeno}>
-                      <Text style={styles.botaoPequenoTexto}>Posso ajudar</Text>
-                    </Pressable>
-                  )}
-                  {!!c.celula && (
-                    <Pressable
-                      onPress={() =>
-                        void Linking.openURL(
-                          `https://www.google.com/maps/search/?api=1&query=${c.celula!.lat},${c.celula!.lng}`
-                        )
-                      }
-                      style={styles.botaoVazado}
-                    >
-                      <Text style={styles.botaoVazadoTexto}>Ver a região</Text>
-                    </Pressable>
-                  )}
-                  <Pressable onPress={() => onDispensar(c.pedidoId)} style={styles.botaoVazado}>
-                    <Text style={styles.botaoVazadoTexto}>Dispensar</Text>
-                  </Pressable>
-                </View>
-              </View>
+        <View style={styles.segmento}>
+          {(['emergencia', 'apoio'] as const).map((t) => {
+            const ativo = tipo === t;
+            return (
+              <Pressable
+                key={t}
+                onPress={() => setTipo(t)}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: ativo }}
+                style={[styles.segmentoItem, ativo && styles.segmentoAtivo]}
+              >
+                <Ionicons
+                  name={t === 'emergencia' ? 'warning-outline' : 'hand-left-outline'}
+                  size={18}
+                  color={ativo ? COLORS.onAction : COLORS.inkMuted}
+                />
+                <Text style={[styles.segmentoTexto, ativo && styles.segmentoTextoAtivo]}>
+                  {t === 'emergencia' ? 'Socorro' : 'Apoio'}
+                </Text>
+              </Pressable>
             );
           })}
-        </View>
-      )}
-
-      {respostas.length > 0 && (
-        <View style={styles.card}>
-          <Text style={styles.tituloCard}>Quem respondeu ao seu pedido</Text>
-          {respostas.map((r, i) => (
-            <View key={`${r.pedidoId}-${i}`} style={styles.chamado}>
-              <Text style={styles.chamadoNome}>
-                {r.nome}
-                {r.moto ? ` · ${r.moto}` : ''}
-              </Text>
-              <Text style={styles.chamadoMeta}>
-                {r.celula && posicao
-                  ? `a ~${distanceKm(posicao, r.celula).toFixed(1)} km de você`
-                  : 'região não informada'}
-              </Text>
-              {r.aceita ? (
-                <Text style={styles.jaRespondeu}>
-                  Você enviou seu endereço e telefone para {r.nome}
-                </Text>
-              ) : (
-                <Pressable
-                  onPress={() => void aceitar(r)}
-                  disabled={!r.ofertaId || !posicao}
-                  style={[
-                    styles.botaoPequeno,
-                    styles.botaoResolver,
-                    (!r.ofertaId || !posicao) && styles.botaoInativo,
-                  ]}
-                >
-                  <Text style={styles.botaoResolverTexto}>Aceitar e enviar meu endereço</Text>
-                </Pressable>
-              )}
-              {!meusPedidos.find((p) => p.pedidoId === r.pedidoId)?.telefone &&
-                !profile.phone &&
-                !r.aceita && (
-                  <Text style={styles.avisoPerfil}>
-                    Você pediu sem informar telefone. Quem aceitar vai receber o endereço e
-                    não vai ter como te ligar.
-                  </Text>
-                )}
-              <Text style={styles.ajuda}>
-                Aceitar envia seu endereço exato e telefone só para esta pessoa. O app não
-                verifica a identidade de ninguém — aceite quem você tem alguma razão para
-                aceitar.
-              </Text>
-            </View>
-          ))}
-        </View>
-      )}
-
-      <View style={styles.card}>
-        <Text style={styles.tituloCard}>Pedir ajuda</Text>
-
-        <View style={styles.abas}>
-          {(['emergencia', 'apoio'] as const).map((t) => (
-            <Pressable
-              key={t}
-              onPress={() => setTipo(t)}
-              style={[styles.aba, tipo === t && styles.abaAtiva]}
-            >
-              <Text style={[styles.abaTexto, tipo === t && styles.abaTextoAtivo]}>
-                {t === 'emergencia' ? 'Socorro' : 'Apoio'}
-              </Text>
-            </Pressable>
-          ))}
         </View>
 
         {tipo === 'emergencia' && (
           <View style={styles.chips}>
             {EMERGENCIAS.map((e) => (
-              <Pressable
+              <Chip
                 key={e.id}
+                rotulo={e.rotulo}
+                icone={e.icone}
+                ativo={emergencia === e.id}
                 onPress={() => setEmergencia(e.id)}
-                style={[styles.chip, emergencia === e.id && styles.chipAtivo]}
-              >
-                <Text style={[styles.chipTexto, emergencia === e.id && styles.chipTextoAtivo]}>
-                  {e.rotulo}
-                </Text>
-              </Pressable>
+              />
             ))}
           </View>
         )}
 
-        <Text style={styles.rotulo}>Onde você está, com palavras</Text>
-        <TextInput
+        <Rotulo icone="location-outline">Onde você está, com palavras</Rotulo>
+        <Campo
           value={referencia}
           onChangeText={setReferencia}
           placeholder="Imigrantes km 28, sentido litoral, acostamento"
-          placeholderTextColor={COLORS.faint}
-          style={styles.input}
         />
         {/* O GPS erra, cai, é negado. Quem vai te socorrer chega pela frase. */}
         {!!validacao.errors.reference && referencia.length > 0 && (
-          <Text style={styles.erro}>{validacao.errors.reference}</Text>
+          <Text style={estilosBase.erro}>{validacao.errors.reference}</Text>
         )}
 
-        <Text style={styles.rotulo}>Seu telefone</Text>
-        <TextInput
+        <Rotulo icone="call-outline">Seu telefone</Rotulo>
+        <Campo
           value={telefone}
           onChangeText={setTelefone}
           placeholder="(11) 98765-4321"
-          placeholderTextColor={COLORS.faint}
           keyboardType="phone-pad"
-          style={styles.input}
         />
-        <Text style={styles.ajuda}>
+        <Ajuda>
           {telefone.trim()
             ? 'Não vai no alerta. Só quem você aceitar recebe este número, junto com o endereço exato.'
             : 'Sem telefone, quem for te ajudar chega pelo endereço mas não consegue te avisar nem confirmar nada.'}
-        </Text>
+        </Ajuda>
 
-        <Text style={styles.rotulo}>O que houve</Text>
-        <TextInput
+        <Rotulo icone="chatbox-ellipses-outline">O que houve</Rotulo>
+        <Campo
           value={detalhes}
           onChangeText={setDetalhes}
           placeholder={
             tipo === 'emergencia'
-              ? EMERGENCIAS.find((e) => e.id === emergencia)?.leva
+              ? emergenciaAtual?.leva
               : 'Preciso que alguém pegue um pacote no Itaim'
           }
-          placeholderTextColor={COLORS.faint}
           multiline
-          style={[styles.input, styles.inputAlto]}
+          style={styles.campoAlto}
         />
 
-        <Text style={styles.rotulo}>Quem avisar</Text>
+        <Rotulo icone="radio-outline">Quem avisar</Rotulo>
         <View style={styles.chips}>
           {RAIOS.map((r) => (
-            <Pressable
-              key={r}
-              onPress={() => setRaioKm(r)}
-              style={[styles.chip, raioKm === r && styles.chipAtivo]}
-            >
-              <Text style={[styles.chipTexto, raioKm === r && styles.chipTextoAtivo]}>
-                {r} km
-              </Text>
-            </Pressable>
+            <Chip key={r} rotulo={`${r} km`} ativo={raioKm === r} onPress={() => setRaioKm(r)} />
           ))}
         </View>
 
         {!posicao && (
-          <Text style={styles.erro}>
-            Sem GPS agora. Sem posição não dá para saber quem está perto — e avisar
-            gente aleatória seria pior que não avisar.
-          </Text>
+          <View style={styles.linhaIcone}>
+            <Ionicons name="navigate-circle-outline" size={18} color={COLORS.dangerText} />
+            <Text style={[estilosBase.erro, { flex: 1 }]}>
+              Sem GPS agora. Sem posição não dá para saber quem está perto — e avisar
+              gente aleatória seria pior que não avisar.
+            </Text>
+          </View>
         )}
 
-        <Pressable
+        {/* O único vermelho cheio da tela. Apoio não é emergência, então usa o
+            botão principal comum. */}
+        <Botao
+          rotulo={tipo === 'emergencia' ? 'Pedir socorro agora' : 'Pedir apoio'}
+          icone={tipo === 'emergencia' ? 'warning' : 'hand-left'}
+          variante={tipo === 'emergencia' ? 'sos' : 'action'}
+          altura={tipo === 'emergencia' ? 72 : 60}
+          carregando={enviando}
+          disabled={bloqueado}
           onPress={() => void disparar()}
-          disabled={enviando || !validacao.valid || !posicao}
-          style={[
-            styles.botao,
-            tipo === 'emergencia' && styles.botaoUrgente,
-            (enviando || !validacao.valid || !posicao) && styles.botaoInativo,
-          ]}
-        >
-          {enviando ? (
-            <ActivityIndicator color={COLORS.text} />
-          ) : (
-            <Text style={[styles.botaoTexto, tipo === 'emergencia' && styles.botaoTextoUrgente]}>
-              {tipo === 'emergencia' ? 'Pedir socorro agora' : 'Pedir apoio'}
-            </Text>
-          )}
-        </Pressable>
+        />
 
-        {!!resultado && <Text style={styles.resultado}>{resultado}</Text>}
-        {!!erro && <Text style={styles.erro}>{erro}</Text>}
+        {!!resultado && (
+          <View style={styles.resultado}>
+            <Ionicons name="information-circle" size={20} color={COLORS.ink} />
+            <Text style={styles.resultadoTexto}>{resultado}</Text>
+          </View>
+        )}
+        {!!erro && <Text style={estilosBase.erro}>{erro}</Text>}
 
-        <Text style={styles.rodape}>
+        <Ajuda>
           Seu endereço exato não vai no aviso — só a região de mais ou menos 1 km. Ele
-          só chega a quem você aceitar. Em risco de vida, 190 ou 192 primeiro.
-        </Text>
-      </View>
+          só chega a quem você aceitar.
+        </Ajuda>
+      </Cartao>
 
-      <View style={styles.card}>
-        <Text style={styles.tituloCard}>Sua presença</Text>
-        <Text style={styles.ajuda}>
+      <Aviso190 />
+
+      <Cartao>
+        <TituloCartao icone="pulse">Sua presença</TituloCartao>
+        <Ajuda>
           Você fica alcançável por 45 minutos depois de abrir o app. Com o app fechado
           por mais tempo que isso, você sai da rede e deixa de receber chamados — e de
           poder ser encontrado por eles.
-        </Text>
-        <Pressable onPress={() => void onSair()} style={styles.botaoVazadoLargo}>
-          <Text style={styles.botaoVazadoTexto}>Sair da rede</Text>
-        </Pressable>
-      </View>
+        </Ajuda>
+        <Botao rotulo="Sair da rede" icone="exit-outline" onPress={() => void onSair()} />
+      </Cartao>
     </ScrollView>
   );
 };
 
+/** Lembrete do socorro oficial, sempre visível, fora dos cartões. */
+const Aviso190: React.FC = () => (
+  <View style={styles.aviso}>
+    <Ionicons name="call" size={20} color={COLORS.ink} />
+    <Text style={styles.avisoTexto}>
+      Em emergência com risco de vida, ligue 190 ou 192 primeiro. Isto aqui é ajuda
+      de outros motociclistas, não substitui socorro oficial.
+    </Text>
+  </View>
+);
+
+const Chip: React.FC<{
+  rotulo: string;
+  ativo: boolean;
+  onPress: () => void;
+  icone?: NomeIcone;
+}> = ({ rotulo, ativo, onPress, icone }) => (
+  <Pressable
+    onPress={onPress}
+    accessibilityRole="button"
+    accessibilityState={{ selected: ativo }}
+    style={[styles.chip, ativo && styles.chipAtivo]}
+  >
+    {icone && <Ionicons name={icone} size={16} color={ativo ? COLORS.onAction : COLORS.inkMuted} />}
+    <Text style={[styles.chipTexto, ativo && styles.chipTextoAtivo]}>{rotulo}</Text>
+  </Pressable>
+);
+
 const styles = StyleSheet.create({
-  conteudo: { padding: 16, gap: 12, paddingBottom: 32 },
-  card: {
-    backgroundColor: COLORS.surface,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    padding: 16,
-    gap: 8,
+  convite: { alignItems: 'stretch', paddingVertical: ESPACO.xl, gap: ESPACO.lg },
+  conviteIcone: {
+    alignSelf: 'center',
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: COLORS.elevated,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  cardAlerta: { borderColor: COLORS.danger },
-  cardAceito: { borderColor: COLORS.success },
-  telefone: {
-    color: COLORS.text,
-    fontSize: 20,
-    fontFamily: 'monospace',
-    letterSpacing: 1,
-    marginTop: 6,
+  centro: { textAlign: 'center' },
+  largura: { alignSelf: 'stretch' },
+  linhaIcone: { flexDirection: 'row', gap: ESPACO.sm, alignItems: 'flex-start' },
+  segmento: {
+    flexDirection: 'row',
+    gap: ESPACO.xs,
+    padding: ESPACO.xs,
+    borderRadius: RAIO.md,
+    backgroundColor: COLORS.elevated,
   },
-  avisoPerfil: { color: COLORS.accent, fontSize: 11, lineHeight: 16, marginTop: 6 },
-  tituloCard: { color: COLORS.text, fontSize: 15, fontWeight: '800' },
-  rotulo: { color: COLORS.muted, fontSize: 11, fontWeight: '700', marginTop: 6 },
-  ajuda: { color: COLORS.faint, fontSize: 11, lineHeight: 16 },
-  rodape: { color: COLORS.faint, fontSize: 10, lineHeight: 15, marginTop: 8 },
-  erro: { color: COLORS.danger, fontSize: 11, lineHeight: 16, marginTop: 4 },
-  resultado: { color: COLORS.success, fontSize: 12, lineHeight: 17, marginTop: 8 },
-  input: {
-    backgroundColor: COLORS.background,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    color: COLORS.text,
-    fontSize: 13,
-  },
-  inputAlto: { height: 72, textAlignVertical: 'top' },
-  abas: { flexDirection: 'row', gap: 6, marginVertical: 4 },
-  aba: {
+  segmentoItem: {
     flex: 1,
-    paddingVertical: 9,
-    borderRadius: 10,
+    minHeight: ALVO.min,
+    borderRadius: RAIO.sm,
+    flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.background,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    justifyContent: 'center',
+    gap: ESPACO.sm,
   },
-  abaAtiva: { backgroundColor: COLORS.accent, borderColor: COLORS.accent },
-  abaTexto: { color: COLORS.muted, fontSize: 12, fontWeight: '700' },
-  abaTextoAtivo: { color: COLORS.background },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 4 },
+  segmentoAtivo: { backgroundColor: COLORS.action },
+  segmentoTexto: { color: COLORS.inkMuted, fontSize: 15, fontWeight: '700' },
+  segmentoTextoAtivo: { color: COLORS.onAction, fontWeight: '800' },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: ESPACO.sm },
   chip: {
-    paddingHorizontal: 11,
-    paddingVertical: 7,
-    borderRadius: 999,
-    backgroundColor: COLORS.background,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  chipAtivo: { borderColor: COLORS.accent, backgroundColor: COLORS.surfaceAlt },
-  chipTexto: { color: COLORS.muted, fontSize: 11, fontWeight: '600' },
-  chipTextoAtivo: { color: COLORS.accent },
-  botao: {
-    backgroundColor: COLORS.accent,
-    borderRadius: 12,
-    paddingVertical: 13,
+    minHeight: ALVO.min,
+    paddingHorizontal: ESPACO.lg,
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 10,
-  },
-  botaoUrgente: { backgroundColor: '#dc2626' },
-  botaoInativo: { opacity: 0.45 },
-  botaoTexto: { color: COLORS.background, fontSize: 13, fontWeight: '800' },
-  botaoTextoUrgente: { color: '#ffffff' },
-  botaoPequeno: {
-    backgroundColor: COLORS.accent,
-    borderRadius: 9,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-  },
-  botaoPequenoTexto: { color: COLORS.background, fontSize: 11, fontWeight: '800' },
-  botaoResolver: { backgroundColor: COLORS.success, alignSelf: 'flex-start', marginTop: 8 },
-  botaoResolverTexto: { color: COLORS.background, fontSize: 11, fontWeight: '800' },
-  botaoVazado: {
-    borderRadius: 9,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    gap: ESPACO.sm,
+    borderRadius: RAIO.pill,
+    backgroundColor: COLORS.elevated,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: COLORS.lineStrong,
   },
-  botaoVazadoLargo: {
-    borderRadius: 12,
-    paddingVertical: 12,
-    alignItems: 'center',
+  chipAtivo: { backgroundColor: COLORS.action, borderColor: COLORS.action },
+  chipTexto: { color: COLORS.ink, fontSize: 14, fontWeight: '600' },
+  chipTextoAtivo: { color: COLORS.onAction, fontWeight: '800' },
+  campoAlto: { minHeight: 88, textAlignVertical: 'top' },
+  resultado: {
+    flexDirection: 'row',
+    gap: ESPACO.sm,
+    alignItems: 'flex-start',
+    padding: ESPACO.md,
+    borderRadius: RAIO.md,
+    backgroundColor: COLORS.elevated,
+  },
+  resultadoTexto: { color: COLORS.ink, fontSize: 14, lineHeight: 20, flex: 1 },
+  aviso: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    borderRadius: RAIO.lg,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    marginTop: 6,
+    borderColor: COLORS.lineStrong,
+    padding: ESPACO.lg,
+    gap: ESPACO.md,
   },
-  botaoVazadoTexto: { color: COLORS.muted, fontSize: 11, fontWeight: '700' },
-  chamado: {
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-    paddingTop: 10,
-    marginTop: 6,
-    gap: 3,
-  },
-  chamadoNome: { color: COLORS.text, fontSize: 13, fontWeight: '800' },
-  chamadoRef: { color: COLORS.text, fontSize: 12 },
-  chamadoMeta: { color: COLORS.faint, fontSize: 10, fontFamily: 'monospace' },
-  jaRespondeu: { color: COLORS.success, fontSize: 11, fontWeight: '700', paddingVertical: 8 },
-  linhaBotoes: { flexDirection: 'row', gap: 6, marginTop: 8, flexWrap: 'wrap' },
+  avisoTexto: { color: COLORS.ink, fontSize: 14, lineHeight: 20, flex: 1 },
 });

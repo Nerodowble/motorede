@@ -1,30 +1,22 @@
 import React, { useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  Modal,
-  Pressable,
-  ScrollView,
-  Share,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
-import {
-  CONVOY_CAPACITY,
-  generateRoomCode,
-  isJoinableRoomCode,
-  normalizePhone,
-  sortByUrgency,
-  type VoiceParticipant,
-} from '@motorede/shared';
+import { Alert, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import { generateRoomCode, isJoinableRoomCode } from '@motorede/shared';
 import { useVoiceConnection } from '../hooks/useVoiceConnection';
 import { useConvoyBrowser } from '../hooks/useConvoyBrowser';
 import { usePluginAudio } from '../hooks/usePluginAudio';
 import { PluginCard } from '../components/PluginCard';
+import { PainelComboios } from '../components/comboio/PainelComboios';
+import {
+  BotaoMicrofone,
+  CartaoAoVivo,
+  CartaoParticipantes,
+  LinhaStatus,
+} from '../components/comboio/AoVivo';
+import { Botao } from '../components/ui/Botao';
+import { Ajuda, Campo, Cartao, Rotulo, estilosBase } from '../components/ui/Cartao';
 import { storage } from '../services/storage';
 import { TOKEN_ENDPOINT, WEB_APP_URL } from '../config';
-import { COLORS } from '../theme';
+import { COLORS, ESPACO, FONTE_CONDENSADA } from '../theme';
 
 /**
  * Comboio por voz — a tela principal do app.
@@ -32,6 +24,10 @@ import { COLORS } from '../theme';
  * É a única que o piloto usa em movimento, então tudo que não serve para isso
  * fica escondido: trocar de comboio some durante a conversa, e o navegador de
  * comboios é um painel à parte.
+ *
+ * Conectado, a ordem segue o que se procura de relance: está ao vivo e quem
+ * fala; o microfone (o maior alvo); quem está junto; o plugin; e só no fim,
+ * com confirmação, sair.
  */
 
 interface ConvoyScreenProps {
@@ -59,7 +55,6 @@ export const ConvoyScreen: React.FC<ConvoyScreenProps> = ({
   const [erroCodigo, setErroCodigo] = useState<string | null>(null);
   const [telefone, setTelefone] = useState('');
   const [painelAberto, setPainelAberto] = useState(false);
-  const [buscaTelefone, setBuscaTelefone] = useState('');
 
   useEffect(() => {
     void storage.getPhone().then(setTelefone);
@@ -83,13 +78,13 @@ export const ConvoyScreen: React.FC<ConvoyScreenProps> = ({
     });
   };
 
-  const alternar = async () => {
-    if (isLive) {
-      await voice.disconnect();
-      return;
-    }
-    await entrar(roomCode);
-  };
+  // Sair derruba a conversa de todo mundo com você: um toque sem querer, de
+  // luva, não pode fazer isso sozinho.
+  const confirmarSaida = () =>
+    Alert.alert('Sair do comboio?', 'Você para de ouvir e de falar com o grupo.', [
+      { text: 'Ficar', style: 'cancel' },
+      { text: 'Sair', style: 'destructive', onPress: () => void voice.disconnect() },
+    ]);
 
   const convidar = () =>
     Share.share({
@@ -107,353 +102,134 @@ export const ConvoyScreen: React.FC<ConvoyScreenProps> = ({
     onChangeRoom(normalizado);
   };
 
-  const cor =
-    voice.status === 'connected'
-      ? COLORS.success
-      : voice.status === 'error'
-        ? COLORS.danger
-        : voice.status === 'disconnected'
-          ? COLORS.faint
-          : COLORS.accent;
+  const painel = (
+    <PainelComboios
+      visivel={painelAberto}
+      aoFechar={() => setPainelAberto(false)}
+      browser={browser}
+      idToken={idToken}
+      codigoAtual={roomCode}
+      aoEntrar={(c) => void entrar(c)}
+    />
+  );
 
-  const rotuloStatus = {
-    disconnected: 'Desconectado',
-    connecting: 'Conectando...',
-    connected: 'Ao vivo',
-    reconnecting: 'Reconectando...',
-    error: 'Falha ao conectar',
-  }[voice.status];
+  if (isLive) {
+    return (
+      <ScrollView contentContainerStyle={estilosBase.conteudo}>
+        <CartaoAoVivo
+          status={voice.status}
+          codigo={roomCode}
+          participantes={voice.participants}
+          erro={voice.error}
+          aoConvidar={convidar}
+        />
+        <BotaoMicrofone
+          mudo={voice.isMuted}
+          aoAlternar={() => void voice.setMuted(!voice.isMuted)}
+        />
+        <CartaoParticipantes participantes={voice.participants} />
+        <PluginCard pluginAudio={pluginAudio} souLider={souLider} />
+        <View style={estilosBase.linhaBotoes}>
+          <Botao
+            rotulo="Comboios"
+            icone="list"
+            flex
+            onPress={() => setPainelAberto(true)}
+          />
+          <Botao rotulo="Sair do comboio" icone="exit-outline" variante="perigo" flex onPress={confirmarSaida} />
+        </View>
+        {painel}
+      </ScrollView>
+    );
+  }
 
   return (
-    <ScrollView contentContainerStyle={styles.conteudo}>
-      <View style={styles.card}>
-        <View style={styles.linhaStatus}>
-          <View style={[styles.ponto, { backgroundColor: cor }]} />
-          <Text style={styles.status}>{rotuloStatus}</Text>
-          {voice.status === 'connecting' && (
-            <ActivityIndicator size="small" color={COLORS.accent} />
-          )}
+    <ScrollView contentContainerStyle={estilosBase.conteudo} keyboardShouldPersistTaps="handled">
+      <Cartao style={styles.cartaoComboio}>
+        <View style={styles.linhaTopo}>
+          <Rotulo icone="radio-outline">Seu comboio</Rotulo>
         </View>
+        <Text style={styles.codigo} adjustsFontSizeToFit numberOfLines={1}>
+          {roomCode}
+        </Text>
+        {voice.status !== 'disconnected' && <LinhaStatus status={voice.status} />}
+        {voice.error && <Text style={estilosBase.erro}>{voice.error}</Text>}
 
-        {voice.serverHost && (
-          <Text style={styles.servidor}>servidor: {voice.serverHost}</Text>
-        )}
-        {voice.error && <Text style={styles.erro}>{voice.error}</Text>}
-
-        <Text style={styles.rotulo}>COMBOIO</Text>
-        <Text style={styles.codigo}>{roomCode}</Text>
-
-        <View style={styles.linhaBotoes}>
-          <Pressable onPress={convidar} style={styles.botaoSecundario}>
-            <Text style={styles.botaoSecundarioTexto}>Convidar</Text>
-          </Pressable>
-          <Pressable onPress={() => setPainelAberto(true)} style={styles.botaoSecundario}>
-            <Text style={styles.botaoSecundarioTexto}>Comboios</Text>
-          </Pressable>
+        <Botao
+          rotulo="Entrar no comboio"
+          icone="headset"
+          variante="action"
+          altura={64}
+          carregando={voice.status === 'connecting'}
+          onPress={() => void entrar(roomCode)}
+        />
+        <View style={estilosBase.linhaBotoes}>
+          <Botao rotulo="Convidar" icone="share-social-outline" flex onPress={convidar} />
+          <Botao rotulo="Comboios" icone="list" flex onPress={() => setPainelAberto(true)} />
         </View>
+      </Cartao>
 
-        <Pressable
-          onPress={alternar}
-          disabled={voice.status === 'connecting'}
-          style={[styles.botaoPrincipal, isLive && styles.botaoSair]}
-        >
-          <Text style={[styles.botaoPrincipalTexto, isLive && { color: COLORS.danger }]}>
-            {isLive ? 'Sair do comboio' : 'Entrar no comboio'}
-          </Text>
-        </Pressable>
-
-        {isLive && (
-          <Pressable
-            onPress={() => voice.setMuted(!voice.isMuted)}
-            style={[styles.botaoMic, voice.isMuted && styles.botaoMicMudo]}
-          >
-            <Text style={styles.botaoMicTexto}>
-              {voice.isMuted ? 'Microfone mudo — tocar para abrir' : 'Microfone aberto'}
-            </Text>
-          </Pressable>
-        )}
-      </View>
-
-      {isLive && <PluginCard pluginAudio={pluginAudio} souLider={souLider} />}
-
-      {/* Trocar de comboio some durante a conversa: não se oferece isso a
+      {/* Trocar de comboio só aparece fora da conversa: não se oferece isso a
           alguém pilotando. */}
-      {!isLive && (
-        <View style={styles.card}>
-          <Text style={styles.rotulo}>TROCAR DE COMBOIO</Text>
-          <View style={styles.linhaKm}>
-            <TextInput
-              value={codigoDigitado}
-              onChangeText={(t) => {
-                setCodigoDigitado(t);
-                setErroCodigo(null);
-              }}
-              placeholder="Código (ex: K7M-3PQ)"
-              placeholderTextColor={COLORS.faint}
-              autoCapitalize="characters"
-              autoCorrect={false}
-              style={[styles.input, { flex: 1 }]}
-            />
-            <Pressable onPress={entrarPorCodigo} style={styles.botaoPequeno}>
-              <Text style={styles.botaoPequenoTexto}>Ir</Text>
-            </Pressable>
-          </View>
-          {erroCodigo && <Text style={styles.erro}>{erroCodigo}</Text>}
-
-          <Pressable
-            onPress={() => onChangeRoom(generateRoomCode())}
-            style={styles.botaoSecundario}
-          >
-            <Text style={styles.botaoSecundarioTexto}>Criar comboio novo</Text>
-          </Pressable>
-
-          <Text style={styles.rotuloCampo}>Seu telefone (para amigos te acharem)</Text>
-          <TextInput
-            value={telefone}
+      <Cartao>
+        <Rotulo icone="swap-horizontal">Trocar de comboio</Rotulo>
+        <View style={styles.linha}>
+          <Campo
+            value={codigoDigitado}
             onChangeText={(t) => {
-              setTelefone(t);
-              void storage.savePhone(t);
+              setCodigoDigitado(t);
+              setErroCodigo(null);
             }}
-            placeholder="(11) 98765-4321"
-            placeholderTextColor={COLORS.faint}
-            keyboardType="phone-pad"
-            style={styles.input}
+            placeholder="Código (ex: K7M-3PQ)"
+            autoCapitalize="characters"
+            autoCorrect={false}
+            erro={!!erroCodigo}
+            style={styles.campoCodigo}
           />
-          <Text style={styles.ajuda}>
-            Guardado só neste aparelho. Quem já tem seu número consegue te encontrar;
-            ninguém consegue ler telefones.
-          </Text>
+          <Botao rotulo="Ir" compacto altura={52} onPress={entrarPorCodigo} />
         </View>
-      )}
+        {erroCodigo && <Text style={estilosBase.erro}>{erroCodigo}</Text>}
+        <Botao
+          rotulo="Criar comboio novo"
+          icone="add"
+          onPress={() => onChangeRoom(generateRoomCode())}
+        />
 
-      <View style={styles.card}>
-        <Text style={styles.rotulo}>NO COMBOIO ({voice.participants.length})</Text>
-        {voice.participants.length === 0 ? (
-          <Text style={styles.ajuda}>Ninguém conectado ainda.</Text>
-        ) : (
-          voice.participants.map((p: VoiceParticipant) => (
-            <View key={p.id} style={styles.linhaParticipante}>
-              <View
-                style={[styles.avatar, p.isSpeaking && { backgroundColor: COLORS.accent }]}
-              >
-                <Text
-                  style={[
-                    styles.avatarTexto,
-                    p.isSpeaking && { color: COLORS.background },
-                  ]}
-                >
-                  {p.name.charAt(0).toUpperCase()}
-                </Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.nomeParticipante}>
-                  {p.name}
-                  {p.isHost ? ' · líder' : ''}
-                </Text>
-                <Text style={styles.ajuda}>
-                  {p.isMuted ? 'mudo' : p.isSpeaking ? 'falando' : 'ouvindo'}
-                </Text>
-              </View>
-            </View>
-          ))
-        )}
-      </View>
+        <View style={estilosBase.divisoria} />
 
-      {/* Navegador de comboios e busca por telefone */}
-      <Modal visible={painelAberto} transparent animationType="slide">
-        <View style={styles.fundoModal}>
-          <View style={styles.modal}>
-            <View style={styles.cabecalhoModal}>
-              <Text style={styles.titulo}>Comboios ativos</Text>
-              <Pressable onPress={() => setPainelAberto(false)}>
-                <Text style={styles.fechar}>Fechar</Text>
-              </Pressable>
-            </View>
-
-            <View style={styles.linhaKm}>
-              <TextInput
-                value={buscaTelefone}
-                onChangeText={setBuscaTelefone}
-                placeholder="Achar piloto pelo telefone"
-                placeholderTextColor={COLORS.faint}
-                keyboardType="phone-pad"
-                style={[styles.input, { flex: 1 }]}
-              />
-              <Pressable
-                onPress={() =>
-                  void browser.refresh({
-                    phone: normalizePhone(buscaTelefone),
-                    idToken,
-                  })
-                }
-                style={styles.botaoPequeno}
-              >
-                <Text style={styles.botaoPequenoTexto}>Buscar</Text>
-              </Pressable>
-            </View>
-
-            {browser.searched && !browser.found && (
-              <Text style={styles.ajuda}>
-                Ninguém com esse telefone está em comboio agora.
-              </Text>
-            )}
-
-            {browser.found && (
-              <Pressable
-                onPress={() => void entrar(browser.found!.code)}
-                style={styles.achado}
-              >
-                <Text style={styles.achadoTexto}>
-                  Está no comboio {browser.found.code} — tocar para entrar
-                </Text>
-              </Pressable>
-            )}
-
-            <ScrollView style={{ maxHeight: 320 }}>
-              {browser.isLoading && <ActivityIndicator color={COLORS.accent} />}
-              {!browser.isLoading && browser.convoys.length === 0 && (
-                <Text style={styles.ajuda}>Nenhum comboio ativo no momento.</Text>
-              )}
-              {browser.convoys.map((c) => (
-                <View key={c.code} style={styles.linhaComboio}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.codigoComboio}>{c.code}</Text>
-                    <Text style={styles.ajuda}>
-                      {c.riders} de {CONVOY_CAPACITY}
-                      {c.total > c.riders ? ` · ${c.total - c.riders} de apoio` : ''}
-                      {c.isFull ? ' · lotado' : ''}
-                    </Text>
-                  </View>
-                  {c.code === roomCode ? (
-                    <Text style={styles.aqui}>você está aqui</Text>
-                  ) : (
-                    <Pressable
-                      onPress={() => void entrar(c.code)}
-                      style={styles.botaoPequeno}
-                    >
-                      <Text style={styles.botaoPequenoTexto}>Entrar</Text>
-                    </Pressable>
-                  )}
-                </View>
-              ))}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
+        <Rotulo icone="call-outline">Seu telefone</Rotulo>
+        <Campo
+          value={telefone}
+          onChangeText={(t) => {
+            setTelefone(t);
+            void storage.savePhone(t);
+          }}
+          placeholder="(11) 98765-4321"
+          keyboardType="phone-pad"
+        />
+        <Ajuda>
+          Para amigos te acharem. Guardado só neste aparelho: quem já tem seu número
+          consegue te encontrar; ninguém consegue ler telefones.
+        </Ajuda>
+      </Cartao>
+      {painel}
     </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  conteudo: { padding: 16, gap: 12, paddingBottom: 28 },
-  card: {
-    backgroundColor: COLORS.surface,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    padding: 16,
-    gap: 10,
-  },
-  linhaStatus: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  ponto: { width: 10, height: 10, borderRadius: 5 },
-  status: { color: COLORS.text, fontSize: 14, fontWeight: '700', flex: 1 },
-  servidor: { color: COLORS.faint, fontSize: 10, marginTop: -6 },
-  erro: { color: COLORS.danger, fontSize: 11 },
-  rotulo: { color: COLORS.muted, fontSize: 10, fontWeight: '800', letterSpacing: 1 },
+  cartaoComboio: { gap: ESPACO.lg, paddingVertical: ESPACO.xl },
+  linhaTopo: { flexDirection: 'row', alignItems: 'center' },
+  // O código é dito em voz alta e copiado de outra tela: grande, condensado,
+  // em branco (âmbar agora é só "falando").
   codigo: {
-    color: COLORS.accent,
-    fontSize: 28,
+    color: COLORS.ink,
+    fontSize: 52,
     fontWeight: '800',
-    letterSpacing: 3,
-    marginTop: -4,
+    fontFamily: FONTE_CONDENSADA,
+    letterSpacing: 4,
+    marginVertical: -ESPACO.xs,
   },
-  linhaBotoes: { flexDirection: 'row', gap: 8 },
-  linhaKm: { flexDirection: 'row', gap: 8, alignItems: 'center' },
-  botaoPrincipal: {
-    backgroundColor: COLORS.accent,
-    borderRadius: 12,
-    paddingVertical: 15,
-    alignItems: 'center',
-  },
-  botaoSair: {
-    backgroundColor: 'rgba(248,113,113,0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(248,113,113,0.3)',
-  },
-  botaoPrincipalTexto: { color: COLORS.background, fontWeight: '800', fontSize: 15 },
-  botaoMic: {
-    backgroundColor: COLORS.success,
-    borderRadius: 12,
-    paddingVertical: 13,
-    alignItems: 'center',
-  },
-  botaoMicMudo: { backgroundColor: COLORS.surfaceAlt },
-  botaoMicTexto: { color: COLORS.background, fontWeight: '800', fontSize: 13 },
-  botaoSecundario: {
-    flex: 1,
-    backgroundColor: COLORS.surfaceAlt,
-    borderRadius: 12,
-    paddingVertical: 11,
-    alignItems: 'center',
-  },
-  botaoSecundarioTexto: { color: COLORS.text, fontWeight: '700', fontSize: 12 },
-  botaoPequeno: {
-    backgroundColor: COLORS.surfaceAlt,
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-  },
-  botaoPequenoTexto: { color: COLORS.text, fontWeight: '700', fontSize: 12 },
-  input: {
-    backgroundColor: COLORS.background,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    color: COLORS.text,
-    fontSize: 14,
-  },
-  rotuloCampo: { color: COLORS.muted, fontSize: 11 },
-  ajuda: { color: COLORS.faint, fontSize: 11, lineHeight: 16 },
-  linhaParticipante: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  avatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
-    backgroundColor: COLORS.surfaceAlt,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarTexto: { color: COLORS.text, fontWeight: '800' },
-  nomeParticipante: { color: COLORS.text, fontSize: 13, fontWeight: '600' },
-  fundoModal: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.8)' },
-  modal: {
-    backgroundColor: COLORS.surface,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-    padding: 20,
-    gap: 10,
-  },
-  cabecalhoModal: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  titulo: { color: COLORS.text, fontSize: 15, fontWeight: '800' },
-  fechar: { color: COLORS.muted, fontSize: 12 },
-  achado: {
-    backgroundColor: 'rgba(52,211,153,0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(52,211,153,0.3)',
-    borderRadius: 12,
-    padding: 12,
-  },
-  achadoTexto: { color: COLORS.success, fontSize: 12, fontWeight: '700' },
-  linhaComboio: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingVertical: 10,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-  },
-  codigoComboio: { color: COLORS.text, fontSize: 14, fontWeight: '700', letterSpacing: 1 },
-  aqui: { color: COLORS.accent, fontSize: 10, fontWeight: '700' },
+  linha: { flexDirection: 'row', gap: ESPACO.sm, alignItems: 'center' },
+  campoCodigo: { flex: 1, letterSpacing: 1.5, fontWeight: '700' },
 });

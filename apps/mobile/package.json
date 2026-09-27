@@ -13,6 +13,7 @@
     "update": "eas update --channel preview --message"
   },
   "dependencies": {
+    "@expo/vector-icons": "^15.0.2",
     "@livekit/react-native": "^2.12.0",
     "@livekit/react-native-webrtc": "144.1.2",
     "@motorede/shared": "*",
