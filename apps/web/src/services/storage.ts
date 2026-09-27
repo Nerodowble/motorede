@@ -172,6 +172,9 @@ const DEFAULT_RECORDS: MaintenanceRecord[] = [
 // removemos. Lista vazia é a verdade: ninguém pediu socorro perto de você.
 const DEFAULT_SOS_ALERTS: SOSAlert[] = [];
 
+/** Destino que versões antigas semeavam; ver a limpeza em getVoiceRoom. */
+const DESTINO_SEMEADO_ANTIGO = 'Parque Estadual da Serra do Mar - Núcleo Curucutu';
+
 // Seed Voice Room (Comboio)
 const DEFAULT_VOICE_ROOM: VoiceRoom = {
   id: 'room-graciosa-2026',
@@ -181,9 +184,9 @@ const DEFAULT_VOICE_ROOM: VoiceRoom = {
   creatorName: 'Marcos Viana (Líder)',
   isActive: true,
   createdAt: new Date().toISOString(),
-  destinationName: 'Parque Estadual da Serra do Mar - Núcleo Curucutu',
-  destinationLat: -23.9856,
-  destinationLng: -46.7412,
+  // Sem destino de exemplo. O "Parque Estadual da Serra do Mar" que ficava
+  // aqui era gravado no aparelho na primeira leitura e aparecia como destino
+  // do comboio sem ninguém ter escolhido — e o botão do Waze levava para lá.
   participants: [
     {
       id: 'p-leader',
@@ -958,7 +961,16 @@ export const storageService = {
       return DEFAULT_VOICE_ROOM;
     }
     try {
-      return JSON.parse(raw);
+      const sala = JSON.parse(raw) as VoiceRoom;
+      // Aparelhos que já abriram o app têm o destino de exemplo gravado. Só
+      // apaga se for exatamente o texto semeado: um destino que o piloto
+      // escolheu nunca é tocado.
+      if (sala.destinationName === DESTINO_SEMEADO_ANTIGO) {
+        const { destinationName: _n, destinationLat: _la, destinationLng: _ln, ...semDestino } = sala;
+        localStorage.setItem(STORAGE_KEYS.VOICE_ROOM, JSON.stringify(semDestino));
+        return semDestino;
+      }
+      return sala;
     } catch {
       return DEFAULT_VOICE_ROOM;
     }

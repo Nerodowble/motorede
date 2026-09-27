@@ -67,6 +67,19 @@ export function getGoogleMapsNavigationUrl(lat: number, lng: number): string {
 }
 
 /**
+ * Rota por NOME do destino, para quando só temos o texto que o piloto digitou.
+ * Antes o app gravava uma coordenada fixa (Serra do Mar) junto de qualquer
+ * nome, e o Waze abria a rota para um lugar que ninguém escolheu.
+ */
+export function getWazeSearchUrl(query: string): string {
+  return `https://waze.com/ul?q=${encodeURIComponent(query)}&navigate=yes`;
+}
+
+export function getGoogleMapsSearchUrl(query: string): string {
+  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(query)}`;
+}
+
+/**
  * Requests device current position with fallback to default
  */
 export function getCurrentPositionAsync(): Promise<GeoPoint | null> {

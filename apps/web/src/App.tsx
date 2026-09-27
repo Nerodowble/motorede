@@ -18,7 +18,7 @@ import { MotorcycleEditModal } from './components/MotorcycleEditModal';
 import { LoginScreen } from './components/LoginScreen';
 import { useGoogleAuth } from './hooks/useGoogleAuth';
 import { useTheme } from './hooks/useTheme';
-import { ThemeToggle } from './components/ThemeToggle';
+import { MoreSheet } from './components/MoreSheet';
 
 // Eagerly load primary Dashboard for instant first paint
 import { DashboardView } from './views/DashboardView';
@@ -43,6 +43,14 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => storageService.getCurrentUser());
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isMotorcycleEditOpen, setIsMotorcycleEditOpen] = useState(false);
+  // Folha "Mais": aberta pela barra de baixo e pelo avatar do cabeçalho.
+  const [isMoreOpen, setIsMoreOpen] = useState(false);
+  // "Entrar no comboio" do painel. A conexão de voz é UMA e mora na tela do
+  // comboio (useVoiceConnection dentro de ConvoyVoiceView); o painel não abre
+  // outra. Ele liga esta bandeira e troca de aba, e a tela do comboio conecta
+  // ao abrir e apaga a bandeira. Subir a conexão para o App seria o caminho
+  // "certo", mas mexe no ciclo de vida da voz — fica para depois.
+  const [entrarNoComboioAoAbrir, setEntrarNoComboioAoAbrir] = useState(false);
   const [currentRole, setCurrentRole] = useState<UserRole>(() => currentUser?.role || 'rider');
   const [activeTab, setActiveTab] = useState<ActiveTab>(() => {
     if (currentUser?.role === 'partner_shop') return 'partner_shop';
@@ -270,6 +278,10 @@ export default function App() {
   // Conta o que a aba de fato mostra: chamados de outras pessoas ainda não
   // atendidos por você, mais os seus próprios pedidos de pé. Antes contava o
   // histórico local, e dizia "2 SOS" com a tela vazia.
+  // Tela inicial de cada papel, para onde a marca do cabeçalho leva.
+  const abaInicial: ActiveTab =
+    currentRole === 'partner_shop' ? 'partner_shop' : currentRole === 'admin' ? 'admin' : 'dashboard';
+
   const activeSOSCount =
     socorro.chamados.filter((c) => !c.respondido).length + socorro.meusPedidos.length;
 
@@ -285,17 +297,13 @@ export default function App() {
           demais para eu acrescentar mais uma. */}
       <PWAInstallBanner />
 
-      {/* Primary App Header */}
+      {/* Cabeçalho: marca e conta. Tema, sair e o resto foram para o "Mais". */}
       <Header
         currentUser={currentUser}
+        fotoUrl={auth.user?.picture}
+        onOpenAccount={() => setIsMoreOpen(true)}
         onOpenAuthModal={() => setIsAuthModalOpen(true)}
-        onLogout={handleLogout}
-        activeSOSCount={activeSOSCount}
-        isBackgroundAudioActive={isBackgroundAudioActive}
-        onOpenLockscreenModal={() => setIsLockscreenOpen(true)}
-        onSOSClick={() => setActiveTab('sos')}
-        onOpenEditMotorcycle={() => setIsMotorcycleEditOpen(true)}
-        themeToggle={<ThemeToggle choice={theme.choice} onChange={theme.escolher} />}
+        onGoHome={() => setActiveTab(abaInicial)}
       />
 
       {/* Main View Container */}
@@ -305,7 +313,12 @@ export default function App() {
             motorcycle={motorcycle}
             maintenance={maintenance}
             voiceRoom={voiceRoom}
+            idToken={auth.getIdToken()}
             onNavigateTab={(tab) => setActiveTab(tab)}
+            onEntrarNoComboio={() => {
+              setEntrarNoComboioAoAbrir(true);
+              setActiveTab('convoy');
+            }}
             onUpdateKm={handleUpdateKm}
             onOpenEditMotorcycle={() => setIsMotorcycleEditOpen(true)}
           />
@@ -337,6 +350,8 @@ export default function App() {
                   audioEngine.stopBackgroundSession();
                 }
               }}
+              entrarAoAbrir={entrarNoComboioAoAbrir}
+              onEntradaAutomaticaFeita={() => setEntrarNoComboioAoAbrir(false)}
             />
           )}
 
@@ -430,8 +445,25 @@ export default function App() {
         userRole={currentRole}
         activeSOSCount={activeSOSCount}
         isVoiceActive={isBackgroundAudioActive}
-        onOpenEditMotorcycle={() => setIsMotorcycleEditOpen(true)}
-        onOpenLockscreenModal={() => setIsLockscreenOpen(true)}
+        onOpenMore={() => setIsMoreOpen(true)}
+        isMoreOpen={isMoreOpen}
+      />
+
+      <MoreSheet
+        isOpen={isMoreOpen}
+        onClose={() => setIsMoreOpen(false)}
+        userRole={currentRole}
+        activeTab={activeTab}
+        onTabChange={(tab) => setActiveTab(tab)}
+        currentUser={currentUser}
+        fotoUrl={auth.user?.picture}
+        themeChoice={theme.choice}
+        onThemeChange={theme.escolher}
+        // Perfil local só existe sem o login do Google; com ele, a conta é a
+        // do Google e o AuthModal nem abre.
+        onOpenProfile={auth.isConfigured ? undefined : () => setIsAuthModalOpen(true)}
+        onLogout={handleLogout}
+        onOpenLockscreenModal={import.meta.env.DEV ? () => setIsLockscreenOpen(true) : undefined}
       />
     </div>
   );

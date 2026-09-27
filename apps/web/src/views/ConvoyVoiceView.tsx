@@ -8,9 +8,6 @@ import {
   Share2,
   QrCode,
   Users,
-  Navigation,
-  ExternalLink,
-  MapPin,
   Check,
   Copy,
   Plus,
@@ -29,8 +26,9 @@ import {
   isJoinableRoomCode,
 } from '@motorede/shared';
 import { storageService } from '../services/storage';
-import { getGoogleMapsNavigationUrl, getWazeNavigationUrl } from '../services/geolocation';
-import QRCode from 'qrcode';
+import { codigoInicialDoComboio, compartilharConvite, linkDoConvite } from '../services/convoyInvite';
+import { ConvoyDestinationCard } from '../components/ConvoyDestinationCard';
+import { ConvoyQRModal } from '../components/ConvoyQRModal';
 import { useVoiceConnection } from '../hooks/useVoiceConnection';
 import { useGoogleAuth } from '../hooks/useGoogleAuth';
 import { ConvoyBrowser } from '../components/ConvoyBrowser';
@@ -42,6 +40,14 @@ interface ConvoyVoiceViewProps {
   onUpdateVoiceRoom: (updated: Partial<VoiceRoom>) => void;
   isBackgroundAudioActive: boolean;
   onToggleBackgroundSession: (active: boolean) => void;
+  /**
+   * Pedido do painel inicial para conectar assim que a tela abrir ("Entrar no
+   * comboio" com um toque). A conexão continua sendo UMA, a deste componente:
+   * o painel só pede, não conecta por conta própria.
+   */
+  entrarAoAbrir?: boolean;
+  /** Avisa que o pedido foi atendido, para não reconectar numa volta à aba. */
+  onEntradaAutomaticaFeita?: () => void;
 }
 
 export const ConvoyVoiceView: React.FC<ConvoyVoiceViewProps> = ({
@@ -49,11 +55,11 @@ export const ConvoyVoiceView: React.FC<ConvoyVoiceViewProps> = ({
   onUpdateVoiceRoom,
   isBackgroundAudioActive,
   onToggleBackgroundSession,
+  entrarAoAbrir,
+  onEntradaAutomaticaFeita,
 }) => {
   const [showQRModal, setShowQRModal] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
-  const [showEditDestModal, setShowEditDestModal] = useState(false);
-  const [newDestName, setNewDestName] = useState(voiceRoom.destinationName || '');
 
   // Conexão de voz real contra o servidor LiveKit.
   const voice = useVoiceConnection();
@@ -65,54 +71,24 @@ export const ConvoyVoiceView: React.FC<ConvoyVoiceViewProps> = ({
     (p) => p.isHost && p.id === voice.room?.localParticipant.identity
   );
 
-  // Código do comboio ativo. A ordem de precedência importa: um link de convite
-  // (?sala=) tem que vencer o último comboio salvo, senão quem recebe o convite
-  // cai na própria sala anterior em vez da do amigo.
-  const [activeRoomCode, setActiveRoomCode] = useState<string>(() => {
-    const fromLink = new URLSearchParams(window.location.search).get('sala');
-    if (fromLink) {
-      const normalized = normalizeRoomCode(fromLink);
-      if (isJoinableRoomCode(normalized)) return normalized;
-    }
-    return storageService.getLastRoomCode() || voiceRoom.code;
-  });
+  // Código do comboio ativo. A precedência (convite ?sala= antes do último
+  // comboio salvo) mora em convoyInvite, para o painel mostrar o mesmo código.
+  const [activeRoomCode, setActiveRoomCode] = useState<string>(() =>
+    codigoInicialDoComboio(voiceRoom.code)
+  );
   const [codeInput, setCodeInput] = useState('');
   const [codeError, setCodeError] = useState<string | null>(null);
-  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [showBrowser, setShowBrowser] = useState(false);
   const [phone, setPhone] = useState(() => storageService.getPhone());
   const [showLockWarning, setShowLockWarning] = useState(
     () => !storageService.isLockWarningDismissed()
   );
 
-  const inviteUrl = `${window.location.origin}/?sala=${activeRoomCode}`;
+  const inviteUrl = linkDoConvite(activeRoomCode);
 
   // Detecção simples de celular: basta para decidir se vale oferecer o app.
   const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-
-  // Gera o QR de verdade quando o modal abre ou o comboio muda.
-  useEffect(() => {
-    if (!showQRModal) return;
-    let cancelled = false;
-
-    QRCode.toDataURL(inviteUrl, {
-      width: 512,
-      margin: 1,
-      errorCorrectionLevel: 'M',
-      color: { dark: '#0f172a', light: '#ffffff' },
-    })
-      .then((url) => {
-        if (!cancelled) setQrDataUrl(url);
-      })
-      .catch(() => {
-        if (!cancelled) setQrDataUrl(null);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [showQRModal, inviteUrl]);
 
   useEffect(() => {
     if (!auth.user) auth.renderButton(googleButtonRef.current);
@@ -173,47 +149,32 @@ export const ConvoyVoiceView: React.FC<ConvoyVoiceViewProps> = ({
     });
   };
 
-  const handleCopyInviteLink = () => {
-    navigator.clipboard.writeText(inviteUrl);
+  // "Entrar no comboio" do painel: conecta uma vez, ao abrir. O ref segura o
+  // StrictMode (que roda o efeito duas vezes em desenvolvimento) e qualquer
+  // nova renderização — sem ele sairia uma segunda tentativa de conexão.
+  const entradaAutomaticaFeita = useRef(false);
+  useEffect(() => {
+    if (!entrarAoAbrir || entradaAutomaticaFeita.current) return;
+    entradaAutomaticaFeita.current = true;
+    onEntradaAutomaticaFeita?.();
+    if (voice.status === 'disconnected' || voice.status === 'error') void handleToggleLive();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entrarAoAbrir]);
+
+  const marcarCopiado = () => {
     setCopiedLink(true);
     setTimeout(() => setCopiedLink(false), 2000);
   };
 
-  /**
-   * Convidar alguém para o comboio.
-   *
-   * No celular usa a folha de compartilhamento do sistema, que cai direto no
-   * WhatsApp — que é por onde um convite de comboio realmente circula. Onde
-   * isso não existe, copia o link.
-   */
-  const handleShareConvoy = async () => {
-    const texto = `Entra no meu comboio no MotoRede
-
-Código: ${activeRoomCode}
-${inviteUrl}`;
-
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: 'Comboio MotoRede', text: texto, url: inviteUrl });
-        return;
-      } catch {
-        // Cancelado pelo usuário ou indisponível: segue para a cópia.
-      }
-    }
-
-    handleCopyInviteLink();
+  const handleCopyInviteLink = () => {
+    navigator.clipboard.writeText(inviteUrl);
+    marcarCopiado();
   };
 
-  const handleSaveDestination = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newDestName.trim()) {
-      onUpdateVoiceRoom({
-        destinationName: newDestName.trim(),
-        destinationLat: -23.9856,
-        destinationLng: -46.7412,
-      });
-      setShowEditDestModal(false);
-    }
+  // O texto e a regra (folha do sistema no celular, cópia no resto) ficam em
+  // convoyInvite, compartilhados com o botão Convidar do painel.
+  const handleShareConvoy = async () => {
+    if ((await compartilharConvite(activeRoomCode)) === 'copiado') marcarCopiado();
   };
 
   return (
@@ -386,7 +347,9 @@ ${inviteUrl}`;
                   {activeRoomCode}
                 </p>
               </div>
-              <div className="flex items-center gap-2">
+              {/* flex-wrap: em 360px os quatro botões não cabem numa linha e o
+                  "Novo" era cortado pela borda da tela. */}
+              <div className="flex items-center gap-2 flex-wrap">
                 <button
                   onClick={() => setShowBrowser(true)}
                   className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-elevated hover:bg-line-strong text-ink text-xs font-semibold border border-line-strong transition active:scale-95"
@@ -651,60 +614,8 @@ ${inviteUrl}`;
       {/* Plugin de áudio do comboio. Some por completo fora da conversa. */}
       {isLive && <PluginPanel pluginAudio={pluginAudio} souLider={souLider} />}
 
-      {/* External Navigation Destination (Waze & Google Maps) */}
-      <div className="rounded-2xl bg-surface/80 border border-line p-4 shadow-md">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <Navigation className="w-4 h-4 text-info" />
-            <h3 className="text-xs font-bold text-ink uppercase tracking-wider font-mono">
-              Destino Cadastrado do Comboio
-            </h3>
-          </div>
-          <button
-            onClick={() => setShowEditDestModal(true)}
-            className="text-xs text-brand-soft hover:text-brand-soft font-semibold"
-          >
-            Alterar Destino
-          </button>
-        </div>
-
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-canvas/80 p-3.5 rounded-xl border border-line/80">
-          <div className="flex items-start gap-2.5">
-            <MapPin className="w-5 h-5 text-danger shrink-0 mt-0.5" />
-            <div>
-              <p className="text-xs sm:text-sm font-bold text-ink">
-                {voiceRoom.destinationName || 'Ponto de Chegada não configurado'}
-              </p>
-              <p className="text-[11px] text-ink-muted mt-0.5">
-                Toque no app de navegação de sua preferência para abrir a rota mantendo o áudio em 2º plano:
-              </p>
-            </div>
-          </div>
-
-          {/* Navigation Action Buttons */}
-          <div className="flex items-center gap-2 shrink-0">
-            <a
-              href={getWazeNavigationUrl(voiceRoom.destinationLat || -23.9856, voiceRoom.destinationLng || -46.7412)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-1 sm:flex-initial px-3.5 py-2 rounded-xl bg-info/20 hover:bg-info/30 text-info border border-info/40 text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95"
-            >
-              <span>Waze</span>
-              <ExternalLink className="w-3.5 h-3.5" />
-            </a>
-
-            <a
-              href={getGoogleMapsNavigationUrl(voiceRoom.destinationLat || -23.9856, voiceRoom.destinationLng || -46.7412)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-1 sm:flex-initial px-3.5 py-2 rounded-xl bg-live/20 hover:bg-live/30 text-success border border-success/40 text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95"
-            >
-              <span>Google Maps</span>
-              <ExternalLink className="w-3.5 h-3.5" />
-            </a>
-          </div>
-        </div>
-      </div>
+      {/* Destino e atalhos de rota (Waze / Google Maps). */}
+      <ConvoyDestinationCard voiceRoom={voiceRoom} onUpdateVoiceRoom={onUpdateVoiceRoom} />
 
       <ConvoyBrowser
         isOpen={showBrowser}
@@ -714,87 +625,13 @@ ${inviteUrl}`;
         idToken={auth.getIdToken()}
       />
 
-      {/* QR Code Modal */}
-      {showQRModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-sm rounded-2xl bg-surface border border-line p-5 shadow-2xl text-center">
-            <h3 className="text-base font-extrabold text-ink mb-1">Ingressar no Comboio</h3>
-            <p className="text-xs text-ink-muted mb-4">
-              Aponte a câmera do celular para entrar diretamente na sala de voz:
-            </p>
-
-            <div className="bg-white p-4 rounded-xl inline-block mx-auto mb-4">
-              {qrDataUrl ? (
-                <img
-                  src={qrDataUrl}
-                  alt={`QR Code do comboio ${activeRoomCode}`}
-                  className="w-48 h-48"
-                />
-              ) : (
-                <div className="w-48 h-48 flex items-center justify-center text-ink-muted text-xs">
-                  Gerando...
-                </div>
-              )}
-            </div>
-
-            <p className="font-mono text-sm font-bold text-code mb-4 tracking-wider">
-              CÓDIGO: {activeRoomCode}
-            </p>
-
-            <div className="flex gap-2">
-              <button
-                onClick={handleCopyInviteLink}
-                className="flex-1 py-2 px-3 bg-elevated hover:bg-line-strong text-ink text-xs font-bold rounded-lg border border-line-strong"
-              >
-                {copiedLink ? 'Link Copiado!' : 'Copiar Link'}
-              </button>
-              <button
-                onClick={() => setShowQRModal(false)}
-                className="flex-1 py-2 px-3 bg-action hover:opacity-90 text-on-action text-xs font-bold rounded-lg"
-              >
-                Fechar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Edit Destination Modal */}
-      {showEditDestModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-sm rounded-2xl bg-surface border border-line p-5 shadow-2xl">
-            <h3 className="text-sm font-extrabold text-ink mb-2">Cadastrar Destino do Comboio</h3>
-            <p className="text-xs text-ink-muted mb-4">
-              Informe o ponto final para que todos os pilotos possam abrir a rota no Waze ou Google Maps com um toque.
-            </p>
-            <form onSubmit={handleSaveDestination} className="space-y-3">
-              <input
-                type="text"
-                value={newDestName}
-                onChange={(e) => setNewDestName(e.target.value)}
-                placeholder="Ex: Serra da Graciosa, Morretes - PR"
-                className="w-full bg-canvas border border-line-strong rounded-lg p-2.5 text-xs text-ink focus:outline-none focus:border-brand"
-                required
-              />
-              <div className="flex justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowEditDestModal(false)}
-                  className="px-3 py-1.5 rounded-lg bg-elevated text-ink-muted text-xs"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-1.5 rounded-lg bg-action text-on-action font-bold text-xs hover:opacity-90"
-                >
-                  Salvar Destino
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <ConvoyQRModal
+        isOpen={showQRModal}
+        onClose={() => setShowQRModal(false)}
+        roomCode={activeRoomCode}
+        copiado={copiedLink}
+        onCopiarLink={handleCopyInviteLink}
+      />
     </div>
   );
 };

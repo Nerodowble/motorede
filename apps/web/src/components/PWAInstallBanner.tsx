@@ -22,6 +22,17 @@ import { storageService } from '../services/storage';
  * caminho a partir de dentro do app.
  */
 
+/**
+ * Passo a passo manual, para quando o navegador não deixa o app abrir o
+ * diálogo. Exportado porque o "Mais → Instalar app" mostra o mesmo texto —
+ * o banner some depois de dispensado, e o caminho não pode sumir junto.
+ */
+export function passosDeInstalacao(isIOS: boolean): string[] {
+  return isIOS
+    ? ['Toque em Compartilhar, na barra do Safari', 'Escolha "Adicionar à Tela de Início"', 'Confirme em "Adicionar"']
+    : ['Toque no menu ⋮ do navegador', 'Escolha "Instalar app" ou "Adicionar à tela inicial"', 'Confirme'];
+}
+
 export const PWAInstallBanner: React.FC = () => {
   const { isInstallable, isInstalled, isIOS, install } = usePWAInstall();
   const [mostrarPassos, setMostrarPassos] = useState(false);
@@ -34,9 +45,7 @@ export const PWAInstallBanner: React.FC = () => {
     setDispensado(true);
   };
 
-  const passos = isIOS
-    ? ['Toque em Compartilhar, na barra do Safari', 'Escolha "Adicionar à Tela de Início"', 'Confirme em "Adicionar"']
-    : ['Toque no menu ⋮ do navegador', 'Escolha "Instalar app" ou "Adicionar à tela inicial"', 'Confirme'];
+  const passos = passosDeInstalacao(isIOS);
 
   return (
     <div className="bg-surface border-b border-line px-4 py-2.5">

@@ -50,7 +50,7 @@ como traço, nunca como fundo de botão.
 - [x] Tirar o sentido de estado de `brand` (~35 pontos) — **feito:** 28 botões principais → `action`; conectando/mudo/offline/lotado/atenção/manutenção/pendente → `warning`; avatar de quem fala → `speaking`; código do comboio → `code`. Barrinha da aba ativa e ícones de identidade seguem `brand`: conectando, falando, mudo, avisos, "lotado", código do comboio, papel "Piloto"
 
 ### Etapa 2 — correções de celular
-- [ ] Cabeçalho em até 3 alvos de 44px (logo · SOS · conta); tema, engrenagem e sair vão para "Mais"; tirar selo "PWA" e SOS duplicado — `components/Header.tsx`
+- [x] Cabeçalho em até 3 alvos de 44px (logo · SOS · conta); tema, engrenagem e sair vão para "Mais"; tirar selo "PWA" e SOS duplicado — `components/Header.tsx`
 - [x] `min-w-0` no bloco esquerdo do cabeçalho (transborda em ≤ 383px e esconde "Entrar")
 - [x] Breakpoint `xs:` inexistente em `Header.tsx:136`
 - [x] `min-w-0` nas grades do `AuthModal.tsx:495,540` (proteção para Safari)
@@ -62,16 +62,23 @@ como traço, nunca como fundo de botão.
 - [x] Waze/Google Maps legíveis no tema claro — `views/ConvoyVoiceView.tsx`
 
 ### Etapa 4 — painel e navegação no celular
-- [ ] Painel inicial: "Entrar no comboio" conecta direto (1 toque), mostra estado e quem está no comboio; Convidar / Trocar comboio no próprio cartão; tirar botão "Ficha" — `views/DashboardView.tsx`, `App.tsx`
-- [ ] Navegação: Início · Comboio · **SOS** (centro) · **Moto** (era "Oficina") · Mais; rótulos 12px — `components/Navigation.tsx`
-- [ ] "Mais" sem duplicata ("Passaporte & Ficha") e sem o Simulador de Tela Bloqueada (só em modo desenvolvimento)
-- [ ] Conferir o destino "Serra do Mar" que aparece sem ninguém escolher — `views/ConvoyVoiceView.tsx`
+- [x] Painel inicial: "Entrar no comboio" conecta direto (1 toque), mostra estado e quem está no comboio; Convidar / Trocar comboio no próprio cartão; tirar botão "Ficha" — `views/DashboardView.tsx`, `App.tsx`
+- [x] Navegação: Início · Comboio · **SOS** (centro) · **Moto** (era "Oficina") · Mais; rótulos 12px — `components/Navigation.tsx`
+- [x] "Mais" sem duplicata ("Passaporte & Ficha") e sem o Simulador de Tela Bloqueada (só em modo desenvolvimento)
+- [x] Conferir o destino "Serra do Mar" (era dado de exemplo semeado em storage.ts; removido, vira estado vazio) que aparece sem ninguém escolher — `views/ConvoyVoiceView.tsx`
 
 ### Etapa 5 — acabamento
 - [ ] Fonte condensada itálica (parecida com a da logo) só no código do comboio e no nome da marca
 - [ ] Script de contraste que falha abaixo de AA + capturas em 360/420px nos dois temas
 
 ---
+
+## Achados que ficaram para depois
+
+- [ ] **Web: sair da aba Comboio derruba a chamada** — a conexão de voz mora dentro da tela do comboio e desmonta com ela. Já era assim antes. Resolver = subir a conexão para o App.
+- [ ] Cartão do painel mostra só a contagem de pilotos; nomes pedem API nova.
+- [ ] `DEFAULT_VOICE_ROOM` (storage.ts) ainda tem participantes fictícios usados no simulador.
+- [ ] `ConvoyVoiceView.tsx` (637 linhas) e `AuthModal.tsx` (675) acima de 500.
 
 ## Estimativa (análise técnica)
 
