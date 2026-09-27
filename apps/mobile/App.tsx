@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Image,
   Linking,
   PermissionsAndroid,
   Platform,
@@ -220,6 +221,7 @@ function Aplicativo() {
       <StatusBar style="light" />
 
       <View style={[styles.cabecalho, { paddingTop: insets.top + 12 }]}>
+        <Image source={require('./assets/marca-pino.png')} style={styles.logo} accessibilityIgnoresInvertColors />
         <View style={{ flex: 1 }}>
           <Text style={styles.marca}>MotoRede</Text>
           <Text style={styles.usuario}>
@@ -312,6 +314,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
+  logo: { width: 36, height: 36, marginRight: 10 },
   marca: { color: COLORS.text, fontSize: 17, fontWeight: '800' },
   usuario: { color: COLORS.faint, fontSize: 11 },
   sair: { color: COLORS.muted, fontSize: 12 },

@@ -74,9 +74,13 @@ export const Header: React.FC<HeaderProps> = ({
         {themeToggle && <div className="shrink-0 mr-1">{themeToggle}</div>}
 
         <div className="flex items-center gap-2 sm:gap-2.5">
-          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-brand flex items-center justify-center text-on-brand font-black text-base sm:text-lg shadow-sm shrink-0">
-            <span>M</span>
-          </div>
+          <img
+            src="/marca-pino.png"
+            alt=""
+            className="w-8 h-8 sm:w-9 sm:h-9 shrink-0"
+            width={36}
+            height={36}
+          />
           <div>
             <div className="flex items-center gap-2">
               <h1 className="font-extrabold text-ink tracking-tight text-sm sm:text-base leading-none">

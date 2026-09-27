@@ -25,7 +25,7 @@
     "android": {
       "package": "br.com.motorede.app",
       "adaptiveIcon": {
-        "backgroundColor": "#020617",
+        "backgroundColor": "#000000",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"

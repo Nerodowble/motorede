@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Radio, ShieldCheck, Wrench, Headphones } from 'lucide-react';
+import { Radio, ShieldCheck, Wrench } from 'lucide-react';
 import type { useGoogleAuth } from '../hooks/useGoogleAuth';
 import { ThemeToggle } from './ThemeToggle';
 import { useTheme } from '../hooks/useTheme';
@@ -43,10 +43,15 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ auth }) => {
         </div>
 
         <div className="text-center mb-8">
-          <div className="w-16 h-16 rounded-2xl bg-brand/15 border border-brand/30 flex items-center justify-center text-brand-soft mx-auto mb-4">
-            <Headphones className="w-8 h-8" />
-          </div>
-          <h1 className="text-3xl font-extrabold text-ink tracking-tight">MotoRede</h1>
+          {/* A logo já traz o nome escrito; o h1 fica só para leitores de tela. */}
+          <img
+            src="/marca-logo.png"
+            alt=""
+            className="w-36 h-36 mx-auto mb-3 drop-shadow-xl"
+            width={144}
+            height={144}
+          />
+          <h1 className="sr-only">MotoRede</h1>
           <p className="text-sm text-ink-muted mt-1">
             A rede de quem anda sobre duas rodas
           </p>

@@ -15,7 +15,8 @@ export default defineConfig(() => {
       livekitTokenPlugin(),
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['icon.svg', 'apple-touch-icon.png'],
+        // Ícones gerados por scripts/gerar-marca.ps1 a partir de docs/marca/.
+        includeAssets: ['favicon-32.png', 'favicon-64.png', 'apple-touch-icon.png', 'marca-pino.png', 'marca-logo.png'],
         manifest: {
           id: '/',
           name: 'MotoRede - Plataforma para Motociclistas',

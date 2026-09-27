@@ -178,9 +178,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         {/* Header Bar */}
         <div className="bg-canvas px-4 sm:px-5 py-3.5 sm:py-4 border-b border-line/80 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-xl bg-brand flex items-center justify-center text-on-brand font-black text-base shadow shrink-0">
-              <span>M</span>
-            </div>
+            <img src="/marca-pino.png" alt="" className="w-8 h-8 shrink-0" width={32} height={32} />
             <div className="min-w-0">
               <h2 className="font-bold text-ink text-sm sm:text-base leading-tight flex items-center gap-2 truncate">
                 MotoRede

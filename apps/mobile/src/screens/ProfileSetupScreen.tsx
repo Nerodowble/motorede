@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import {
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -98,7 +99,11 @@ export const ProfileSetupScreen: React.FC<ProfileSetupScreenProps> = ({
             { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20 },
           ]}
         >
-          <Text style={styles.titulo}>MotoRede</Text>
+          <Image
+            source={require('../../assets/splash-icon.png')}
+            style={styles.logo}
+            accessibilityLabel="MotoRede"
+          />
           <Text style={styles.subtitulo}>Como você aparece no comboio</Text>
 
           <View style={styles.card}>
@@ -144,6 +149,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: COLORS.background },
   conteudo: { padding: 20, gap: 14, justifyContent: 'center', flexGrow: 1 },
   titulo: { color: COLORS.text, fontSize: 28, fontWeight: '800', textAlign: 'center' },
+  logo: { width: 150, height: 150, alignSelf: 'center' },
   subtitulo: {
     color: COLORS.muted,
     fontSize: 13,
