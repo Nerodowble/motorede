@@ -90,7 +90,7 @@ export const PartnerShopView: React.FC<PartnerShopViewProps> = ({
                 <h2 className="text-base sm:text-lg font-extrabold text-ink tracking-tight">
                   Painel da Oficina Parceira
                 </h2>
-                <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">
+                <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-live/10 text-success border border-success/20 font-bold">
                   {currentUser?.shopName || 'MotoTech Garage'}
                 </span>
               </div>
@@ -104,7 +104,7 @@ export const PartnerShopView: React.FC<PartnerShopViewProps> = ({
 
           <button
             onClick={() => setShowAddCoupon(!showAddCoupon)}
-            className="px-3.5 py-2 rounded-xl bg-brand hover:opacity-90 text-on-brand font-bold text-xs flex items-center gap-1.5 transition active:scale-95 shadow-sm"
+            className="px-3.5 py-2 rounded-xl bg-action hover:opacity-90 text-on-action font-bold text-xs flex items-center gap-1.5 transition active:scale-95 shadow-sm"
           >
             <Plus className="w-4 h-4" />
             Criar Nova Oferta
@@ -131,7 +131,7 @@ export const PartnerShopView: React.FC<PartnerShopViewProps> = ({
           </div>
           <button
             type="submit"
-            className="w-full sm:w-auto px-5 py-2.5 bg-brand hover:opacity-90 text-on-brand font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 active:scale-95 transition"
+            className="w-full sm:w-auto px-5 py-2.5 bg-action hover:opacity-90 text-on-action font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 active:scale-95 transition"
           >
             <CheckCircle2 className="w-4 h-4" />
             Validar Cupom
@@ -142,8 +142,8 @@ export const PartnerShopView: React.FC<PartnerShopViewProps> = ({
           <div
             className={`mt-3 p-3 rounded-xl text-xs flex items-start gap-2 ${
               validationResult.success
-                ? 'bg-emerald-950/40 border border-emerald-800 text-emerald-300'
-                : 'bg-red-950/40 border border-red-800 text-red-300'
+                ? 'bg-success/15 border border-success/50 text-success'
+                : 'bg-danger/15 border border-danger/50 text-danger'
             }`}
           >
             {validationResult.success ? (
@@ -158,7 +158,7 @@ export const PartnerShopView: React.FC<PartnerShopViewProps> = ({
 
       {/* LGPD Compliance Reminder */}
       <div className="rounded-xl bg-surface/60 border border-line p-3.5 text-xs text-ink-muted flex items-start gap-2.5">
-        <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+        <ShieldCheck className="w-5 h-5 text-success shrink-0 mt-0.5" />
         <div>
           <span className="font-bold text-ink">Compliance LGPD para Oficinas:</span>
           <p className="mt-0.5 leading-relaxed">
@@ -240,7 +240,7 @@ export const PartnerShopView: React.FC<PartnerShopViewProps> = ({
               </button>
               <button
                 type="submit"
-                className="px-4 py-1.5 rounded-lg bg-brand text-on-brand font-bold hover:opacity-90"
+                className="px-4 py-1.5 rounded-lg bg-action text-on-action font-bold hover:opacity-90"
               >
                 Publicar Oferta
               </button>
@@ -263,7 +263,7 @@ export const PartnerShopView: React.FC<PartnerShopViewProps> = ({
                 <span className="font-mono text-xs font-bold text-brand-soft px-2 py-0.5 rounded bg-brand/10 border border-brand/20">
                   {coupon.promoCode}
                 </span>
-                <span className="text-[11px] font-mono text-emerald-400 font-bold">
+                <span className="text-[11px] font-mono text-success font-bold">
                   {coupon.discountPercentage}% OFF
                 </span>
               </div>

@@ -126,7 +126,9 @@ export function useGoogleAuth(): UseGoogleAuth {
       if (!el || !isReady) return;
       const google = (window as unknown as { google?: any }).google;
       google?.accounts?.id?.renderButton(el, {
-        theme: 'filled_black',
+        // Segue o tema da página na hora de desenhar (o botão é do Google, não
+        // reage sozinho a uma troca de tema depois).
+        theme: document.documentElement.dataset.theme === 'light' ? 'outline' : 'filled_black',
         size: 'large',
         shape: 'pill',
         text: 'continue_with',

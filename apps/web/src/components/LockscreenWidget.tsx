@@ -41,7 +41,7 @@ export const LockscreenWidget: React.FC<LockscreenWidgetProps> = ({
           <div className="flex items-center justify-between text-ink-muted text-xs mb-6">
             <div className="flex items-center gap-1">
               <span className="font-semibold text-ink">MotoRede OS</span>
-              <span className="text-[10px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded font-mono">2º PLANO ATIVO</span>
+              <span className="text-[10px] text-success bg-live/10 px-1.5 py-0.5 rounded font-mono">2º PLANO ATIVO</span>
             </div>
             <div className="flex items-center gap-2">
               <Lock className="w-4 h-4 text-ink-muted" />
@@ -75,7 +75,7 @@ export const LockscreenWidget: React.FC<LockscreenWidgetProps> = ({
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                  <span className="w-2 h-2 rounded-full bg-live animate-ping" />
                   <p className="text-xs font-bold text-ink truncate">{voiceRoom.name}</p>
                 </div>
                 <p className="text-[11px] text-ink-muted truncate">
@@ -97,10 +97,10 @@ export const LockscreenWidget: React.FC<LockscreenWidgetProps> = ({
                 className={`py-3 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition active:scale-95 ${
                   isMuted
                     ? 'bg-elevated hover:bg-line-strong text-ink border border-line-strong'
-                    : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-950'
+                    : 'bg-live hover:bg-live text-white shadow-lg shadow-live/30'
                 }`}
               >
-                {isMuted ? <MicOff className="w-4 h-4 text-brand-soft" /> : <Mic className="w-4 h-4" />}
+                {isMuted ? <MicOff className="w-4 h-4 text-warning" /> : <Mic className="w-4 h-4" />}
                 {isMuted ? 'Ativar Voz' : 'Mutar Mic'}
               </button>
 
@@ -117,7 +117,7 @@ export const LockscreenWidget: React.FC<LockscreenWidgetProps> = ({
           {/* GPS Live Status on Lock Screen */}
           <div className="rounded-xl bg-surface/60 border border-line/60 p-3 flex items-center justify-between text-xs text-ink-muted">
             <div className="flex items-center gap-2">
-              <Compass className="w-4 h-4 text-sky-400" />
+              <Compass className="w-4 h-4 text-info" />
               <span>GPS 2º Plano:</span>
             </div>
             <span className="font-mono text-ink-muted text-[11px]">
@@ -132,7 +132,7 @@ export const LockscreenWidget: React.FC<LockscreenWidgetProps> = ({
         <div className="pt-2">
           <button
             onClick={onTriggerSOS}
-            className="w-full py-3.5 px-4 rounded-2xl bg-red-600/90 hover:bg-red-500 text-white font-extrabold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-red-950 transition active:scale-95 border border-red-500/30"
+            className="w-full py-3.5 px-4 rounded-2xl bg-sos/90 hover:bg-sos text-white font-extrabold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-sos/30 transition active:scale-95 border border-danger/30"
           >
             <ShieldAlert className="w-5 h-5" />
             SOS Emergência na Estrada

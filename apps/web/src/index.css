@@ -27,6 +27,23 @@
   --color-brand: var(--mr-brand);
   --color-on-brand: var(--mr-on-brand);
   --color-brand-soft: var(--mr-brand-soft);
+
+  /* Estados. Cada cor tem UM significado — é o que permite trocar a cor da
+     marca sem que o botão principal fique igual ao SOS ou a um erro.
+     Fundo suave: use a opacidade do Tailwind (`bg-danger/15`). */
+  --color-action: var(--mr-action);      /* botão principal */
+  --color-on-action: var(--mr-on-action);
+  --color-speaking: var(--mr-speaking);  /* só "alguém falando" */
+  --color-on-speaking: var(--mr-on-speaking);
+  --color-code: var(--mr-code);          /* código do comboio */
+  --color-warning: var(--mr-warning);    /* atenção: offline, lotado, perto do prazo */
+  --color-live: var(--mr-live);          /* só microfone aberto / ao vivo (fundo) */
+  --color-on-live: var(--mr-on-live);
+  --color-success: var(--mr-success);    /* deu certo, conectado (texto) */
+  --color-sos: var(--mr-sos);            /* só emergência (fundo cheio) */
+  --color-on-sos: var(--mr-on-sos);
+  --color-danger: var(--mr-danger);      /* erro, vencido, ação destrutiva (texto) */
+  --color-info: var(--mr-info);          /* informação, links externos */
 }
 
 /* Tema escuro: o padrão, pensado para uso noturno e na estrada. */
@@ -43,6 +60,20 @@
   --mr-brand: #f59e0b;
   --mr-on-brand: #020617;
   --mr-brand-soft: #fbbf24;
+  /* Estados: no escuro, os mesmos tons que as telas já usavam. */
+  --mr-action: #f59e0b;
+  --mr-on-action: #020617;
+  --mr-speaking: #fbbf24;
+  --mr-on-speaking: #020617;
+  --mr-code: #fbbf24;
+  --mr-warning: #fbbf24;
+  --mr-live: #059669;
+  --mr-on-live: #ffffff;
+  --mr-success: #34d399;
+  --mr-sos: #dc2626;
+  --mr-on-sos: #ffffff;
+  --mr-danger: #f87171;
+  --mr-info: #38bdf8;
   color-scheme: dark;
 }
 
@@ -64,6 +95,21 @@
   --mr-brand: #b45309;
   --mr-on-brand: #ffffff;
   --mr-brand-soft: #92400e;
+  /* Estados: tons escurecidos para passar AA sobre branco (os de antes, como
+     emerald-400 e red-400, ficavam entre 1,9 e 2,8:1). */
+  --mr-action: #b45309;
+  --mr-on-action: #ffffff;
+  --mr-speaking: #b45309;
+  --mr-on-speaking: #ffffff;
+  --mr-code: #92400e;
+  --mr-warning: #b45309;
+  --mr-live: #15803d;
+  --mr-on-live: #ffffff;
+  --mr-success: #047857;
+  --mr-sos: #b91c1c;
+  --mr-on-sos: #ffffff;
+  --mr-danger: #b91c1c;
+  --mr-info: #0369a1;
   color-scheme: light;
 }
 

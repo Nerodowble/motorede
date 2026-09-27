@@ -59,7 +59,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ sosAlerts, onResolveSOS })
           </div>
           <div className="bg-canvas/70 p-3 rounded-xl border border-line/80">
             <span className="text-[10px] text-ink-muted font-mono uppercase">Comboios Ativos:</span>
-            <p className="text-lg font-black text-emerald-400 font-mono">38 salas</p>
+            <p className="text-lg font-black text-success font-mono">38 salas</p>
           </div>
           <div className="bg-canvas/70 p-3 rounded-xl border border-line/80">
             <span className="text-[10px] text-ink-muted font-mono uppercase">Taxa Resposta SOS:</span>
@@ -67,7 +67,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ sosAlerts, onResolveSOS })
           </div>
           <div className="bg-canvas/70 p-3 rounded-xl border border-line/80">
             <span className="text-[10px] text-ink-muted font-mono uppercase">Oficinas Parceiras:</span>
-            <p className="text-lg font-black text-sky-400 font-mono">{shops.length}</p>
+            <p className="text-lg font-black text-info font-mono">{shops.length}</p>
           </div>
         </div>
       </div>
@@ -92,7 +92,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ sosAlerts, onResolveSOS })
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-bold text-ink">{shop.name}</span>
                   {shop.isVerified ? (
-                    <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-400 font-medium flex items-center gap-1">
+                    <span className="text-[10px] px-1.5 py-0.2 rounded bg-live/15 text-success font-medium flex items-center gap-1">
                       <BadgeCheck className="w-3 h-3" />
                       Homologada
                     </span>
@@ -118,8 +118,8 @@ export const AdminView: React.FC<AdminViewProps> = ({ sosAlerts, onResolveSOS })
                 onClick={() => handleToggleShopApproval(shop.id)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 shrink-0 ${
                   shop.isVerified
-                    ? 'bg-red-950/40 text-red-400 border border-red-800 hover:bg-red-900/50'
-                    : 'bg-emerald-600 hover:bg-emerald-500 text-white'
+                    ? 'bg-danger/15 text-danger border border-danger/50 hover:bg-danger/15'
+                    : 'bg-live hover:bg-live text-white'
                 }`}
               >
                 {shop.isVerified ? <XCircle className="w-3.5 h-3.5" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
@@ -150,9 +150,9 @@ export const AdminView: React.FC<AdminViewProps> = ({ sosAlerts, onResolveSOS })
                 <div
                   className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs ${
                     u.role === 'partner_shop'
-                      ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                      ? 'bg-info/10 text-info border border-info/20'
                       : u.role === 'admin'
-                      ? 'bg-red-500/10 text-red-400 border border-red-500/20'
+                      ? 'bg-sos/10 text-danger border border-danger/20'
                       : 'bg-brand/10 text-brand-soft border border-brand/20'
                   }`}
                 >
@@ -164,9 +164,9 @@ export const AdminView: React.FC<AdminViewProps> = ({ sosAlerts, onResolveSOS })
                     <span
                       className={`text-[9px] uppercase font-bold font-mono px-1.5 py-0.2 rounded border ${
                         u.role === 'partner_shop'
-                          ? 'bg-blue-500/10 text-blue-400 border-blue-500/30'
+                          ? 'bg-info/10 text-info border-info/30'
                           : u.role === 'admin'
-                          ? 'bg-red-500/10 text-red-400 border-red-500/30'
+                          ? 'bg-sos/10 text-danger border-danger/30'
                           : 'bg-brand/10 text-brand-soft border-brand/30'
                       }`}
                     >
@@ -192,7 +192,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ sosAlerts, onResolveSOS })
       {/* Community SOS Alerts Audit */}
       <div className="rounded-2xl bg-surface/80 border border-line p-4 shadow-md">
         <h3 className="text-xs font-bold text-ink uppercase tracking-wider font-mono flex items-center gap-2 mb-3">
-          <ShieldAlert className="w-4 h-4 text-red-500" />
+          <ShieldAlert className="w-4 h-4 text-danger" />
           Auditoria de Alertas Comunitários
         </h3>
 
@@ -215,7 +215,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ sosAlerts, onResolveSOS })
                 {alert.status !== 'resolved' && (
                   <button
                     onClick={() => onResolveSOS(alert.id)}
-                    className="px-2.5 py-1 rounded bg-elevated hover:bg-line-strong text-emerald-400 text-xs font-semibold"
+                    className="px-2.5 py-1 rounded bg-elevated hover:bg-line-strong text-success text-xs font-semibold"
                   >
                     Encerrar
                   </button>

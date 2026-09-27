@@ -78,7 +78,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <p className="text-[11px] text-ink-muted uppercase tracking-wider font-mono">
               Seu comboio
             </p>
-            <p className="text-2xl font-extrabold text-brand-soft font-mono tracking-widest leading-tight">
+            <p className="text-2xl font-extrabold text-code font-mono tracking-widest leading-tight">
               {roomCode}
             </p>
           </div>
@@ -86,7 +86,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
         <button
           onClick={() => onNavigateTab('convoy')}
-          className="w-full py-4 rounded-xl bg-brand hover:opacity-90 text-on-brand font-black text-base uppercase tracking-wide transition active:scale-95 shadow-lg"
+          className="w-full py-4 rounded-xl bg-action hover:opacity-90 text-on-action font-black text-base uppercase tracking-wide transition active:scale-95 shadow-lg"
         >
           Abrir comboio
         </button>
@@ -140,7 +140,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             />
             <button
               type="submit"
-              className="px-4 py-2 rounded-xl bg-brand hover:opacity-90 text-on-brand text-xs font-bold transition active:scale-95"
+              className="px-4 py-2 rounded-xl bg-action hover:opacity-90 text-on-action text-xs font-bold transition active:scale-95"
             >
               Salvar
             </button>
@@ -178,7 +178,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 <span className="text-xs text-ink-muted truncate">{m.label}</span>
                 <span
                   className={`text-[11px] font-mono font-bold shrink-0 ${
-                    m.status === 'vencido' ? 'text-red-400' : 'text-brand-soft'
+                    m.status === 'vencido' ? 'text-danger' : 'text-warning'
                   }`}
                 >
                   {m.status === 'vencido'

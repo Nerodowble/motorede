@@ -31,7 +31,7 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({ choice, onChange }) =>
         aria-pressed={choice === id}
         className={`p-1.5 rounded-md transition ${
           choice === id
-            ? 'bg-brand text-on-brand'
+            ? 'bg-action text-on-action'
             : 'text-ink-faint hover:text-ink-muted'
         }`}
       >

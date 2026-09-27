@@ -148,7 +148,7 @@ export const Navigation: React.FC<NavigationProps> = ({
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400 shrink-0">
+                  <div className="w-9 h-9 rounded-lg bg-info/10 border border-info/20 flex items-center justify-center text-info shrink-0">
                     <Stethoscope className="w-5 h-5" />
                   </div>
                   <div className="text-left">
@@ -189,7 +189,7 @@ export const Navigation: React.FC<NavigationProps> = ({
                   className="w-full p-3.5 rounded-xl border bg-canvas/60 border-line text-ink hover:bg-elevated flex items-center justify-between transition active:scale-98"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-elevated border border-line-strong flex items-center justify-center text-emerald-400 shrink-0">
+                    <div className="w-9 h-9 rounded-lg bg-elevated border border-line-strong flex items-center justify-center text-success shrink-0">
                       <Smartphone className="w-5 h-5" />
                     </div>
                     <div className="text-left">
@@ -225,13 +225,13 @@ export const Navigation: React.FC<NavigationProps> = ({
                   }`}
                 >
                   {item.badge !== undefined && item.badge > 0 && (
-                    <span className="absolute top-1 right-3 w-4 h-4 rounded-full bg-red-600 text-white font-mono text-[9px] font-bold flex items-center justify-center shadow">
+                    <span className="absolute top-1 right-3 w-4 h-4 rounded-full bg-sos text-white font-mono text-[9px] font-bold flex items-center justify-center shadow">
                       {item.badge}
                     </span>
                   )}
 
                   {item.pulse && (
-                    <span className="absolute top-1.5 right-4 w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                    <span className="absolute top-1.5 right-4 w-2 h-2 rounded-full bg-live animate-ping" />
                   )}
 
                   <div
@@ -287,7 +287,7 @@ export const Navigation: React.FC<NavigationProps> = ({
                 }`}
               >
                 {isVoiceActive && (
-                  <span className="absolute top-1 right-3 w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                  <span className="absolute top-1 right-3 w-2 h-2 rounded-full bg-live animate-ping" />
                 )}
                 <div
                   className={`p-1 rounded-lg ${
@@ -310,20 +310,20 @@ export const Navigation: React.FC<NavigationProps> = ({
                 <div
                   className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg transition border ${
                     activeTab === 'sos'
-                      ? 'bg-red-600 border-red-400 text-white shadow-red-900/60 ring-2 ring-red-500/40'
-                      : 'bg-red-950/90 border-red-700/60 text-red-400 shadow-canvas'
+                      ? 'bg-sos border-danger text-white shadow-sos/30 ring-2 ring-danger/40'
+                      : 'bg-sos/25 border-sos text-danger shadow-canvas'
                   }`}
                 >
                   <ShieldAlert className={`w-6 h-6 ${activeSOSCount > 0 ? 'animate-pulse' : ''}`} />
                   {activeSOSCount > 0 && (
-                    <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-white text-red-600 font-mono text-[10px] font-black flex items-center justify-center border-2 border-canvas shadow">
+                    <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-white text-danger font-mono text-[10px] font-black flex items-center justify-center border-2 border-canvas shadow">
                       {activeSOSCount}
                     </span>
                   )}
                 </div>
                 <span
                   className={`text-[10px] font-bold tracking-tight mt-0.5 ${
-                    activeTab === 'sos' ? 'text-red-400' : 'text-red-400/80'
+                    activeTab === 'sos' ? 'text-danger' : 'text-danger/80'
                   }`}
                 >
                   SOS
@@ -391,7 +391,7 @@ export const Navigation: React.FC<NavigationProps> = ({
                     }`}
                   >
                     {item.badge !== undefined && item.badge > 0 && (
-                      <span className="absolute top-0 right-2 w-4 h-4 rounded-full bg-red-600 text-white font-mono text-[9px] font-bold flex items-center justify-center shadow">
+                      <span className="absolute top-0 right-2 w-4 h-4 rounded-full bg-sos text-white font-mono text-[9px] font-bold flex items-center justify-center shadow">
                         {item.badge}
                       </span>
                     )}

@@ -59,7 +59,7 @@ export const DiagnosticView: React.FC<DiagnosticViewProps> = ({ onExportToSOS })
                 <h2 className="text-base sm:text-lg font-extrabold text-ink tracking-tight">
                   Triagem Mecânica na Estrada
                 </h2>
-                <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20 font-bold">
+                <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-info/10 text-info border border-info/20 font-bold">
                   Árvore de Decisão
                 </span>
               </div>
@@ -133,27 +133,27 @@ export const DiagnosticView: React.FC<DiagnosticViewProps> = ({ onExportToSOS })
             <div
               className={`rounded-xl p-4 border ${
                 currentNode.severity === 'danger_stop'
-                  ? 'bg-red-950/30 border-red-800/50'
+                  ? 'bg-danger/15 border-danger/50'
                   : currentNode.severity === 'caution'
-                  ? 'bg-brand/10 border-brand/40'
-                  : 'bg-emerald-950/30 border-emerald-800/50'
+                  ? 'bg-warning/10 border-warning/40'
+                  : 'bg-success/15 border-success/50'
               }`}
             >
               <div className="flex items-center gap-2 mb-2">
                 {currentNode.severity === 'danger_stop' ? (
-                  <AlertTriangle className="w-5 h-5 text-red-400" />
+                  <AlertTriangle className="w-5 h-5 text-danger" />
                 ) : currentNode.severity === 'caution' ? (
-                  <AlertTriangle className="w-5 h-5 text-brand-soft" />
+                  <AlertTriangle className="w-5 h-5 text-warning" />
                 ) : (
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                  <CheckCircle2 className="w-5 h-5 text-success" />
                 )}
                 <span
                   className={`text-xs font-black uppercase tracking-wider font-mono ${
                     currentNode.severity === 'danger_stop'
-                      ? 'text-red-400'
+                      ? 'text-danger'
                       : currentNode.severity === 'caution'
-                      ? 'text-brand-soft'
-                      : 'text-emerald-400'
+                      ? 'text-warning'
+                      : 'text-success'
                   }`}
                 >
                   {currentNode.severity === 'danger_stop'
@@ -184,7 +184,7 @@ export const DiagnosticView: React.FC<DiagnosticViewProps> = ({ onExportToSOS })
                     currentNode.severity || 'caution'
                   )
                 }
-                className="px-4 py-2.5 bg-red-600 hover:bg-red-500 active:scale-95 text-white font-extrabold text-xs rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-red-950 transition border border-red-500/40 shrink-0"
+                className="px-4 py-2.5 bg-sos hover:bg-sos active:scale-95 text-white font-extrabold text-xs rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-sos/30 transition border border-danger/40 shrink-0"
               >
                 <ShieldAlert className="w-4 h-4" />
                 Exportar para SOS Comunitário

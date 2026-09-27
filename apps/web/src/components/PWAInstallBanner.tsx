@@ -59,7 +59,7 @@ export const PWAInstallBanner: React.FC = () => {
           {isInstallable ? (
             <button
               onClick={install}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-brand hover:opacity-90 active:scale-95 text-on-brand font-bold rounded-lg text-xs transition"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-action hover:opacity-90 active:scale-95 text-on-action font-bold rounded-lg text-xs transition"
             >
               <Download className="w-3.5 h-3.5" />
               Instalar

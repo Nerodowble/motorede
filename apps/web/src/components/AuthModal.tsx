@@ -215,7 +215,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             }}
             className={`flex-1 py-2 rounded-xl font-semibold text-xs flex items-center justify-center gap-1.5 transition ${
               activeTab === 'login'
-                ? 'bg-brand text-on-brand shadow-sm'
+                ? 'bg-action text-on-action shadow-sm'
                 : 'text-ink-muted hover:text-ink'
             }`}
           >
@@ -230,7 +230,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             }}
             className={`flex-1 py-2 rounded-xl font-semibold text-xs flex items-center justify-center gap-1.5 transition ${
               activeTab === 'register'
-                ? 'bg-brand text-on-brand shadow-sm'
+                ? 'bg-action text-on-action shadow-sm'
                 : 'text-ink-muted hover:text-ink'
             }`}
           >
@@ -241,15 +241,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
         {/* Feedback alerts */}
         {errorMessage && (
-          <div className="mx-4 sm:mx-5 mt-3 p-3 rounded-xl bg-red-950/60 border border-red-800/80 text-red-200 text-xs flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+          <div className="mx-4 sm:mx-5 mt-3 p-3 rounded-xl bg-danger/15 border border-danger/80 text-danger text-xs flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-danger shrink-0" />
             <span>{errorMessage}</span>
           </div>
         )}
 
         {successMessage && (
-          <div className="mx-4 sm:mx-5 mt-3 p-3 rounded-xl bg-emerald-950/60 border border-emerald-800/80 text-emerald-200 text-xs flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+          <div className="mx-4 sm:mx-5 mt-3 p-3 rounded-xl bg-success/15 border border-success/80 text-success text-xs flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-success shrink-0" />
             <span>{successMessage}</span>
           </div>
         )}
@@ -301,7 +301,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
               <button
                 type="submit"
-                className="w-full py-2.5 rounded-xl bg-brand hover:opacity-90 text-on-brand font-bold text-sm flex items-center justify-center gap-2 transition active:scale-[0.98] shadow-md shadow-brand/20"
+                className="w-full py-2.5 rounded-xl bg-action hover:opacity-90 text-on-action font-bold text-sm flex items-center justify-center gap-2 transition active:scale-[0.98] shadow-md shadow-action/20"
               >
                 <LogIn className="w-4 h-4" />
                 <span>Acessar Plataforma</span>
@@ -343,10 +343,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     className="p-2.5 rounded-xl bg-canvas hover:bg-elevated/80 border border-line hover:border-brand/50 text-left transition group"
                   >
                     <div className="flex items-center gap-2 mb-1">
-                      <div className="w-6 h-6 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center">
+                      <div className="w-6 h-6 rounded-lg bg-info/10 text-info flex items-center justify-center">
                         <Wrench className="w-3.5 h-3.5" />
                       </div>
-                      <span className="font-bold text-xs text-ink group-hover:text-blue-400">
+                      <span className="font-bold text-xs text-ink group-hover:text-info">
                         Oficina
                       </span>
                     </div>
@@ -361,10 +361,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     className="p-2.5 rounded-xl bg-canvas hover:bg-elevated/80 border border-line hover:border-brand/50 text-left transition group"
                   >
                     <div className="flex items-center gap-2 mb-1">
-                      <div className="w-6 h-6 rounded-lg bg-red-500/10 text-red-400 flex items-center justify-center">
+                      <div className="w-6 h-6 rounded-lg bg-sos/10 text-danger flex items-center justify-center">
                         <Shield className="w-3.5 h-3.5" />
                       </div>
-                      <span className="font-bold text-xs text-ink group-hover:text-red-400">
+                      <span className="font-bold text-xs text-ink group-hover:text-danger">
                         Admin
                       </span>
                     </div>
@@ -492,7 +492,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     <span>Dados da Sua Motocicleta Principal</span>
                   </div>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 [&>*]:min-w-0">
                     <div>
                       <label className="block text-[11px] text-ink-muted mb-0.5">Marca</label>
                       <select
@@ -537,7 +537,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-2 gap-2 [&>*]:min-w-0">
                     <div>
                       <label className="block text-[11px] text-ink-muted mb-0.5">Ano</label>
                       <input
@@ -648,7 +648,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               {/* Conditional: Admin Key */}
               {regRole === 'admin' && (
                 <div className="pt-3 border-t border-line space-y-2">
-                  <div className="flex items-center gap-1.5 text-red-400 font-semibold text-xs">
+                  <div className="flex items-center gap-1.5 text-danger font-semibold text-xs">
                     <Shield className="w-3.5 h-3.5" />
                     <span>Nível de Acesso: Supervisão e Gestão Central</span>
                   </div>
@@ -661,7 +661,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
               <button
                 type="submit"
-                className="w-full py-2.5 rounded-xl bg-brand hover:opacity-90 text-on-brand font-bold text-sm flex items-center justify-center gap-2 transition active:scale-[0.98] shadow-md shadow-brand/20"
+                className="w-full py-2.5 rounded-xl bg-action hover:opacity-90 text-on-action font-bold text-sm flex items-center justify-center gap-2 transition active:scale-[0.98] shadow-md shadow-action/20"
               >
                 <UserPlus className="w-4 h-4" />
                 <span>Finalizar Cadastro e Entrar</span>

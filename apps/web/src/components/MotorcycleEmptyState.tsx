@@ -38,7 +38,7 @@ export const MotorcycleEmptyState: React.FC<MotorcycleEmptyStateProps> = ({
       {onCadastrar && (
         <button
           onClick={onCadastrar}
-          className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-brand hover:opacity-90 text-on-brand text-xs font-bold transition active:scale-95"
+          className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-action hover:opacity-90 text-on-action text-xs font-bold transition active:scale-95"
         >
           <Plus className="w-4 h-4" />
           Cadastrar minha moto

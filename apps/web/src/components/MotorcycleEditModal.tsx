@@ -127,8 +127,8 @@ export const MotorcycleEditModal: React.FC<MotorcycleEditModalProps> = ({
         {/* Content Form */}
         <form id="motorcycle-edit-form" onSubmit={handleSubmit} className="overflow-y-auto p-3.5 sm:p-5 space-y-4 sm:space-y-5 flex-1 touch-scroll">
           {feedback && (
-            <div className="p-3 rounded-xl bg-emerald-950/70 border border-emerald-800 text-emerald-300 text-xs flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            <div className="p-3 rounded-xl bg-success/15 border border-success/50 text-success text-xs flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-success shrink-0" />
               <span>{feedback}</span>
             </div>
           )}
@@ -334,7 +334,7 @@ export const MotorcycleEditModal: React.FC<MotorcycleEditModalProps> = ({
           <button
             type="submit"
             form="motorcycle-edit-form"
-            className="px-5 py-2.5 rounded-xl bg-brand hover:opacity-90 text-on-brand text-xs font-bold transition shadow-md active:scale-95 flex items-center gap-2"
+            className="px-5 py-2.5 rounded-xl bg-action hover:opacity-90 text-on-action text-xs font-bold transition shadow-md active:scale-95 flex items-center gap-2"
           >
             <Sparkles className="w-4 h-4" />
             <span>Salvar Ficha Técnica</span>

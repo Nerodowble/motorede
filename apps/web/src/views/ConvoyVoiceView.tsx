@@ -229,11 +229,11 @@ ${inviteUrl}`;
           aviso ocasionalmente desnecessário custa menos que alguém falhando em
           silêncio na estrada. */}
       {isMobileDevice && showLockWarning && (
-        <div className="rounded-2xl bg-brand/10 border border-brand/30 p-4">
+        <div className="rounded-2xl bg-warning/10 border border-warning/30 p-4">
           <div className="flex items-start gap-3">
-            <Lock className="w-4 h-4 text-brand-soft shrink-0 mt-0.5" />
+            <Lock className="w-4 h-4 text-warning shrink-0 mt-0.5" />
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-bold text-brand-soft mb-1">
+              <p className="text-xs font-bold text-warning mb-1">
                 No celular, fale com a tela ligada
               </p>
               <p className="text-[11px] text-ink-muted leading-relaxed">
@@ -245,7 +245,7 @@ ${inviteUrl}`;
               </p>
               <a
                 href={`motorede://sala/${activeRoomCode}`}
-                className="inline-flex items-center gap-1.5 mt-2.5 px-3 py-1.5 rounded-lg bg-brand text-on-brand text-[11px] font-bold transition active:scale-95"
+                className="inline-flex items-center gap-1.5 mt-2.5 px-3 py-1.5 rounded-lg bg-action text-on-action text-[11px] font-bold transition active:scale-95"
               >
                 <Smartphone className="w-3.5 h-3.5" />
                 Abrir no app
@@ -314,11 +314,11 @@ ${inviteUrl}`;
             <span
               className={`w-2.5 h-2.5 rounded-full shrink-0 ${
                 voice.status === 'connected'
-                  ? 'bg-emerald-400 animate-pulse'
+                  ? 'bg-live animate-pulse'
                   : voice.status === 'connecting' || voice.status === 'reconnecting'
-                    ? 'bg-brand animate-pulse'
+                    ? 'bg-warning animate-pulse'
                     : voice.status === 'error'
-                      ? 'bg-red-500'
+                      ? 'bg-sos'
                       : 'bg-line-strong'
               }`}
             />
@@ -333,7 +333,7 @@ ${inviteUrl}`;
               {/* Erro quebra linha: a explicação (ex.: como liberar o microfone
                   no iPhone) não pode sumir num "…". */}
               <p
-                className={`text-[11px] ${voice.error ? 'text-red-400 whitespace-normal' : 'text-ink-muted truncate'}`}
+                className={`text-[11px] ${voice.error ? 'text-danger whitespace-normal' : 'text-ink-muted truncate'}`}
               >
                 {voice.error
                   ? voice.error
@@ -351,9 +351,9 @@ ${inviteUrl}`;
                 className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-elevated hover:bg-line-strong text-ink text-xs font-semibold border border-line-strong transition active:scale-95"
               >
                 {voice.isMuted ? (
-                  <MicOff className="w-4 h-4 text-red-400" />
+                  <MicOff className="w-4 h-4 text-danger" />
                 ) : (
-                  <Mic className="w-4 h-4 text-emerald-400" />
+                  <Mic className="w-4 h-4 text-success" />
                 )}
                 {voice.isMuted ? 'Reativar' : 'Mudo'}
               </button>
@@ -363,8 +363,8 @@ ${inviteUrl}`;
               disabled={voice.status === 'connecting'}
               className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition active:scale-95 disabled:opacity-50 ${
                 isLive
-                  ? 'bg-red-500/15 text-red-300 border border-red-500/30 hover:bg-red-500/25'
-                  : 'bg-brand text-on-brand hover:opacity-90'
+                  ? 'bg-sos/15 text-danger border border-danger/30 hover:bg-sos/25'
+                  : 'bg-action text-on-action hover:opacity-90'
               }`}
             >
               <Signal className="w-4 h-4" />
@@ -382,7 +382,7 @@ ${inviteUrl}`;
                 <p className="text-[11px] text-ink-muted uppercase tracking-wider font-mono">
                   Comboio
                 </p>
-                <p className="text-xl font-extrabold text-brand-soft font-mono tracking-widest">
+                <p className="text-xl font-extrabold text-code font-mono tracking-widest">
                   {activeRoomCode}
                 </p>
               </div>
@@ -409,7 +409,7 @@ ${inviteUrl}`;
                   title="Convidar para este comboio"
                 >
                   {copiedLink ? (
-                    <Check className="w-4 h-4 text-emerald-400" />
+                    <Check className="w-4 h-4 text-success" />
                   ) : (
                     <Copy className="w-4 h-4 text-ink-muted" />
                   )}
@@ -448,7 +448,7 @@ ${inviteUrl}`;
               </button>
             </form>
 
-            {codeError && <p className="text-[11px] text-red-400">{codeError}</p>}
+            {codeError && <p className="text-[11px] text-danger">{codeError}</p>}
 
             {/* Telefone: fica só neste aparelho. Serve para um amigo que já tem
                 o seu número conseguir te achar entre os comboios do evento. */}
@@ -507,13 +507,13 @@ ${inviteUrl}`;
               onClick={() => voice.setMuted(!voice.isMuted)}
               className={`w-full py-5 px-4 rounded-2xl flex flex-col items-center justify-center gap-2 transition-all active:scale-95 shadow-lg ${
                 voice.isMuted
-                  ? 'bg-surface border-2 border-brand/40 text-ink'
-                  : 'bg-gradient-to-br from-emerald-600 to-emerald-700 text-white shadow-emerald-950/50'
+                  ? 'bg-surface border-2 border-warning/40 text-ink'
+                  : 'bg-gradient-to-br from-live to-live text-white shadow-live/30'
               }`}
             >
               <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
                 {voice.isMuted ? (
-                  <MicOff className="w-7 h-7 text-brand-soft" />
+                  <MicOff className="w-7 h-7 text-warning" />
                 ) : (
                   <Mic className="w-7 h-7" />
                 )}
@@ -539,7 +539,7 @@ ${inviteUrl}`;
               <p className="text-[10px] text-ink-faint uppercase tracking-wider font-mono">
                 Código do comboio
               </p>
-              <p className="text-lg font-extrabold text-brand-soft font-mono tracking-widest">
+              <p className="text-lg font-extrabold text-code font-mono tracking-widest">
                 {activeRoomCode}
               </p>
             </div>
@@ -552,7 +552,7 @@ ${inviteUrl}`;
             </button>
             <button
               onClick={handleShareConvoy}
-              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-brand hover:opacity-90 text-on-brand text-xs font-bold transition active:scale-95"
+              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-action hover:opacity-90 text-on-action text-xs font-bold transition active:scale-95"
             >
               {copiedLink ? <Check className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
               {copiedLink ? 'Copiado' : 'Convidar'}
@@ -595,7 +595,7 @@ ${inviteUrl}`;
                   <div
                     className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 ${
                       p.isSpeaking
-                        ? 'bg-brand text-on-brand ring-2 ring-brand-soft'
+                        ? 'bg-speaking text-on-speaking ring-2 ring-speaking/60'
                         : 'bg-elevated text-ink-muted'
                     }`}
                   >
@@ -624,7 +624,7 @@ ${inviteUrl}`;
             <div className="flex items-center gap-2.5 min-w-0">
               <span
                 className={`w-2.5 h-2.5 rounded-full shrink-0 ${
-                  isBackgroundAudioActive ? 'bg-emerald-400 animate-pulse' : 'bg-line-strong'
+                  isBackgroundAudioActive ? 'bg-live animate-pulse' : 'bg-line-strong'
                 }`}
               />
               <div className="min-w-0">
@@ -638,7 +638,7 @@ ${inviteUrl}`;
               onClick={() => onToggleBackgroundSession(!isBackgroundAudioActive)}
               className={`px-4 py-2 rounded-xl font-bold text-xs transition active:scale-95 shrink-0 ${
                 isBackgroundAudioActive
-                  ? 'bg-emerald-600 text-white'
+                  ? 'bg-live text-white'
                   : 'bg-elevated text-ink-muted hover:bg-line-strong border border-line-strong'
               }`}
             >
@@ -655,7 +655,7 @@ ${inviteUrl}`;
       <div className="rounded-2xl bg-surface/80 border border-line p-4 shadow-md">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <Navigation className="w-4 h-4 text-sky-400" />
+            <Navigation className="w-4 h-4 text-info" />
             <h3 className="text-xs font-bold text-ink uppercase tracking-wider font-mono">
               Destino Cadastrado do Comboio
             </h3>
@@ -670,7 +670,7 @@ ${inviteUrl}`;
 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-canvas/80 p-3.5 rounded-xl border border-line/80">
           <div className="flex items-start gap-2.5">
-            <MapPin className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+            <MapPin className="w-5 h-5 text-danger shrink-0 mt-0.5" />
             <div>
               <p className="text-xs sm:text-sm font-bold text-ink">
                 {voiceRoom.destinationName || 'Ponto de Chegada não configurado'}
@@ -687,7 +687,7 @@ ${inviteUrl}`;
               href={getWazeNavigationUrl(voiceRoom.destinationLat || -23.9856, voiceRoom.destinationLng || -46.7412)}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex-1 sm:flex-initial px-3.5 py-2 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/40 text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95"
+              className="flex-1 sm:flex-initial px-3.5 py-2 rounded-xl bg-info/20 hover:bg-info/30 text-info border border-info/40 text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95"
             >
               <span>Waze</span>
               <ExternalLink className="w-3.5 h-3.5" />
@@ -697,7 +697,7 @@ ${inviteUrl}`;
               href={getGoogleMapsNavigationUrl(voiceRoom.destinationLat || -23.9856, voiceRoom.destinationLng || -46.7412)}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex-1 sm:flex-initial px-3.5 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95"
+              className="flex-1 sm:flex-initial px-3.5 py-2 rounded-xl bg-live/20 hover:bg-live/30 text-success border border-success/40 text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95"
             >
               <span>Google Maps</span>
               <ExternalLink className="w-3.5 h-3.5" />
@@ -737,7 +737,7 @@ ${inviteUrl}`;
               )}
             </div>
 
-            <p className="font-mono text-sm font-bold text-brand-soft mb-4 tracking-wider">
+            <p className="font-mono text-sm font-bold text-code mb-4 tracking-wider">
               CÓDIGO: {activeRoomCode}
             </p>
 
@@ -750,7 +750,7 @@ ${inviteUrl}`;
               </button>
               <button
                 onClick={() => setShowQRModal(false)}
-                className="flex-1 py-2 px-3 bg-brand hover:opacity-90 text-on-brand text-xs font-bold rounded-lg"
+                className="flex-1 py-2 px-3 bg-action hover:opacity-90 text-on-action text-xs font-bold rounded-lg"
               >
                 Fechar
               </button>
@@ -786,7 +786,7 @@ ${inviteUrl}`;
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-1.5 rounded-lg bg-brand text-on-brand font-bold text-xs hover:opacity-90"
+                  className="px-4 py-1.5 rounded-lg bg-action text-on-action font-bold text-xs hover:opacity-90"
                 >
                   Salvar Destino
                 </button>

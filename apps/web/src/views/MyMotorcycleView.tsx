@@ -43,20 +43,20 @@ const STATUS_STYLES: Record<
   { barra: string; texto: string; rotulo: string; borda: string }
 > = {
   vencido: {
-    barra: 'bg-red-500',
-    texto: 'text-red-400',
+    barra: 'bg-sos',
+    texto: 'text-danger',
     rotulo: 'vencido',
-    borda: 'border-red-500/40',
+    borda: 'border-danger/40',
   },
   proximo: {
-    barra: 'bg-brand',
-    texto: 'text-brand-soft',
+    barra: 'bg-warning',
+    texto: 'text-warning',
     rotulo: 'se aproximando',
-    borda: 'border-brand/40',
+    borda: 'border-warning/40',
   },
   ok: {
-    barra: 'bg-emerald-500',
-    texto: 'text-emerald-400',
+    barra: 'bg-live',
+    texto: 'text-success',
     rotulo: 'em dia',
     borda: 'border-line',
   },
@@ -167,7 +167,7 @@ export const MyMotorcycleView: React.FC<MyMotorcycleViewProps> = ({
                 />
                 <button
                   type="submit"
-                  className="px-3 py-1.5 rounded-lg bg-brand text-on-brand text-xs font-bold"
+                  className="px-3 py-1.5 rounded-lg bg-action text-on-action text-xs font-bold"
                 >
                   Salvar
                 </button>
@@ -448,7 +448,7 @@ export const MyMotorcycleView: React.FC<MyMotorcycleViewProps> = ({
 
             <button
               type="submit"
-              className="w-full py-3 rounded-xl bg-brand hover:opacity-90 text-on-brand font-bold text-sm transition active:scale-95 flex items-center justify-center gap-2"
+              className="w-full py-3 rounded-xl bg-action hover:opacity-90 text-on-action font-bold text-sm transition active:scale-95 flex items-center justify-center gap-2"
             >
               <Check className="w-4 h-4" />
               Salvar

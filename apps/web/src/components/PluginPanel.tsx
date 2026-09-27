@@ -213,7 +213,7 @@ const Rodape: React.FC<{ pluginAudio: PluginAudio }> = ({ pluginAudio }) => {
           if (!confirm(`Desvincular ${nome} deste comboio? Ele some para todo mundo aqui. Para voltar, alguém digita o código de novo.`)) return;
           void pluginAudio.desparear();
         }}
-        className="text-xs font-bold text-red-400 hover:text-red-300 py-1"
+        className="text-xs font-bold text-danger hover:text-danger py-1"
       >
         Desvincular
       </button>
@@ -313,7 +313,7 @@ const Biblioteca: React.FC<{ pluginAudio: PluginAudio; podeDispensar: boolean; a
                 void pluginAudio.enviar({ tipo: 'sair' });
                 aoFechar();
               }}
-              className={`${botao} px-3 py-2 text-red-400`}
+              className={`${botao} px-3 py-2 text-danger`}
             >
               Dispensar plugin
             </button>
@@ -392,11 +392,11 @@ const Conectar: React.FC<{
         autoComplete="off"
         className="w-full bg-canvas border border-line rounded-xl px-3 py-3 text-center text-lg font-mono font-bold tracking-[0.3em] text-ink placeholder:text-ink-faint focus:outline-none focus:border-brand"
       />
-      {erro && <p className="text-xs text-red-400">{erro}</p>}
+      {erro && <p className="text-xs text-danger">{erro}</p>}
       <button
         type="submit"
         disabled={enviando || codigo.replace(/[^a-z0-9]/gi, '').length < 7}
-        className="w-full py-3 rounded-xl bg-brand hover:opacity-90 text-on-brand text-sm font-bold transition active:scale-95 disabled:opacity-50"
+        className="w-full py-3 rounded-xl bg-action hover:opacity-90 text-on-action text-sm font-bold transition active:scale-95 disabled:opacity-50"
       >
         {enviando ? 'Conectando…' : 'Conectar'}
       </button>

@@ -23,7 +23,7 @@ export default defineConfig(() => {
           short_name: 'MotoRede',
           description: 'Plataforma PWA colaborativa para motociclistas: comboio por voz em tempo real, SOS geolocalizado, manutenção preditiva e cupons de oficinas.',
           theme_color: '#020617',
-          background_color: '#0b0f19',
+          background_color: '#020617',
           display: 'standalone',
           orientation: 'portrait',
           start_url: '/',

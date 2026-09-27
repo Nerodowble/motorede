@@ -47,13 +47,13 @@ export const Header: React.FC<HeaderProps> = ({
         return {
           label: 'Oficina',
           icon: Wrench,
-          color: 'bg-blue-500/10 text-blue-400 border-blue-500/30',
+          color: 'bg-info/10 text-info border-info/30',
         };
       case 'admin':
         return {
           label: 'Admin',
           icon: Shield,
-          color: 'bg-red-500/10 text-red-400 border-red-500/30',
+          color: 'bg-sos/10 text-danger border-danger/30',
         };
       default:
         return {
@@ -73,7 +73,9 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Brand & Status */}
         {themeToggle && <div className="shrink-0 mr-1">{themeToggle}</div>}
 
-        <div className="flex items-center gap-2 sm:gap-2.5">
+        {/* min-w-0: sem ele o bloco não encolhe e empurra o "Entrar" para fora da
+            tela em celulares de até ~383px (o overflow-x: clip corta sem aviso). */}
+        <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
           <img
             src="/marca-pino.png"
             alt=""
@@ -81,19 +83,19 @@ export const Header: React.FC<HeaderProps> = ({
             width={36}
             height={36}
           />
-          <div>
+          <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <h1 className="font-extrabold text-ink tracking-tight text-sm sm:text-base leading-none">
+              <h1 className="font-extrabold text-ink tracking-tight text-sm sm:text-base leading-none truncate">
                 MotoRede
               </h1>
-              <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-brand/10 text-brand-soft border border-brand/20 font-mono">
+              <span className="hidden sm:inline text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-brand/10 text-brand-soft border border-brand/20 font-mono">
                 PWA
               </span>
             </div>
             <div className="flex items-center gap-2 mt-0.5 text-[11px] text-ink-muted">
               {isBackgroundAudioActive ? (
-                <span className="flex items-center gap-1 text-emerald-400 font-medium">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                <span className="flex items-center gap-1 text-success font-medium">
+                  <span className="w-1.5 h-1.5 rounded-full bg-live animate-ping" />
                   Áudio Ativo
                 </span>
               ) : (
@@ -105,7 +107,7 @@ export const Header: React.FC<HeaderProps> = ({
 
               {/* Online/offline badge */}
               {!isOnline && (
-                <span className="flex items-center gap-1 text-brand-soft">
+                <span className="flex items-center gap-1 text-warning">
                   <WifiOff className="w-3 h-3" />
                   Offline
                 </span>
@@ -129,13 +131,14 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Quick SOS Trigger Button */}
           <button
             onClick={onSOSClick}
-            className="relative px-2 sm:px-3 py-1.5 rounded-lg bg-red-600/90 hover:bg-red-500 active:scale-95 text-white font-extrabold text-xs flex items-center gap-1 sm:gap-1.5 shadow-md shadow-red-950 transition border border-red-500/40 shrink-0"
+            className="relative px-2 sm:px-3 py-1.5 rounded-lg bg-sos/90 hover:bg-sos active:scale-95 text-white font-extrabold text-xs flex items-center gap-1 sm:gap-1.5 shadow-md shadow-sos/30 transition border border-danger/40 shrink-0"
             title="Abrir Central SOS de Emergência"
           >
             <ShieldAlert className="w-4 h-4 animate-pulse" />
-            <span className="hidden xs:inline sm:inline">SOS</span>
+            {/* "xs" não existe no Tailwind; o rótulo aparece a partir de 420px. */}
+            <span className="hidden min-[420px]:inline">SOS</span>
             {activeSOSCount > 0 && (
-              <span className="w-4 h-4 rounded-full bg-white text-red-600 font-mono text-[9px] sm:text-[10px] flex items-center justify-center font-bold">
+              <span className="w-4 h-4 rounded-full bg-white text-danger font-mono text-[9px] sm:text-[10px] flex items-center justify-center font-bold">
                 {activeSOSCount}
               </span>
             )}
@@ -190,7 +193,7 @@ export const Header: React.FC<HeaderProps> = ({
 
               <button
                 onClick={onLogout}
-                className="p-1 sm:p-1.5 rounded-lg text-ink-muted hover:text-red-400 hover:bg-elevated transition"
+                className="p-1 sm:p-1.5 rounded-lg text-ink-muted hover:text-danger hover:bg-elevated transition"
                 title="Desconectar da conta"
               >
                 <LogOut className="w-3.5 h-3.5" />
@@ -199,7 +202,7 @@ export const Header: React.FC<HeaderProps> = ({
           ) : (
             <button
               onClick={onOpenAuthModal}
-              className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-brand hover:opacity-90 text-on-brand font-bold text-xs flex items-center gap-1.5 transition active:scale-95 shadow shrink-0"
+              className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-action hover:opacity-90 text-on-action font-bold text-xs flex items-center gap-1.5 transition active:scale-95 shadow shrink-0"
             >
               <LogIn className="w-3.5 h-3.5" />
               <span>Entrar</span>

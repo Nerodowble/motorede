@@ -214,9 +214,9 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
     <div className="space-y-4 pb-28 sm:pb-24 max-w-4xl mx-auto px-3 sm:px-4 py-3">
       {/* Você foi aceito: o único lugar do app onde aparece endereço exato. */}
       {socorro.aceites.length > 0 && (
-        <div className="rounded-2xl bg-surface border border-emerald-600/50 p-4">
+        <div className="rounded-2xl bg-surface border border-success/50 p-4">
           <div className="flex items-center gap-2 mb-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+            <CheckCircle2 className="w-4 h-4 text-success" />
             <h3 className="text-xs font-bold text-ink uppercase tracking-wider font-mono">
               Aceitaram sua ajuda — vá até lá
             </h3>
@@ -232,7 +232,7 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
               {a.telefone ? (
                 <div className="mt-2 flex items-center gap-2 flex-wrap">
                   <span className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-elevated border border-line-strong">
-                    <Phone className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <Phone className="w-3.5 h-3.5 text-success shrink-0" />
                     <span className="font-mono text-sm text-ink select-all">{a.telefone}</span>
                   </span>
                   <button
@@ -241,7 +241,7 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
                   >
                     {copiado === a.telefone ? (
                       <>
-                        <Check className="w-3.5 h-3.5 text-emerald-400" />
+                        <Check className="w-3.5 h-3.5 text-success" />
                         Copiado
                       </>
                     ) : (
@@ -253,7 +253,7 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
                   </button>
                 </div>
               ) : (
-                <p className="text-[11px] text-red-400 mt-2">
+                <p className="text-[11px] text-danger mt-2">
                   Sem telefone no perfil de quem pediu — só dá para chegar pelo endereço.
                 </p>
               )}
@@ -262,7 +262,7 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
                 {!!a.telefone && (
                   <a
                     href={`tel:${a.telefone.replace(/\D/g, '')}`}
-                    className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs"
+                    className="px-3.5 py-2 rounded-xl bg-live hover:bg-live text-white font-bold text-xs"
                   >
                     Ligar agora
                   </a>
@@ -273,7 +273,7 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
                       href={getWazeNavigationUrl(a.exato.lat, a.exato.lng)}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-3 py-1.5 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/40 text-xs font-bold flex items-center gap-1"
+                      className="px-3 py-1.5 rounded-lg bg-info/20 hover:bg-info/30 text-info border border-info/40 text-xs font-bold flex items-center gap-1"
                     >
                       Waze <ExternalLink className="w-3 h-3" />
                     </a>
@@ -281,7 +281,7 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
                       href={getGoogleMapsNavigationUrl(a.exato.lat, a.exato.lng)}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-3 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold flex items-center gap-1"
+                      className="px-3 py-1.5 rounded-lg bg-live/20 hover:bg-live/30 text-success border border-success/40 text-xs font-bold flex items-center gap-1"
                     >
                       Maps <ExternalLink className="w-3 h-3" />
                     </a>
@@ -313,13 +313,13 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
           </div>
 
           {!!socorro.rede.motivo && (
-            <p className="text-[11px] text-red-400 mt-3 leading-relaxed">{socorro.rede.motivo}</p>
+            <p className="text-[11px] text-danger mt-3 leading-relaxed">{socorro.rede.motivo}</p>
           )}
 
           <button
             onClick={() => void socorro.entrar()}
             disabled={socorro.entrando || !socorro.suportado}
-            className="mt-4 w-full sm:w-auto px-5 py-3 rounded-xl bg-brand hover:opacity-90 disabled:opacity-40 text-on-brand font-bold text-xs uppercase tracking-wider transition active:scale-95"
+            className="mt-4 w-full sm:w-auto px-5 py-3 rounded-xl bg-action hover:opacity-90 disabled:opacity-40 text-on-action font-bold text-xs uppercase tracking-wider transition active:scale-95"
           >
             {socorro.entrando ? 'Entrando…' : 'Entrar na rede'}
           </button>
@@ -339,9 +339,9 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
       )}
 
       {socorro.meusPedidos.length > 0 && (
-        <div className="rounded-2xl bg-surface border border-brand/40 p-4">
+        <div className="rounded-2xl bg-surface border border-warning/40 p-4">
           <div className="flex items-center gap-2 mb-2">
-            <ShieldAlert className="w-4 h-4 text-brand" />
+            <ShieldAlert className="w-4 h-4 text-warning" />
             <h3 className="text-xs font-bold text-ink uppercase tracking-wider font-mono">
               Seu pedido está de pé ({socorro.meusPedidos.length})
             </h3>
@@ -351,7 +351,7 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
             {socorro.meusPedidos.map((p) => (
               <div key={p.pedidoId} className="rounded-xl bg-canvas/80 border border-line p-3">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[10px] px-2 py-0.5 rounded font-bold font-mono bg-brand/20 text-brand-soft">
+                  <span className="text-[10px] px-2 py-0.5 rounded font-bold font-mono bg-warning/20 text-warning">
                     {p.kind === 'emergencia' ? 'Socorro' : 'Apoio'}
                   </span>
                   <span className="text-[11px] text-ink-faint font-mono">
@@ -369,7 +369,7 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
                 </p>
                 <button
                   onClick={() => void socorro.encerrarMeuPedido(p.pedidoId)}
-                  className="mt-2 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition active:scale-95"
+                  className="mt-2 px-3 py-1.5 rounded-lg bg-live hover:bg-live text-white text-xs font-bold transition active:scale-95"
                 >
                   Já resolvi, encerrar
                 </button>
@@ -386,9 +386,9 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
       )}
 
       {socorro.chamados.length > 0 && (
-        <div className="rounded-2xl bg-surface border border-red-800/50 p-4">
+        <div className="rounded-2xl bg-surface border border-danger/50 p-4">
           <div className="flex items-center gap-2 mb-2">
-            <Radio className="w-4 h-4 text-red-500" />
+            <Radio className="w-4 h-4 text-danger" />
             <h3 className="text-xs font-bold text-ink uppercase tracking-wider font-mono">
               Pedindo ajuda perto de você ({socorro.chamados.length})
             </h3>
@@ -402,7 +402,7 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
                 <div key={c.pedidoId} className="rounded-xl bg-canvas/80 border border-line p-3.5">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-xs font-bold text-ink">{c.nome}</span>
-                    <span className="text-[10px] px-2 py-0.5 rounded font-bold font-mono bg-red-600/20 text-red-300">
+                    <span className="text-[10px] px-2 py-0.5 rounded font-bold font-mono bg-sos/20 text-danger">
                       {c.kind === 'emergencia' ? 'Socorro' : 'Apoio'}
                     </span>
                     {!!longe && (
@@ -413,7 +413,7 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
                   </div>
 
                   <p className="text-xs text-ink mt-1 flex items-start gap-1.5">
-                    <MapPin className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />
+                    <MapPin className="w-3.5 h-3.5 text-danger shrink-0 mt-0.5" />
                     {c.referencia}
                   </p>
                   {!!c.detalhes && <p className="text-[11px] text-ink-muted mt-1">{c.detalhes}</p>}
@@ -421,14 +421,14 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
 
                   <div className="flex items-center gap-2 mt-3 flex-wrap">
                     {c.respondido ? (
-                      <span className="text-[11px] text-emerald-400 font-bold flex items-center gap-1">
+                      <span className="text-[11px] text-success font-bold flex items-center gap-1">
                         <CheckCircle2 className="w-3.5 h-3.5" />
                         Você avisou que vai
                       </span>
                     ) : (
                       <button
                         onClick={() => void atender(c.pedidoId)}
-                        className="px-3.5 py-2 rounded-xl bg-brand hover:opacity-90 text-on-brand font-bold text-xs transition active:scale-95"
+                        className="px-3.5 py-2 rounded-xl bg-action hover:opacity-90 text-on-action font-bold text-xs transition active:scale-95"
                       >
                         Posso ajudar
                       </button>
@@ -440,7 +440,7 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
                           href={getWazeNavigationUrl(c.celula.lat, c.celula.lng)}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="px-3 py-1.5 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/40 text-xs font-bold flex items-center gap-1"
+                          className="px-3 py-1.5 rounded-lg bg-info/20 hover:bg-info/30 text-info border border-info/40 text-xs font-bold flex items-center gap-1"
                         >
                           Waze <ExternalLink className="w-3 h-3" />
                         </a>
@@ -448,7 +448,7 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
                           href={getGoogleMapsNavigationUrl(c.celula.lat, c.celula.lng)}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="px-3 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold flex items-center gap-1"
+                          className="px-3 py-1.5 rounded-lg bg-live/20 hover:bg-live/30 text-success border border-success/40 text-xs font-bold flex items-center gap-1"
                         >
                           Maps <ExternalLink className="w-3 h-3" />
                         </a>
@@ -498,7 +498,7 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
                     : 'região não informada'}
                 </p>
                 {r.aceita ? (
-                  <p className="text-[11px] text-emerald-400 font-bold mt-2 flex items-center gap-1">
+                  <p className="text-[11px] text-success font-bold mt-2 flex items-center gap-1">
                     <CheckCircle2 className="w-3.5 h-3.5" />
                     Você enviou seu endereço e telefone para {r.nome}
                   </p>
@@ -506,7 +506,7 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
                   <button
                     onClick={() => void aceitar(r)}
                     disabled={!r.ofertaId || !posicao}
-                    className="mt-2 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white font-bold text-xs transition active:scale-95"
+                    className="mt-2 px-3.5 py-2 rounded-xl bg-live hover:bg-live disabled:opacity-40 text-white font-bold text-xs transition active:scale-95"
                   >
                     Aceitar e enviar meu endereço
                   </button>
@@ -533,10 +533,10 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
       {socorro.rede.disponivel && (
         <form
           onSubmit={disparar}
-          className="rounded-2xl bg-gradient-to-b from-red-500/10 via-surface to-surface border border-red-800/50 p-4 sm:p-5 space-y-4"
+          className="rounded-2xl bg-gradient-to-b from-danger/10 via-surface to-surface border border-danger/50 p-4 sm:p-5 space-y-4"
         >
           <div className="flex items-center gap-3">
-            <span className="w-11 h-11 rounded-xl bg-red-600/20 border border-red-500/40 flex items-center justify-center text-red-500 shrink-0">
+            <span className="w-11 h-11 rounded-xl bg-sos/20 border border-danger/40 flex items-center justify-center text-danger shrink-0">
               <ShieldAlert className="w-6 h-6" />
             </span>
             <div>
@@ -552,7 +552,7 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
                 type="button"
                 onClick={() => setTipo(t)}
                 className={`flex-1 py-2 rounded-xl text-xs font-bold transition ${
-                  tipo === t ? 'bg-brand text-on-brand' : 'bg-surface text-ink-muted border border-line'
+                  tipo === t ? 'bg-action text-on-action' : 'bg-surface text-ink-muted border border-line'
                 }`}
               >
                 {t === 'emergencia' ? 'Socorro' : 'Apoio'}
@@ -569,7 +569,7 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
                   onClick={() => setEmergencia(item.type)}
                   className={`p-3 rounded-xl border text-left transition ${
                     emergencia === item.type
-                      ? 'bg-red-600/25 border-red-500 text-ink'
+                      ? 'bg-sos/25 border-danger text-ink'
                       : 'bg-surface/80 border-line text-ink-muted hover:border-line-strong'
                   }`}
                 >
@@ -593,11 +593,11 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
               value={referencia}
               onChange={(e) => setReferencia(e.target.value)}
               placeholder="Imigrantes km 28, sentido litoral, acostamento"
-              className="w-full bg-surface border border-line-strong rounded-xl p-3 text-xs text-ink placeholder:text-ink-faint focus:outline-none focus:border-red-500"
+              className="w-full bg-surface border border-line-strong rounded-xl p-3 text-xs text-ink placeholder:text-ink-faint focus:outline-none focus:border-danger"
             />
             {/* O GPS erra, cai, é negado. Quem vai socorrer chega pela frase. */}
             {!!validacao.errors.reference && referencia.length > 0 && (
-              <p className="text-[11px] text-red-400 mt-1">{validacao.errors.reference}</p>
+              <p className="text-[11px] text-danger mt-1">{validacao.errors.reference}</p>
             )}
           </div>
 
@@ -610,7 +610,7 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
               value={telefone}
               onChange={(e) => setTelefone(e.target.value)}
               placeholder="(11) 98765-4321"
-              className="w-full bg-surface border border-line-strong rounded-xl p-3 text-xs text-ink placeholder:text-ink-faint focus:outline-none focus:border-red-500"
+              className="w-full bg-surface border border-line-strong rounded-xl p-3 text-xs text-ink placeholder:text-ink-faint focus:outline-none focus:border-danger"
             />
             <p className="text-[10px] text-ink-faint mt-1 leading-relaxed">
               {telefone.trim()
@@ -627,7 +627,7 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
                 ? EMERGENCIAS.find((e) => e.type === emergencia)?.leva
                 : 'Preciso que alguém pegue um pacote no Itaim'
             }
-            className="w-full bg-surface border border-line-strong rounded-xl p-3 text-xs text-ink placeholder:text-ink-faint focus:outline-none focus:border-red-500 h-20 resize-none"
+            className="w-full bg-surface border border-line-strong rounded-xl p-3 text-xs text-ink placeholder:text-ink-faint focus:outline-none focus:border-danger h-20 resize-none"
           />
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -643,7 +643,7 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
                     onClick={() => setRaioKm(r)}
                     className={`flex-1 py-1.5 rounded-lg text-xs font-bold font-mono transition ${
                       raioKm === r
-                        ? 'bg-brand text-on-brand'
+                        ? 'bg-action text-on-action'
                         : 'bg-surface text-ink-muted border border-line'
                     }`}
                   >
@@ -660,7 +660,7 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
               <div className="bg-surface/90 border border-line rounded-lg p-2 flex items-center justify-between text-xs">
                 {posicao ? (
                   <>
-                    <span className="flex items-center gap-1.5 text-sky-400">
+                    <span className="flex items-center gap-1.5 text-info">
                       <Compass className="w-4 h-4" />
                       GPS ativo
                     </span>
@@ -669,7 +669,7 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
                     </span>
                   </>
                 ) : (
-                  <span className="flex items-center gap-1.5 text-red-400">
+                  <span className="flex items-center gap-1.5 text-danger">
                     <Compass className="w-4 h-4 shrink-0" />
                     Sem GPS — escreva bem a referência
                   </span>
@@ -681,14 +681,14 @@ export const SOSRescueView: React.FC<SOSRescueViewProps> = ({
           <button
             type="submit"
             disabled={enviando || !validacao.valid || !posicao}
-            className="w-full py-3.5 rounded-xl bg-red-600 hover:bg-red-500 disabled:opacity-40 active:scale-95 text-white font-extrabold text-sm uppercase tracking-wider transition flex items-center justify-center gap-2"
+            className="w-full py-3.5 rounded-xl bg-sos hover:bg-sos disabled:opacity-40 active:scale-95 text-white font-extrabold text-sm uppercase tracking-wider transition flex items-center justify-center gap-2"
           >
             <Flame className="w-5 h-5" />
             {enviando ? 'Acionando…' : tipo === 'emergencia' ? 'Pedir socorro agora' : 'Pedir apoio'}
           </button>
 
-          {!!resultado && <p className="text-xs text-emerald-400 leading-relaxed">{resultado}</p>}
-          {!!erro && <p className="text-xs text-red-400 leading-relaxed">{erro}</p>}
+          {!!resultado && <p className="text-xs text-success leading-relaxed">{resultado}</p>}
+          {!!erro && <p className="text-xs text-danger leading-relaxed">{erro}</p>}
 
           <p className="text-[10px] text-ink-faint leading-relaxed">
             Seu endereço exato não vai no aviso — só a região de mais ou menos 1 km, e ele

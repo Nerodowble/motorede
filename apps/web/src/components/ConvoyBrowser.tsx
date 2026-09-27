@@ -106,9 +106,9 @@ export const ConvoyBrowser: React.FC<ConvoyBrowserProps> = ({
           )}
 
           {browser.found && (
-            <div className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30">
+            <div className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-live/10 border border-success/30">
               <div className="min-w-0">
-                <p className="text-xs font-bold text-emerald-300">
+                <p className="text-xs font-bold text-success">
                   Está no comboio {browser.found.code}
                 </p>
                 <p className="text-[11px] text-ink-muted">
@@ -117,7 +117,7 @@ export const ConvoyBrowser: React.FC<ConvoyBrowserProps> = ({
               </div>
               <button
                 onClick={() => onJoinConvoy(browser.found!.code)}
-                className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition active:scale-95 shrink-0"
+                className="px-3 py-1.5 rounded-lg bg-live hover:bg-live text-white text-xs font-bold transition active:scale-95 shrink-0"
               >
                 Entrar
               </button>
@@ -127,7 +127,7 @@ export const ConvoyBrowser: React.FC<ConvoyBrowserProps> = ({
 
         {/* Lista */}
         <div className="flex-1 overflow-y-auto p-4 space-y-2">
-          {browser.error && <p className="text-xs text-red-400">{browser.error}</p>}
+          {browser.error && <p className="text-xs text-danger">{browser.error}</p>}
 
           {!browser.isLoading && ordenados.length === 0 && !browser.error && (
             <p className="text-xs text-ink-muted text-center py-6">
@@ -168,7 +168,7 @@ export const ConvoyBrowser: React.FC<ConvoyBrowserProps> = ({
                     <Users className="w-3 h-3" />
                     {c.riders} de {CONVOY_CAPACITY}
                     {c.total > c.riders && ` · ${c.total - c.riders} de apoio`}
-                    {c.isFull && <span className="text-brand-soft font-bold">· lotado</span>}
+                    {c.isFull && <span className="text-warning font-bold">· lotado</span>}
                   </p>
                 </div>
 
