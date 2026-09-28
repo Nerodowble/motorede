@@ -27,12 +27,18 @@ const CHAVES = {
 /**
  * Como o Android trata o som do comboio.
  *
- * - conversa: modo "ligação" (o padrão). O aparelho aplica o tratamento de
+ * - conversa: modo "ligação". O aparelho aplica o tratamento de
  *   chamada — supressão de ruído, controle automático de volume, cancelamento
  *   de eco pelo hardware. Ótimo para voz.
- * - musica: modo "mídia". Sem o tratamento de chamada, que em música faz o
+ * - musica: modo "mídia" — O PADRÃO. Sem o tratamento de chamada, que em música faz o
  *   volume subir e descer e o som "quebrar", mesmo com o microfone mudo.
  *   Os botões de volume passam a controlar o volume de mídia.
+ *
+ * Música virou o padrão (2026-09-27): medido no aparelho, o sinal do plugin
+ * chegava perfeito e o modo ligação o abafava. Sem cancelamento de eco de
+ * chamada — o uso previsto é com capacete/fone. ATENÇÃO: o microfone de
+ * intercomunicador Bluetooth só abre no modo ligação; se ele falhar, Conversa
+ * em Ajustes resolve.
  */
 export type ModoAudio = 'conversa' | 'musica';
 
@@ -56,9 +62,9 @@ async function gravar(chave: string, valor: unknown): Promise<void> {
 export const storage = {
   getModoAudio: async (): Promise<ModoAudio> => {
     try {
-      return (await AsyncStorage.getItem(CHAVES.MODO_AUDIO)) === 'musica' ? 'musica' : 'conversa';
+      return (await AsyncStorage.getItem(CHAVES.MODO_AUDIO)) === 'conversa' ? 'conversa' : 'musica';
     } catch {
-      return 'conversa';
+      return 'musica';
     }
   },
   saveModoAudio: async (modo: ModoAudio) => {

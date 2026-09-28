@@ -96,6 +96,8 @@ export const SinalPlugin: React.FC<{ room: Room | null; identidade: string | nul
   const s = useSinal(room, identidade);
   if (!s) return null;
   const v = veredito(s);
+  // Só aparece quando há problema: sinal bom não precisa ocupar o card.
+  if (!v.ruim) return null;
   const cor = v.ruim ? COLORS.dangerText : COLORS.inkFaint;
   return (
     <View style={styles.linha} accessibilityLabel={`Sinal do plugin: ${v.texto}`}>

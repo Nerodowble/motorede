@@ -42,7 +42,7 @@ type EstadoBusca =
 
 export const SettingsScreen: React.FC<SettingsScreenProps> = ({ profile, onSair }) => {
   const [estado, setEstado] = useState<EstadoBusca>({ fase: 'parado' });
-  const [modoAudio, setModoAudio] = useState<ModoAudio>('conversa');
+  const [modoAudio, setModoAudio] = useState<ModoAudio>('musica');
 
   useEffect(() => {
     void storage.getModoAudio().then(setModoAudio);
@@ -152,8 +152,8 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ profile, onSair 
         </View>
         <Ajuda>
           {modoAudio === 'conversa'
-            ? 'Modo ligação: o celular trata o som como chamada — ótimo para voz, mas pode fazer o áudio de um plugin subir e descer.'
-            : 'Modo mídia: o som do plugin sai limpo, e os botões de volume controlam a mídia. Se aparecer eco no viva-voz, volte para Conversa.'}
+            ? 'Modo ligação: o celular trata o som como chamada. Abre o microfone de intercomunicador Bluetooth, mas abafa o som de plugins.'
+            : 'Modo mídia (padrão): o som sai limpo, próprio para capacete e fone. Se o microfone do seu intercomunicador Bluetooth não funcionar, use Conversa.'}
           {' '}Vale na próxima vez que entrar no comboio.
         </Ajuda>
       </Cartao>

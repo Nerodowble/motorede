@@ -902,3 +902,13 @@ erradas por comboio a cada 10 minutos. `salas` continua existindo, mas opcional.
   atrapalhou: a cada frase o áudio quase sumia. O plugin passa a ser tratado
   como mais um participante — cada um ajusta o volume dele no próprio aparelho
   (− e + no app, controle deslizante na web) ou silencia só para si.
+
+**Som abafado do plugin (2026-09-27): era o modo "ligação" do Android.**
+Com um medidor de sinal no card, o áudio do plugin chegava perfeito ao
+celular (~99 kbps, 0% de perda, 0% de buracos) e mesmo assim soava abafado
+até quase sumir. No modo "mídia" o mesmo sinal tocava limpo: o tratamento de
+voz de chamada que o celular aplica na saída é que estragava a música.
+Decisão: **modo mídia é o padrão**, sem cancelamento de eco de chamada — o
+uso previsto é com capacete/fone. Conversa (modo ligação) continua em
+Ajustes como plano B, porque o microfone de intercomunicador Bluetooth só
+abre nesse modo. A confirmar em campo com o capacete.
