@@ -21,7 +21,20 @@ const CHAVES = {
   PHONE: 'motorede_phone',
   FAVORITES: 'motorede_favorite_rooms',
   MEUS_PEDIDOS: 'motorede_meus_pedidos',
+  MODO_AUDIO: 'motorede_modo_audio',
 } as const;
+
+/**
+ * Como o Android trata o som do comboio.
+ *
+ * - conversa: modo "ligação" (o padrão). O aparelho aplica o tratamento de
+ *   chamada — supressão de ruído, controle automático de volume, cancelamento
+ *   de eco pelo hardware. Ótimo para voz.
+ * - musica: modo "mídia". Sem o tratamento de chamada, que em música faz o
+ *   volume subir e descer e o som "quebrar", mesmo com o microfone mudo.
+ *   Os botões de volume passam a controlar o volume de mídia.
+ */
+export type ModoAudio = 'conversa' | 'musica';
 
 async function ler<T>(chave: string): Promise<T | null> {
   try {
@@ -41,6 +54,21 @@ async function gravar(chave: string, valor: unknown): Promise<void> {
 }
 
 export const storage = {
+  getModoAudio: async (): Promise<ModoAudio> => {
+    try {
+      return (await AsyncStorage.getItem(CHAVES.MODO_AUDIO)) === 'musica' ? 'musica' : 'conversa';
+    } catch {
+      return 'conversa';
+    }
+  },
+  saveModoAudio: async (modo: ModoAudio) => {
+    try {
+      await AsyncStorage.setItem(CHAVES.MODO_AUDIO, modo);
+    } catch {
+      // sem armazenamento: vale só nesta sessão
+    }
+  },
+
   /** Perfil do piloto, ou null se ainda não cadastrou. */
   getProfile: () => ler<RiderProfile>(CHAVES.PROFILE),
   saveProfile: (perfil: RiderProfile) => gravar(CHAVES.PROFILE, perfil),

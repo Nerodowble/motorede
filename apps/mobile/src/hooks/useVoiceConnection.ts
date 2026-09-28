@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AudioSession } from '@livekit/react-native';
+import { AndroidAudioTypePresets, AudioSession } from '@livekit/react-native';
 import {
   AudioPresets,
   ConnectionState,
@@ -17,6 +17,7 @@ import {
   startVoiceForegroundService,
   stopVoiceForegroundService,
 } from '../services/foregroundService';
+import { storage } from '../services/storage';
 
 export type VoiceConnectionStatus =
   | 'disconnected'
@@ -119,6 +120,17 @@ export function useVoiceConnection(tokenEndpoint: string): UseVoiceConnection {
 
         // Prepara a sessão de áudio do sistema. É o que roteia para o fone
         // bluetooth e mantém o áudio ativo em segundo plano.
+        // Modo de áudio escolhido em Ajustes (ver ModoAudio em storage.ts).
+        // Precisa vir ANTES de abrir a sessão: o Android lê na abertura.
+        const modo = await storage.getModoAudio();
+        await AudioSession.configureAudio({
+          android: {
+            audioTypeOptions:
+              modo === 'musica'
+                ? AndroidAudioTypePresets.media
+                : AndroidAudioTypePresets.communication,
+          },
+        });
         await AudioSession.startAudioSession();
 
         const room = new Room({

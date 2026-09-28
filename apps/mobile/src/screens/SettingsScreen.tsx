@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Updates from 'expo-updates';
@@ -6,6 +6,7 @@ import type { RiderProfile } from '@motorede/shared';
 import { COLORS, ESPACO, TIPO } from '../theme';
 import { Botao, type NomeIcone } from '../components/ui/Botao';
 import { Ajuda, Cartao, TituloCartao, estilosBase } from '../components/ui/Cartao';
+import { storage, type ModoAudio } from '../services/storage';
 
 /**
  * Ajustes.
@@ -41,6 +42,16 @@ type EstadoBusca =
 
 export const SettingsScreen: React.FC<SettingsScreenProps> = ({ profile, onSair }) => {
   const [estado, setEstado] = useState<EstadoBusca>({ fase: 'parado' });
+  const [modoAudio, setModoAudio] = useState<ModoAudio>('conversa');
+
+  useEffect(() => {
+    void storage.getModoAudio().then(setModoAudio);
+  }, []);
+
+  const escolherModo = (modo: ModoAudio) => {
+    setModoAudio(modo);
+    void storage.saveModoAudio(modo);
+  };
 
   const procurarAtualizacao = useCallback(async () => {
     // Em desenvolvimento o app roda direto do Metro, não de um pacote
@@ -122,6 +133,32 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ profile, onSair 
       </Cartao>
 
       <Cartao>
+        <TituloCartao icone="musical-notes-outline">Som do comboio</TituloCartao>
+        <View style={styles.opcoes}>
+          <Botao
+            rotulo="Conversa"
+            icone="chatbubbles-outline"
+            variante={modoAudio === 'conversa' ? 'action' : 'secundario'}
+            onPress={() => escolherModo('conversa')}
+            flex
+          />
+          <Botao
+            rotulo="Música"
+            icone="headset-outline"
+            variante={modoAudio === 'musica' ? 'action' : 'secundario'}
+            onPress={() => escolherModo('musica')}
+            flex
+          />
+        </View>
+        <Ajuda>
+          {modoAudio === 'conversa'
+            ? 'Modo ligação: o celular trata o som como chamada — ótimo para voz, mas pode fazer o áudio de um plugin subir e descer.'
+            : 'Modo mídia: o som do plugin sai limpo, e os botões de volume controlam a mídia. Se aparecer eco no viva-voz, volte para Conversa.'}
+          {' '}Vale na próxima vez que entrar no comboio.
+        </Ajuda>
+      </Cartao>
+
+      <Cartao>
         <TituloCartao icone="cloud-download-outline">Atualização</TituloCartao>
 
         <Botao
@@ -191,6 +228,7 @@ const Linha: React.FC<{ rotulo: string; valor: string; icone?: NomeIcone }> = ({
 );
 
 const styles = StyleSheet.create({
+  opcoes: { flexDirection: 'row', gap: ESPACO.sm },
   perfil: { flexDirection: 'row', alignItems: 'center', gap: ESPACO.md },
   avatar: {
     width: 56,
