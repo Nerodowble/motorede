@@ -32,6 +32,8 @@ const ACOES: Record<string, string> = {
   pular: 'pulou para o próximo',
   parar: 'parou',
   embaralhar: 'mexeu no embaralhar',
+  'som-bluetooth': 'ligou o som para fone Bluetooth',
+  'som-normal': 'voltou o som normal',
 };
 
 /** Frase curta do último comando, só nos 8 s seguintes a ele. */

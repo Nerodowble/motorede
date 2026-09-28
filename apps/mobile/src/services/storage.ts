@@ -30,6 +30,10 @@ const CHAVES = {
  * - conversa: modo "ligação" — O PADRÃO. O aparelho aplica o tratamento de
  *   chamada — supressão de ruído, controle automático de volume, cancelamento
  *   de eco pelo hardware. Ótimo para voz.
+ * - conversa-midia (TESTE): modo ligação — o microfone do fone Bluetooth
+ *   continua funcionando — mas o som recebido é marcado como MÍDIA, não como
+ *   voz. Em muitos celulares é o que evita a redução de ruído de chamada
+ *   "comer" a música do plugin.
  * - musica: modo "mídia". Sem o tratamento de chamada, que em música faz o
  *   volume subir e descer e o som "quebrar", mesmo com o microfone mudo.
  *   Os botões de volume passam a controlar o volume de mídia.
@@ -39,7 +43,7 @@ const CHAVES = {
  * chegou a ser padrão por algumas horas (2026-09-27) e foi revertida — ela
  * desliga o microfone do fone. Fica em Ajustes só para teste.
  */
-export type ModoAudio = 'conversa' | 'musica';
+export type ModoAudio = 'conversa' | 'conversa-midia' | 'musica';
 
 async function ler<T>(chave: string): Promise<T | null> {
   try {
@@ -61,7 +65,8 @@ async function gravar(chave: string, valor: unknown): Promise<void> {
 export const storage = {
   getModoAudio: async (): Promise<ModoAudio> => {
     try {
-      return (await AsyncStorage.getItem(CHAVES.MODO_AUDIO)) === 'musica' ? 'musica' : 'conversa';
+      const salvo = await AsyncStorage.getItem(CHAVES.MODO_AUDIO);
+      return salvo === 'musica' || salvo === 'conversa-midia' ? salvo : 'conversa';
     } catch {
       return 'conversa';
     }

@@ -159,6 +159,20 @@ export const PluginSheet: React.FC<PluginSheetProps> = ({
         outros.
       </Ajuda>
 
+      {/* Teste: prepara a música para o canal de chamada do fone Bluetooth.
+          Muda para todo o comboio; a faixa atual recomeça com o som novo. */}
+      <Botao
+        rotulo={`Som para fone Bluetooth: ${e?.perfilSom === 'bluetooth' ? 'ligado' : 'desligado'}`}
+        icone="bluetooth"
+        variante={e?.perfilSom === 'bluetooth' ? 'action' : 'secundario'}
+        onPress={() =>
+          void pluginAudio.enviar({
+            tipo: 'som',
+            perfil: e?.perfilSom === 'bluetooth' ? 'normal' : 'bluetooth',
+          })
+        }
+      />
+
       <View style={estilosBase.linhaBotoes}>
         <Botao
           rotulo={`Embaralhar: ${e?.embaralhar ? 'ligado' : 'desligado'}`}

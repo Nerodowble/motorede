@@ -134,26 +134,32 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ profile, onSair 
 
       <Cartao>
         <TituloCartao icone="musical-notes-outline">Som do comboio</TituloCartao>
-        <View style={styles.opcoes}>
+        <View style={styles.opcoesColuna}>
           <Botao
-            rotulo="Conversa"
+            rotulo="Conversa (padrão)"
             icone="chatbubbles-outline"
             variante={modoAudio === 'conversa' ? 'action' : 'secundario'}
             onPress={() => escolherModo('conversa')}
-            flex
           />
           <Botao
-            rotulo="Música"
+            rotulo="Teste: conversa + som de mídia"
+            icone="flask-outline"
+            variante={modoAudio === 'conversa-midia' ? 'action' : 'secundario'}
+            onPress={() => escolherModo('conversa-midia')}
+          />
+          <Botao
+            rotulo="Teste: só música"
             icone="headset-outline"
             variante={modoAudio === 'musica' ? 'action' : 'secundario'}
             onPress={() => escolherModo('musica')}
-            flex
           />
         </View>
         <Ajuda>
           {modoAudio === 'conversa'
-            ? 'Padrão. Necessário no fone Bluetooth de capacete: é o que liga o microfone do fone.'
-            : 'Só para teste: o som sai limpo, mas no fone Bluetooth o microfone do fone não funciona.'}
+            ? 'Padrão. Liga o microfone do fone Bluetooth de capacete. A música do plugin sai com som de ligação.'
+            : modoAudio === 'conversa-midia'
+              ? 'Teste: continua com o microfone do fone, mas pede ao celular para tratar o som como mídia — em muitos aparelhos a música para de ser "abafada".'
+              : 'Teste: som limpo, mas no fone Bluetooth o microfone do fone não funciona.'}
           {' '}Vale na próxima vez que entrar no comboio.
         </Ajuda>
       </Cartao>
@@ -229,6 +235,7 @@ const Linha: React.FC<{ rotulo: string; valor: string; icone?: NomeIcone }> = ({
 
 const styles = StyleSheet.create({
   opcoes: { flexDirection: 'row', gap: ESPACO.sm },
+  opcoesColuna: { gap: ESPACO.sm },
   perfil: { flexDirection: 'row', alignItems: 'center', gap: ESPACO.md },
   avatar: {
     width: 56,

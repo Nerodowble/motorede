@@ -39,6 +39,16 @@ export function normalizePairCode(input: unknown): string | null {
 /** Passo dos botões de volume do plugin (em %). Botão grande, de luva. */
 export const PLUGIN_VOLUME_STEP = 10;
 
+/**
+ * Como o plugin prepara o áudio.
+ * - normal: como a faixa é.
+ * - bluetooth: mono, faixa de 150 Hz a 7 kHz, volume nivelado e sem silêncios
+ *   bruscos — o que o canal de chamada de um fone Bluetooth transmite. Assim a
+ *   música não perde o que importa e a redução de ruído do celular não a
+ *   confunde com barulho.
+ */
+export type PerfilSom = 'normal' | 'bluetooth';
+
 /** Comandos que o app manda ao plugin. */
 export type PluginCommand =
   | { tipo: 'tocar'; lista: string; item?: number }
@@ -47,6 +57,8 @@ export type PluginCommand =
   | { tipo: 'pular' }
   | { tipo: 'parar' }
   | { tipo: 'embaralhar'; ligado: boolean }
+  /** Perfil de som: "bluetooth" prepara o áudio para o canal de chamada do fone. */
+  | { tipo: 'som'; perfil: PerfilSom }
   | { tipo: 'sair' };
 
 /** Mensagem como trafega: quem mandou vai junto para o aviso "Fulano pulou". */
@@ -73,6 +85,7 @@ export interface PluginState {
   ultimo?: { por: string; acao: string; em: number };
   /** Identidade de quem chamou o plugin. Pode dispensá-lo, junto com o líder. */
   chamadoPor?: string;
+  perfilSom?: PerfilSom;
 }
 
 export function encodePluginState(state: PluginState): Record<string, string> {
@@ -86,6 +99,7 @@ export function encodePluginState(state: PluginState): Record<string, string> {
     itens: JSON.stringify(state.itens),
     ultimo: state.ultimo ? JSON.stringify(state.ultimo) : '',
     chamadoPor: state.chamadoPor ?? '',
+    perfilSom: state.perfilSom ?? 'normal',
   };
 }
 
@@ -112,6 +126,7 @@ export function decodePluginState(attrs: Record<string, string> | undefined): Pl
     itens: parseJson(a.itens, []),
     ultimo: parseJson(a.ultimo, undefined),
     chamadoPor: a.chamadoPor || undefined,
+    perfilSom: a.perfilSom === 'bluetooth' ? 'bluetooth' : 'normal',
   };
 }
 
@@ -128,6 +143,8 @@ export function parsePluginCommand(raw: unknown): PluginCommand | null {
       return { tipo: 'tocar', lista: c.lista, item: c.item as number | undefined };
     case 'embaralhar':
       return { tipo: 'embaralhar', ligado: c.ligado === true };
+    case 'som':
+      return { tipo: 'som', perfil: c.perfil === 'bluetooth' ? 'bluetooth' : 'normal' };
     case 'pausar':
     case 'continuar':
     case 'pular':

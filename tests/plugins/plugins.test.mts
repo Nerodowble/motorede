@@ -124,6 +124,9 @@ ok(shared.parsePluginCommand({ tipo: 'tocar', lista: 'Estrada' })?.tipo === 'toc
 ok(shared.parsePluginCommand({ tipo: 'tocar' }) === null, 'tocar sem lista é descartado');
 ok(shared.parsePluginCommand({ tipo: 'tocar', lista: 'x', item: -1 }) === null, 'item negativa é descartada');
 ok(shared.parsePluginCommand({ tipo: 'rm -rf' }) === null, 'comando desconhecido é descartado');
+ok(shared.parsePluginCommand({ tipo: 'som', perfil: 'bluetooth' })?.perfil === 'bluetooth', 'comando de perfil de som passa');
+ok(shared.parsePluginCommand({ tipo: 'som', perfil: 'qualquer' })?.perfil === 'normal', 'perfil desconhecido vira normal');
+ok(shared.decodePluginState({ perfilSom: 'bluetooth' }).perfilSom === 'bluetooth' && shared.decodePluginState({}).perfilSom === 'normal', 'perfil de som viaja nos atributos');
 ok(shared.pluginPlaybackVolume(100, false) === 1, 'volume cheio por padrão');
 ok(shared.pluginPlaybackVolume(40, false) === 0.4, 'volume escolhido pela pessoa');
 ok(shared.pluginPlaybackVolume(150, false) === 1 && shared.pluginPlaybackVolume(-5, false) === 0, 'volume fora da faixa é contido');

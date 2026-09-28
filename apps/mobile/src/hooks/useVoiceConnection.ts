@@ -128,7 +128,16 @@ export function useVoiceConnection(tokenEndpoint: string): UseVoiceConnection {
             audioTypeOptions:
               modo === 'musica'
                 ? AndroidAudioTypePresets.media
-                : AndroidAudioTypePresets.communication,
+                : modo === 'conversa-midia'
+                  ? {
+                      // Mantém o modo de chamada (é o que abre o microfone do
+                      // fone Bluetooth), mas o som que chega é tratado como mídia.
+                      ...AndroidAudioTypePresets.communication,
+                      audioStreamType: 'music',
+                      audioAttributesUsageType: 'media',
+                      audioAttributesContentType: 'music',
+                    }
+                  : AndroidAudioTypePresets.communication,
           },
         });
         await AudioSession.startAudioSession();
