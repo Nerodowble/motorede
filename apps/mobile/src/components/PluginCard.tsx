@@ -4,6 +4,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import type { PluginAudio } from '../hooks/usePluginAudio';
 import { PluginSheet } from './PluginSheet';
 import { ConectarPlugin, Rodape, Seletor, Volume } from './PluginPartes';
+import { SinalPlugin } from './SinalPlugin';
 import { Botao } from './ui/Botao';
 import { Ajuda, Cartao, Rotulo, estilosBase } from './ui/Cartao';
 import { ALVO, COLORS, ESPACO, RAIO } from '../theme';
@@ -151,6 +152,7 @@ export const PluginCard: React.FC<PluginCardProps> = ({ pluginAudio, souLider })
           />
         </View>
         <Volume pluginAudio={pluginAudio} />
+        <SinalPlugin room={pluginAudio.room} identidade={pluginAudio.plugin?.identidade ?? null} />
       </>
     );
   }

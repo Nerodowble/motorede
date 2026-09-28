@@ -338,6 +338,8 @@ export function usePluginAudio(room: Room | null, sessionToken: string | null) {
     parear,
     desparear,
     identidadeLocal: room?.localParticipant.identity ?? null,
+    /** Sala atual — usada para medir a qualidade do sinal do plugin. */
+    room,
   };
 }
 
