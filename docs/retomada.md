@@ -6,8 +6,9 @@
   nota registra o estado; aguarde uma nova solicitação antes de continuar.
 - Web e app nativo são desenvolvidos juntos. Não criar mapa próprio; usar
   navegação externa. Não mostrar referências ao BikerWay na interface.
-- O catálogo inicial tem 15 rotas não auditadas. Pesquisa e ampliação em um
-  projeto externo foram discutidas, mas esse projeto não foi implementado.
+- O catálogo inicial tem 15 rotas não auditadas. O BikerWay foi só
+  referência: o MotoRede não depende dele. Rotas novas entram por
+  `npm run rotas:importar`, a partir de um JSON pesquisado fora do app.
 - As imagens de redesign foram rejeitadas. O catálogo atual mantém o tema
   do MotoRede, com Explorar/Salvas, filtros, cards compactos e detalhes separados.
 
@@ -61,7 +62,8 @@ Fonte: <https://caminhosdomar.com.br/sua-visita>.
 - `packages/shared/src/domain/rotas.ts`: filtros, custos e links externos.
 - `packages/shared/src/data/revisoesRotas.ts`: correções após importar o catálogo.
 - `packages/shared/src/data/catalogoRotas.ts`: snapshot de rotas.
-- `scripts/importar-catalogo-bikerway.mjs`: importador que preserva correções.
+- `scripts/importar-rotas.mts` (`npm run rotas:importar`): valida e acrescenta
+  rotas novas; base JSON e regras em `docs/rotas.md`.
 - `apps/mobile/src/screens/RoutesScreen.tsx` e
   `apps/web/src/views/RoutesView.tsx`: catálogo e detalhes.
 - `apps/*/src/hooks/useRotasSalvas.ts`: favoritos locais.
@@ -74,6 +76,11 @@ No commit `3a227ec`, passaram: build do shared, 15 testes de rotas, lint,
 build web, testes de socorro e plugins, e exportação/publicação OTA Android.
 A reimportação do catálogo foi conferida e preserva as correções locais.
 Ainda falta validar a viagem completa no Google Maps em aparelho real.
+
+Rotas novas: pesquisa fora do app → `npm run rotas:importar` → commit/push
+(Vercel) → OTA do app. Passo a passo em `docs/rotas.md` ("Publicar rotas
+novas"). Pendente para avaliar e implementar: catálogo servido pela API, sem
+nova publicação a cada lote (ideia 34 de `docs/ideias.md`).
 
 Firebase é usado somente como transporte FCM para Expo Push Android.
 `google-services.json` público está configurado e a credencial privada está

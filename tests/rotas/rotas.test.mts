@@ -157,7 +157,7 @@ test('Caminho do Mar expõe a restrição e não oferece travessia de moto', () 
 });
 
 test('catálogo importado tem IDs únicos, coordenadas válidas e pedágios consistentes', () => {
-  assert.equal(CATALOGO_ROTAS.length, 15);
+  assert.ok(CATALOGO_ROTAS.length >= 15);
   assert.equal(new Set(CATALOGO_ROTAS.map((r) => r.id)).size, CATALOGO_ROTAS.length);
   for (const r of CATALOGO_ROTAS) {
     assert.ok(Number.isFinite(r.distanciaKm) && r.distanciaKm > 0, r.id);

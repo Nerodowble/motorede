@@ -1,4 +1,4 @@
-# Rotas do BikerWay no MotoRede
+# Catálogo de rotas do MotoRede
 
 O catálogo está disponível na aba **Rotas** do app e em **Mais → Rotas** na web.
 As duas telas usam o domínio puro `packages/shared/src/domain/rotas.ts` e o
@@ -58,32 +58,108 @@ Os links do Google Maps não devolvem quilômetros, tempo ou tarifas ao MotoRede
 Para estimar o total dentro do app é necessária uma integração de roteamento
 rodoviário; não se deve somar a distância em linha reta aos quilômetros do catálogo.
 
-## Origem e curadoria externa
+## Origem e como adicionar rotas
 
-O conjunto inicial tem 15 rotas do repositório
-<https://github.com/Nerodowble/BikerWay>, commit `245e5e5`. Esses registros
-foram importados, **não auditados pelo MotoRede**. As datas são as declaradas
-no BikerWay; disponibilidade de estradas, descrições, serviços e tarifas não
-foram confirmadas. Nenhum ponto é anunciado como homologado pelo MotoRede.
+As 15 rotas iniciais vieram de um projeto usado só como referência e foram
+copiadas uma única vez; o MotoRede não depende dele. O catálogo é mantido
+aqui, no formato `RotaCatalogo`. Esses registros **não foram auditados pelo
+MotoRede**: datas, serviços e tarifas não foram confirmados, e nenhum ponto
+é anunciado como homologado.
 
-A pesquisa e a ampliação podem ocorrer em um projeto externo, que publica
-um catálogo versionado. O MotoRede mantém um snapshot local para consulta
-sem rede; não executa pesquisa, raspagem ou cálculo de mapas. O contrato
-`RotaCatalogo` separa esses dados das telas. Não foi criado um novo serviço de
-curadoria nesta integração.
-
-Para reproduzir a importação manual do formato atual do BikerWay:
+O app não pesquisa rotas. A pesquisa é feita fora dele (por exemplo, pelo
+Codex com busca na web) e entregue num arquivo JSON, que o importador valida
+e **acrescenta** ao fim do catálogo. Rotas existentes nunca são alteradas
+pelo importador; correções locais ficam em `revisoesRotas.ts`.
 
 ```powershell
-node scripts/importar-catalogo-bikerway.mjs <caminho-do-routes.json> <commit>
-npm run build --workspace @motorede/shared
+npm run rotas:importar -- rotas-novas.json --verificar   # só valida
+npm run rotas:importar -- rotas-novas.json               # valida e acrescenta
 npm run test:rotas
 ```
 
-O importador valida IDs, coordenadas, características e soma das praças de
-pedágio antes de escrever `packages/shared/src/data/catalogoRotas.ts`.
-Atualizações devem ser revisadas antes de publicar; a importação não certifica
-a exatidão das fontes.
+Se houver qualquer erro, nada é gravado e todos os problemas são listados.
+O arquivo de rotas novas é temporário e não fica no repositório.
+
+### Base JSON de uma rota
+
+O arquivo é um array com uma ou mais rotas:
+
+```json
+[
+  {
+    "id": "nome-da-rota-uf",
+    "nome": "Nome da Rota (BR-000)",
+    "regiao": "UF, Brasil",
+    "inicio": { "cidade": "Cidade de início", "lat": 0, "lng": 0 },
+    "fim":    { "cidade": "Cidade de fim",    "lat": 0, "lng": 0 },
+    "distanciaKm": 0,
+    "pavimento": "asfalto",
+    "curvas": "medio",
+    "trechoSemPostoKm": 0,
+    "pedagioIda": 0,
+    "pedagios": [
+      { "nome": "Praça X (km 00)", "valorMoto": 0, "sistema": "fisica", "fonte": "https://..." }
+    ],
+    "pontosApoio": [
+      { "nome": "Posto Y", "tipo": "posto_gasolina", "descricao": "Por que importa para o motociclista.", "lat": 0, "lng": 0 }
+    ],
+    "revisao": "AAAA-MM-DD",
+    "descricao": "Texto de 1 a 3 parágrafos, voz de motociclista.",
+    "dificuldade": "intermediario",
+    "melhorEpoca": "Meses bons e o que evitar.",
+    "observacoes": ["Risco específico e onde ocorre."],
+    "fontes": ["https://...", "https://..."]
+  }
+]
+```
+
+| Campo | Regra |
+|---|---|
+| `id` | Único, kebab-case, termina com a sigla do estado (`serra-x-sc`). |
+| `nome` | Inclui a rodovia entre parênteses. |
+| `regiao` | `"SC, Brasil"` ou estados na ordem do trajeto: `"MG/SP, Brasil"`. |
+| `inicio`, `fim` | Cidade e coordenadas reais (OpenStreetMap ou Google Maps), dentro do Brasil. Nunca inventar. |
+| `distanciaKm` | Pelo menos 20 km, conferida no Google Maps. |
+| `pavimento` | `asfalto`, `misto` ou `terra` (terra só com justificativa na descrição). |
+| `curvas` | `baixo`, `medio` ou `alto`. |
+| `trechoSemPostoKm` | Maior distância seguida sem posto aberto, sem passar de `distanciaKm`. Na dúvida, errar para mais. |
+| `pedagioIda` | Valor de moto de uma passagem só; o app dobra para ida e volta. `null` se não confirmado (e então sem `pedagios`). |
+| `pedagios` | Uma entrada por praça ou pórtico (`fisica` ou `free_flow`). `[]` quando conferido e sem pedágio. A soma tem de ser **exatamente** `pedagioIda`. |
+| `pontosApoio` | De 1 a 12, com pelo menos um `posto_gasolina`. Tipos: `posto_gasolina`, `mirante`, `restaurante`, `ponto_historico`, `hotel`. |
+| `revisao` | Data da pesquisa, `AAAA-MM-DD`. |
+| `dificuldade` | Opcional: `iniciante`, `intermediario` ou `avancado`. |
+| `descricao`, `melhorEpoca` | Opcionais. Tom de motociclista, sem texto de agência de turismo. |
+| `observacoes` | Riscos verificáveis (neblina, animais, trecho sem sinal); pode ser vazia. |
+| `fontes` | Pelo menos 2 links `https` realmente consultados. Pedágio: concessionária, ANTT/ARTESP ou notícia datada do último reajuste. |
+
+Campos fora dessa lista são recusados, para pegar nome digitado errado.
+O importador confere formato e coerência, não a verdade dos dados: revise
+coordenadas, pedágios e distância sem posto antes de publicar.
+
+### Publicar rotas novas
+
+O JSON não é enviado a nenhum servidor. O catálogo faz parte do código
+(`packages/shared/src/data/catalogoRotas.ts`) e web e app o leem localmente,
+então rotas novas sobem como qualquer mudança de código:
+
+1. **Importar e testar**
+   ```powershell
+   npm run rotas:importar -- rotas-novas.json
+   npm run build --workspace @motorede/shared
+   npm run test:rotas
+   ```
+   Depois, apague o `rotas-novas.json`.
+2. **Web:** commit e push no `main`. A Vercel publica sozinha em
+   `motorede-web.vercel.app`.
+3. **App:** é só JavaScript, então basta OTA (sem APK novo):
+   ```powershell
+   cd apps/mobile
+   $env:EAS_SKIP_AUTO_FINGERPRINT=1; npx eas-cli update --channel preview --environment preview --message "Rotas novas: <região>"
+   ```
+   O piloto recebe ao reabrir o app (às vezes na segunda abertura).
+
+Cada lote exige esse ciclo. A evolução para o app baixar o catálogo da API,
+sem nova publicação, está descrita na ideia 34 de [ideias.md](ideias.md).
 
 Referências dos links externos:
 [Google Maps URLs](https://developers.google.com/maps/documentation/urls/get-started)

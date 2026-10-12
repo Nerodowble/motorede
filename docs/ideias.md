@@ -1123,3 +1123,54 @@ disso, o MotoRede pergunta a uma IA e guarda a resposta **por modelo**.
 
 **Adiado:** validar e criar rotas com a mesma IA. Rota inventada é perigosa;
 quando vier, entra como rascunho revisado antes de ir para o catálogo.
+
+## 33. Rotas novas entram pelo nosso formato, sem BikerWay
+
+**Status:** `implementado`
+**Data:** 2026-10-12
+
+O BikerWay foi só referência de processo; o MotoRede não lê nem depende do
+repositório dele. O importador antigo (que lia o `routes.json` do BikerWay e
+substituía o catálogo inteiro) saiu. No lugar, `npm run rotas:importar`
+recebe um JSON no formato do próprio app (`RotaCatalogo`), pesquisado fora
+(ex.: Codex com busca na web), valida tudo e **acrescenta** ao catálogo.
+
+- Recusa id repetido, coordenada fora do Brasil, rota com menos de 20 km,
+  campo desconhecido, ponto de apoio sem posto e menos de 2 fontes.
+- Pedágio zero só com lista de praças explícita (`[]`); sem confirmação é
+  `null`. A soma das praças tem de bater exatamente com o total.
+- Com qualquer erro nada é gravado; `--verificar` só valida.
+- Base JSON e regras dos campos: [rotas.md](rotas.md).
+
+## 34. Catálogo de rotas servido pela API (sem nova publicação)
+
+**Status:** `proposto — verificar e implementar quando os lotes ficarem frequentes`
+**Data:** 2026-10-12
+
+Hoje o catálogo vive no código: cada lote de rotas novas exige commit, deploy
+da Vercel e OTA do app (passo a passo em [rotas.md](rotas.md#publicar-rotas-novas)).
+Para lotes ocasionais isso basta. Se a pesquisa de rotas virar rotina, o app
+deve baixar o catálogo da API.
+
+**Antes de implementar, verificar:** com que frequência entram rotas novas;
+se o snapshot local ainda cabe bem no bundle; se o Redis (já usado pela ficha
+do modelo) ou um arquivo estático na Vercel é suficiente — o Supabase, por
+decisão anterior, só entra com o módulo de Eventos.
+
+**Esboço:**
+
+- `GET /api/rotas` (handler Node `(req, res)`, imports com `.js`) devolve
+  `{ versao, rotas: RotaCatalogo[] }` com cache HTTP. A fonte pode continuar
+  sendo `catalogoRotas.ts` no começo (só muda o transporte) e depois um
+  armazenamento que o importador grava sem deploy.
+- Web e app continuam com o snapshot embutido como **reserva offline**: mostram
+  o embutido na hora, buscam a versão nova em segundo plano e guardam a última
+  baixada (localStorage / AsyncStorage). Sem rede, nada quebra.
+- Toda resposta passa por `validarRotasNovas` (ou equivalente) antes de ser
+  usada: dado inválido do servidor não pode sumir com rotas nem travar a tela.
+- `revisarRotaCatalogo` continua sendo aplicado no cliente, para as correções
+  locais (ex.: Caminho do Mar) valerem também nas rotas baixadas.
+- Favoritos são IDs (`lerRotasSalvas`); rota removida do catálogo some da lista
+  de salvas sem erro — conferir esse caso nos testes.
+- Escrita do catálogo (se houver) só por quem opera o servidor, protegida como
+  `ADMIN_EMAILS`; nunca rota de escrita pública.

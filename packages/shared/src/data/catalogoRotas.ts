@@ -1,13 +1,6 @@
-// Importado por scripts/importar-catalogo-bikerway.mjs; revisão das fontes ainda pendente.
+// Gerado por scripts/importar-rotas.mts; as fontes de cada rota ainda não foram auditadas.
 import type { RotaCatalogo } from '../domain/rotas.js';
 import { revisarRotaCatalogo } from './revisoesRotas.js';
-
-export const ORIGEM_CATALOGO_ROTAS = {
-  "projeto": "BikerWay",
-  "url": "https://github.com/Nerodowble/BikerWay",
-  "commit": "245e5e5",
-  "versao": 1
-} as const;
 
 export const CATALOGO_ROTAS: readonly RotaCatalogo[] = ([
   {
