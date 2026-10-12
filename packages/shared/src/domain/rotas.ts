@@ -44,7 +44,7 @@ export const ROTULOS_CURVAS: Record<CurvasRota, string> = {
   baixo: 'Poucas curvas', medio: 'Curvas moderadas', alto: 'Muitas curvas',
 };
 export const AVISO_CATALOGO_ROTAS =
-  'Dados importados do BikerWay, ainda sem revisão no MotoRede. Distâncias, acessos, pontos de apoio e tarifas podem ter mudado.';
+  'Informações ainda não revisadas pelo MotoRede. Distâncias, acessos, pontos de apoio e tarifas podem ter mudado.';
 export const AVISO_CUSTO_ROTAS =
   'Estimativa apenas do trecho cadastrado. Não inclui deslocamento até o início, outros pedágios ou desvios. Ida e volta considera o mesmo trecho nos dois sentidos; confirme acessos e tarifas.';
 export const AVISO_NAVEGACAO_ROTAS =

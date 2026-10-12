@@ -147,7 +147,7 @@ export function RoutesScreen({ motorcycle }: { motorcycle: Motorcycle | null }) 
           <Botao rotulo="Ir ao início · Google Maps" icone="navigate-outline" variante="action" onPress={() => void abrir(links.googleInicio)} />
           <Botao rotulo="Ir ao início · Waze" icone="open-outline" onPress={() => void abrir(links.wazeInicio)} />
           <Botao rotulo="Ver início → fim · Google Maps" icone="open-outline" onPress={() => void abrir(links.googleTrecho)} />
-          {rota.fontes.filter(fonteRotaSegura).length > 0 && <><TituloCartao>Fontes informadas no BikerWay</TituloCartao>{rota.fontes.filter(fonteRotaSegura).map((fonte, i) => <Botao key={fonte} rotulo={`Consultar fonte ${i + 1}`} icone="open-outline" onPress={() => void abrir(fonte)} />)}</>}
+          {rota.fontes.filter(fonteRotaSegura).length > 0 && <><TituloCartao>Fontes e referências</TituloCartao>{rota.fontes.filter(fonteRotaSegura).map((fonte, i) => <Botao key={fonte} rotulo={`Consultar fonte ${i + 1}`} icone="open-outline" onPress={() => void abrir(fonte)} />)}</>}
         </>}
       </Cartao>;
     })}

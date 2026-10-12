@@ -137,7 +137,7 @@ export function RoutesView({ motorcycle, origem }: { motorcycle: Motorcycle | nu
           <section className="space-y-2"><h2 className="font-bold text-ink">Navegação</h2><p className="text-sm text-ink-muted">{AVISO_NAVEGACAO_ROTAS}</p>
             <div className="flex flex-wrap gap-3"><LinkExterno href={links.googleInicio}>Ir ao início · Google Maps</LinkExterno><LinkExterno href={links.wazeInicio}>Ir ao início · Waze</LinkExterno><LinkExterno href={links.googleTrecho}>Ver início → fim · Google Maps</LinkExterno></div>
           </section>
-          {rota.fontes.filter(fonteRotaSegura).length > 0 && <section className="space-y-2"><h2 className="font-bold text-ink">Fontes informadas no BikerWay</h2><div className="flex flex-wrap gap-2">{rota.fontes.filter(fonteRotaSegura).map((fonte, i) => <LinkExterno key={fonte} href={fonte}>Fonte {i + 1}</LinkExterno>)}</div></section>}
+          {rota.fontes.filter(fonteRotaSegura).length > 0 && <section className="space-y-2"><h2 className="font-bold text-ink">Fontes e referências</h2><div className="flex flex-wrap gap-2">{rota.fontes.filter(fonteRotaSegura).map((fonte, i) => <LinkExterno key={fonte} href={fonte}>Fonte {i + 1}</LinkExterno>)}</div></section>}
         </div>}
       </article>;
     })}
