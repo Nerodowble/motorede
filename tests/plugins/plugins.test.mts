@@ -23,10 +23,11 @@ process.env.MOTOREDE_PLUGINS = JSON.stringify([
 ]);
 await subir(PORTA);
 
-const RAIZ = 'C:/Users/willi/Projetos_Firebase/motorede---plataforma-para-motociclistas';
-const plugins = (await import(`file:///${RAIZ}/apps/web/api/plugins.ts`)).default;
-const { countParticipants } = await import(`file:///${RAIZ}/apps/web/api/_livekit.ts`);
-const shared = await import(`file:///${RAIZ}/packages/shared/src/index.ts`);
+// Relativo a este arquivo, para os testes rodarem em qualquer máquina.
+const RAIZ = new URL('../..', import.meta.url).href.replace(/\/$/, '');
+const plugins = (await import(`${RAIZ}/apps/web/api/plugins.ts`)).default;
+const { countParticipants } = await import(`${RAIZ}/apps/web/api/_livekit.ts`);
+const shared = await import(`${RAIZ}/packages/shared/src/index.ts`);
 
 function chamar(h: any, body: unknown) {
   return new Promise<any>((r) => {

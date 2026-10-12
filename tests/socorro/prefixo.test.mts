@@ -6,8 +6,9 @@ process.env.STORAGE_REST_API_TOKEN = 'faz-de-conta';
 // E uma pegadinha: KV_URL existe mas e string de conexao, nao REST.
 process.env.KV_URL = 'redis://usuario:senha@algum-host:6379';
 await subir(PORTA);
-const RAIZ = 'C:/Users/willi/Projetos_Firebase/motorede---plataforma-para-motociclistas/apps/web/api';
-const presenca = (await import(`file:///${RAIZ}/presenca.ts`)).default;
+// Relativo a este arquivo, para os testes rodarem em qualquer máquina.
+const RAIZ = new URL('../../apps/web/api', import.meta.url).href.replace(/\/$/, '');
+const presenca = (await import(`${RAIZ}/presenca.ts`)).default;
 function chamar(h: any, method: string, body?: unknown) {
   return new Promise<any>((r) => {
     let st = 200;

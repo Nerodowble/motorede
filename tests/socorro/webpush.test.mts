@@ -19,9 +19,10 @@ process.env.VAPID_SUBJECT = 'mailto:teste@motorede.app';
 
 await subir(PORTA);
 
-const RAIZ = 'C:/Users/willi/Projetos_Firebase/motorede---plataforma-para-motociclistas/apps/web/api';
-const presenca = (await import(`file:///${RAIZ}/presenca.ts`)).default;
-const socorro = (await import(`file:///${RAIZ}/socorro.ts`)).default;
+// Relativo a este arquivo, para os testes rodarem em qualquer máquina.
+const RAIZ = new URL('../../apps/web/api', import.meta.url).href.replace(/\/$/, '');
+const presenca = (await import(`${RAIZ}/presenca.ts`)).default;
+const socorro = (await import(`${RAIZ}/socorro.ts`)).default;
 
 function chamar(h: any, method: string, body?: unknown) {
   return new Promise<any>((r) => {

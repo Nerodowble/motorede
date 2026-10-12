@@ -9,10 +9,14 @@ import { AccessToken } from 'livekit-server-sdk';
  * servidor. Aqui isso roda como middleware do próprio Vite, evitando subir
  * um segundo processo durante o desenvolvimento.
  *
- * Em produção este papel passa para uma Supabase Edge Function, que além de
- * assinar vai verificar quem é o usuário e se ele pode entrar naquela sala.
- * O contrato de request/response é o mesmo, de propósito: o cliente só troca
- * a URL.
+ * Em produção este papel é da função serverless `api/livekit-token.ts`, na
+ * Vercel, que além de assinar verifica o login do Google e a lotação do
+ * comboio. O contrato de request/response é o mesmo, de propósito: o cliente
+ * só troca a URL.
+ *
+ * Só este endpoint existe no `vite dev`. Os outros (`/api/comboios`,
+ * `/api/presenca`, `/api/socorro`, `/api/plugins`) só rodam na Vercel ou com
+ * `vercel dev` — ver docs/desenvolvimento.md.
  *
  * Este plugin só é carregado no modo dev — nunca entra no bundle de produção.
  */

@@ -912,3 +912,34 @@ Decisão: **modo mídia é o padrão**, sem cancelamento de eco de chamada — o
 uso previsto é com capacete/fone. Conversa (modo ligação) continua em
 Ajustes como plano B, porque o microfone de intercomunicador Bluetooth só
 abre nesse modo. A confirmar em campo com o capacete.
+
+**Revertido no mesmo dia (2026-09-27): Conversa volta a ser o padrão.** Os
+pilotos usam fones Bluetooth baratos de capacete, e no Bluetooth clássico o
+microfone do fone só abre no modo ligação — com "mídia" como padrão, ninguém
+era ouvido. Ajustes ganhou opções de teste (`conversa-midia`, `musica`) e o
+plugin um perfil de som para fone Bluetooth; a combinação vencedora vira
+padrão e as opções de teste saem.
+
+---
+
+## 25. Web e app em desenvolvimento paralelo
+
+**Status:** `decidido`
+**Data:** 2026-10-12
+
+A decisão de 2026-09-18 (web como painel sem voz, ver ideias 11 e 15) foi
+superada na prática: a web ganhou voz, socorro com Web Push e plugins, e
+continua evoluindo junto com o app. As duas frentes são desenvolvidas ao mesmo
+tempo e precisam continuar interoperáveis — mesmas salas, mesma API, mesma
+rede de socorro.
+
+O papel de cada uma continua diferente: o **app nativo** é o produto para usar
+na moto (voz com tela bloqueada, serviço em primeiro plano); a **web** é a porta
+de entrada sem instalação e o lugar para cuidar da moto em casa. A limitação de
+plataforma da ideia 15 segue valendo: no navegador, falar com a tela bloqueada
+não é garantido.
+
+Junto com isso, a documentação foi refeita (README, `AGENTS.md`,
+`docs/arquitetura.md`, `docs/api.md`, `docs/desenvolvimento.md`) e os restos do
+modelo do Google AI Studio (Gemini, `metadata.json`, dependências sem uso)
+foram removidos.
