@@ -990,3 +990,44 @@ permanece limitado ao trecho cadastrado, sem inventar distância rodoviária.
 O Caminho do Mar foi corrigido com restrição explícita para motos no trecho
 de serra, fonte oficial e remoção do incentivo a atravessá-lo por conta e risco.
 Correções locais são aplicadas após importar o catálogo, para não serem perdidas.
+
+## 29. Página de divulgação em /baixar
+
+**Status:** `implementado`
+**Data:** 2026-10-12
+
+Para chamar amigos motociclistas para testar, a web ganhou uma página de
+divulgação em `/baixar/`, pensada para circular no WhatsApp: hero com o
+comboio por voz, recursos, Android × iPhone, passo a passo do APK e aviso de
+beta. Ela destaca o APK no Android e "Usar no navegador" (com o passo a passo
+da Tela de Início) no iPhone.
+
+Fica no mesmo deploy da Vercel, como segunda página do Vite, em vez de um
+site ou servidor separado: não há infraestrutura nova, e o link do app web
+fica a um toque. O APK é servido por GitHub Releases
+(`releases/latest/download/MotoRede.apk`), porque o repositório é público, o
+link não muda a cada versão e binário não entra no git. A página não usa o
+service worker nem o manifest do app, para o navegador não oferecer
+"instalar" a página de download no lugar do app. O texto segue a regra de
+honestidade: sem números, depoimentos ou loja, e com o limite do iPhone
+escrito. (Correção na ideia 30: o limite da tela bloqueada é do navegador
+do Android, não do iPhone.)
+
+---
+
+## 30. Tela bloqueada na web: o limite é do Android, não do iPhone
+
+**Status:** `decidido` — confirmado pelo dono do projeto em uso real
+**Data:** 2026-10-12
+
+A primeira versão da página /baixar dizia que, no iPhone, a voz pelo navegador
+parava com a tela bloqueada. Está invertido. As medições das ideias 11 e 15
+foram feitas no **navegador do Android**, que fecha o microfone ao bloquear —
+foi por isso que o app Android nasceu. **No iPhone, a web mantém a conversa com
+a tela bloqueada.**
+
+Consequências:
+- A página de divulgação recomenda o navegador para iPhone sem ressalva de
+  tela bloqueada, e anuncia o **app para iOS como "em breve"** (sem data).
+- O app nativo para iOS continua configurado (`UIBackgroundModes`), mas não é
+  distribuído; fica para depois.

@@ -93,7 +93,7 @@ principais, com papéis diferentes:
 | | App nativo | Web |
 |---|---|---|
 | Momento de uso | na moto: tela bloqueada, luva, fone Bluetooth | em casa ou para experimentar sem instalar |
-| Voz com tela bloqueada | **sim** — serviço em primeiro plano (Android) / `UIBackgroundModes` (iOS) | ouvir sim; **falar não é garantido** — o navegador fecha o microfone em muitos aparelhos |
+| Voz com tela bloqueada | **sim** — serviço em primeiro plano (Android) / `UIBackgroundModes` (iOS) | **iPhone: sim** (confirmado em uso real); **Android: só ouvir** — o navegador fecha o microfone, por isso o app Android |
 | Push de socorro | Expo Push (`ExponentPushToken[...]`) | Web Push com VAPID (inscrição JSON) |
 | Dados locais | AsyncStorage | localStorage |
 | Login | Google (`expo-auth-session`, `id_token`) ou perfil local | Google Identity Services, obrigatório quando `VITE_GOOGLE_CLIENT_ID` está definida |

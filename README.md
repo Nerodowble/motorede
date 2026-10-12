@@ -20,6 +20,8 @@ App e web falam com a **mesma API** e entram nas **mesmas salas de voz**: um
 piloto no app e outro no navegador conversam no mesmo comboio, e um pedido de
 socorro feito na web chega a quem está com o app, e vice-versa.
 
+**Para compartilhar com os amigos:** <https://motorede-web.vercel.app/baixar/> (página de divulgação com o APK e o caminho do iPhone; ver [docs/desenvolvimento.md](docs/desenvolvimento.md#página-de-divulgação-baixar)).
+
 > **Não há IA, Gemini, Firebase nem banco de dados neste projeto.** O
 > repositório nasceu de um modelo do Google AI Studio e o nome da pasta ainda
 > carrega "Firebase", mas nada disso é usado. Nenhuma chave de Gemini é
@@ -29,7 +31,7 @@ socorro feito na web chega a quem está com o app, e vice-versa.
 
 | Módulo | App | Web | Servidor |
 |---|---|---|---|
-| Comboio por voz (LiveKit) | ✅ inclusive com a tela bloqueada | ✅ ouvir e falar com a tela ligada; com a tela bloqueada o navegador costuma fechar o microfone | `/api/livekit-token`, `/api/comboios` |
+| Comboio por voz (LiveKit) | ✅ inclusive com a tela bloqueada | ✅ com a tela ligada; com a tela bloqueada, o iPhone mantém a conversa e o Android fecha o microfone (por isso o app Android) | `/api/livekit-token`, `/api/comboios` |
 | Lista de comboios ativos e busca de piloto por telefone | ✅ | ✅ | `/api/comboios` |
 | Rede de socorro (push por raio, endereço exato só para quem for aceito) | ✅ push pelo Expo | ✅ Web Push (VAPID) | `/api/presenca`, `/api/socorro` + Redis |
 | Plugins de áudio no comboio (pareados por código) | ✅ | ✅ | `/api/plugins` + Redis |

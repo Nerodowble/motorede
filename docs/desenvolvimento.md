@@ -238,6 +238,30 @@ npx eas-cli build --profile preview --platform android
 - `eas init --force` reescreve o `app.json` e devolve a `permissions` o que
   está em `blockedPermissions`. Confira o arquivo depois.
 
+### Página de divulgação (/baixar/)
+
+- Endereço: <https://motorede-web.vercel.app/baixar/>. É uma segunda página
+  do Vite no mesmo deploy (`apps/web/baixar/index.html`, registrada em
+  `build.rollupOptions.input` no `vite.config.ts`); o código fica em
+  `apps/web/src/landing/`. Não carrega o app nem o service worker: o
+  `vite.config.ts` tira dela o manifest e o registro do SW, e o
+  `navigateFallbackDenylist` impede o SW do app de responder `/baixar` com
+  o app.
+- **Link do APK:** constante `LINK_APK` em `apps/web/src/landing/config.ts`
+  (único lugar). A versão exibida vem de `apps/mobile/app.json` no build.
+- **Publicar um APK novo** (o APK nunca vai para o git):
+  1. `npx eas-cli build --profile preview --platform android` em
+     `apps/mobile` e baixe o `.apk` gerado.
+  2. Renomeie o arquivo para exatamente `MotoRede.apk`.
+  3. No GitHub (`Nerodowble/motorede` → Releases → *Draft a new release*),
+     crie a tag da versão (ex.: `v0.3.1`), anexe o `MotoRede.apk` e publique
+     como *latest* (não marque como pre-release, senão o link "latest" não
+     a encontra). Pela CLI: `gh release create v0.3.1 MotoRede.apk --title
+     "MotoRede 0.3.1" --latest`.
+  4. O link `releases/latest/download/MotoRede.apk` passa a entregar o novo
+     arquivo sem mudar nada no código. Atualização só de JS segue por OTA e
+     não precisa de release.
+
 ### Marca e ícones
 
 `scripts/gerar-marca.ps1` gera todos os ícones (app, PWA, favicons) a partir de

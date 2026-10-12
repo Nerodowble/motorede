@@ -218,6 +218,16 @@ export const MoreSheet: React.FC<MoreSheetProps> = ({
           </section>
         )}
 
+        {/* Página de divulgação (src/landing/): é o link para mandar aos
+            amigos, com o APK e o caminho do iPhone. Âncora comum, não aba:
+            é outra página do build, fora do app. */}
+        <a
+          href="/baixar/"
+          className="block text-center text-xs font-semibold text-ink-muted hover:text-ink underline underline-offset-4 py-2"
+        >
+          Chamar a turma: página para baixar o MotoRede
+        </a>
+
         {/* Ferramenta de teste: fora do build de produção. */}
         {import.meta.env.DEV && onOpenLockscreenModal && (
           <section>

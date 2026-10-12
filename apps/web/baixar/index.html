@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <!--
+      Página de divulgação do MotoRede (/baixar/). Segunda página do Vite,
+      registrada em build.rollupOptions.input (vite.config.ts). Sem manifest
+      nem service worker de propósito: quem abre o link não deve ver o
+      navegador oferecendo "instalar" esta página no lugar do app.
+      As URLs do Open Graph são absolutas porque o WhatsApp não resolve
+      caminho relativo na prévia do link.
+    -->
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>MotoRede: comboio por voz no fone do capacete</title>
+    <meta name="description" content="Converse com o comboio pelo fone Bluetooth do capacete, até 8 pilotos, com a tela bloqueada no app Android ou no iPhone pelo navegador. Socorro por proximidade, rotas e manutenção da moto. Versão de teste: baixe e rode com a turma." />
+    <meta name="theme-color" content="#0a0a0b" />
+    <link rel="canonical" href="https://motorede-web.vercel.app/baixar/" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="pt_BR" />
+    <meta property="og:site_name" content="MotoRede" />
+    <meta property="og:url" content="https://motorede-web.vercel.app/baixar/" />
+    <meta property="og:title" content="MotoRede: roda junto, fala junto" />
+    <meta property="og:description" content="Comboio por voz pelo fone Bluetooth do capacete, com a tela bloqueada, no Android e no iPhone. Versão de teste: baixe e rode com a turma." />
+    <meta property="og:image" content="https://motorede-web.vercel.app/marca-logo.png" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
+    <meta property="og:image:alt" content="Logo do MotoRede: capacete dentro de um pino de mapa vermelho" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="MotoRede: roda junto, fala junto" />
+    <meta name="twitter:description" content="Comboio por voz pelo fone Bluetooth do capacete, com a tela bloqueada, no Android e no iPhone. Versão de teste." />
+    <meta name="twitter:image" content="https://motorede-web.vercel.app/marca-logo.png" />
+
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="64x64" href="/favicon-64.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;1,800&family=Barlow:wght@400;600;700&display=swap" rel="stylesheet" />
+  </head>
+  <body style="background: #0a0a0b">
+    <div id="landing"></div>
+    <noscript>
+      <p style="color: #f4f4f5; font-family: sans-serif; padding: 24px">
+        <!-- O link do APK fica só em src/landing/config.ts; aqui, só o app web. -->
+        Esta página precisa de JavaScript. <a style="color: #ff4a3d" href="/">Abrir o MotoRede no navegador</a>.
+      </p>
+    </noscript>
+    <script type="module" src="/src/landing/main.tsx"></script>
+  </body>
+</html>

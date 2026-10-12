@@ -1,0 +1,172 @@
+/*
+ * Estilo da página de divulgação (/baixar/).
+ *
+ * `source("./")`: o Tailwind só procura classes nesta pasta. Sem isso ele
+ * varreria o app inteiro e a página — aberta por link no WhatsApp, muitas
+ * vezes no 4G — carregaria o CSS do app todo sem usar quase nada.
+ */
+@import "tailwindcss" source("./");
+
+/*
+ * Mesmas cores da marca (apps/web/src/index.css e
+ * docs/checklist-marca-e-interface.md). A página é só no tema escuro: é a
+ * cara da marca e não depende da preferência salva no app.
+ * Regra da marca mantida aqui: o vermelho entra como traço e detalhe,
+ * nunca como fundo de botão (vermelho cheio e grande = emergência).
+ */
+@theme {
+  --color-asfalto: #0a0a0b;
+  --color-placa: #141417;
+  --color-elevado: #1f1f23;
+  --color-linha: #26262b;
+  --color-giz: #f4f4f5;
+  --color-giz-2: #a1a1aa;
+  --color-giz-3: #8b8b94;
+  --color-sinal: #fc0d0a;
+  --color-sinal-texto: #ff4a3d;
+  --font-cond: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  --font-corpo: 'Barlow', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+@layer base {
+  html {
+    background: var(--color-asfalto);
+    color-scheme: dark;
+    scroll-behavior: smooth;
+  }
+  html, body {
+    /* `clip` e não `hidden`: corta o que vaza para os lados sem criar um
+       contêiner de rolagem (mesmo motivo explicado em src/index.css). As
+       faixas diagonais passam da largura da tela de propósito. */
+    overflow-x: clip;
+    margin: 0;
+    font-family: var(--font-corpo);
+    color: var(--color-giz);
+    -webkit-tap-highlight-color: transparent;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection {
+    background: var(--color-sinal);
+    color: #fff;
+  }
+  :focus-visible {
+    outline: 3px solid var(--color-sinal);
+    outline-offset: 3px;
+  }
+}
+
+/* Tipografia de cartaz: condensada, itálica e pesada, como o "MOTO REDE"
+   da logo. */
+.titulo {
+  font-family: var(--font-cond);
+  font-weight: 800;
+  font-style: italic;
+  text-transform: uppercase;
+  line-height: 0.86;
+  letter-spacing: -0.01em;
+}
+.rotulo {
+  font-family: var(--font-cond);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+}
+
+/* Cortes diagonais entre seções. A variável deixa cada seção escolher o
+   ângulo sem repetir o polígono. */
+.corte {
+  --c: 6vw;
+  clip-path: polygon(0 var(--c), 100% 0, 100% calc(100% - var(--c)), 0 100%);
+}
+.corte-topo {
+  --c: 6vw;
+  clip-path: polygon(0 var(--c), 100% 0, 100% 100%, 0 100%);
+}
+
+/* Botões com canto chanfrado. O principal é branco (papel "action" da
+   marca); o detalhe vermelho é só um traço no canto. */
+.botao {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  min-height: 4rem;
+  padding: 0.85rem 1.4rem;
+  font-family: var(--font-cond);
+  font-weight: 700;
+  font-size: 1.35rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+  clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 18px 100%, 0 calc(100% - 18px));
+  transition: transform 160ms ease, background-color 160ms ease, color 160ms ease;
+}
+.botao:active {
+  transform: scale(0.98);
+}
+.botao-principal {
+  background: var(--color-giz);
+  color: var(--color-asfalto);
+}
+.botao-principal:hover {
+  background: #ffffff;
+}
+.botao-principal::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 26px;
+  height: 26px;
+  background: var(--color-sinal);
+  clip-path: polygon(0 0, 100% 0, 100% 100%);
+}
+.botao-secundario {
+  background: transparent;
+  color: var(--color-giz);
+  box-shadow: inset 0 0 0 2px var(--color-giz-3);
+}
+.botao-secundario:hover {
+  box-shadow: inset 0 0 0 2px var(--color-giz);
+}
+
+/* Barras de "voz" do hero. */
+@keyframes onda {
+  0%, 100% { transform: scaleY(0.25); }
+  50% { transform: scaleY(1); }
+}
+.onda span {
+  display: block;
+  width: 6px;
+  height: 100%;
+  background: currentColor;
+  transform-origin: bottom;
+  animation: onda 1.4s ease-in-out infinite;
+}
+
+/* Entrada ao rolar: o elemento sobe um pouco e aparece quando entra na tela
+   (classe `visivel`, posta por useRevelar). */
+.revelar {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 700ms ease, transform 700ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.revelar.visivel {
+  opacity: 1;
+  transform: none;
+}
+
+/* Deslocamento leve do hero conforme a rolagem (`--rolagem`, de 0 a 1). */
+.paralaxe {
+  transform: translate3d(0, calc(var(--rolagem, 0) * 80px), 0);
+}
+
+/* Quem pediu menos movimento no sistema não vê animação nenhuma: tudo já
+   aparece no lugar. */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .revelar, .revelar.visivel { opacity: 1; transform: none; transition: none; }
+  .paralaxe { transform: none; }
+  .onda span { animation: none; transform: scaleY(0.6); }
+  .botao { transition: none; }
+}
