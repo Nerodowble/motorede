@@ -69,6 +69,16 @@ export type EstadoFicha =
 
 const ANO_MINIMO = 1950;
 
+/**
+ * Ano/modelo digitado pelo piloto. Volta null quando vazio ou impossível.
+ * A ficha é por ano: uma CB 500F 2015 e uma 2022 têm tanque e óleo diferentes.
+ */
+export function parseAnoMoto(texto: string, anoAtual = new Date().getFullYear()): number | null {
+  const n = parseInt(texto.replace(/\D/g, ''), 10);
+  if (!Number.isInteger(n) || n < ANO_MINIMO || n > anoAtual + 1) return null;
+  return n;
+}
+
 /** Valida o que o app mandou. Volta null se não dá para pesquisar. */
 export function lerMotoConsulta(raw: unknown, anoAtual = new Date().getFullYear()): MotoConsulta | null {
   if (!raw || typeof raw !== 'object') return null;

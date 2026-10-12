@@ -61,6 +61,8 @@ ok(
   shared.chaveFichaMoto(CB) === shared.chaveFichaMoto({ marca: ' HONDA', modelo: 'cb-500f', ano: 2022 }),
   'a mesma moto digitada de jeitos diferentes dá a mesma chave'
 );
+ok(shared.parseAnoMoto('2022', 2026) === 2022 && shared.parseAnoMoto('2027', 2026) === 2027, 'ano válido, inclusive o modelo do ano que vem');
+ok(shared.parseAnoMoto('', 2026) === null && shared.parseAnoMoto('22', 2026) === null && shared.parseAnoMoto('2030', 2026) === null, 'ano vazio, curto ou no futuro é recusado');
 ok(shared.montarPromptFichaMoto(CB).includes('Honda CB 500F') && shared.montarPromptFichaMoto(CB).includes('2022'), 'o prompt leva a moto');
 
 console.log('\n=== Resposta da IA ===');

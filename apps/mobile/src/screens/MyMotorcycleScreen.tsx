@@ -5,6 +5,7 @@ import {
   MAINTENANCE_LABELS,
   describeMeasuredHint,
   describeRemaining,
+  parseAnoMoto,
   parseIntervalKm,
   sortByUrgency,
   type ConsumableCategory,
@@ -96,16 +97,25 @@ export const MyMotorcycleScreen: React.FC<MyMotorcycleScreenProps> = ({
   const [marca, setMarca] = useState('');
   const [modelo, setModelo] = useState('');
   const [kmInicial, setKmInicial] = useState('');
+  const [anoCadastro, setAnoCadastro] = useState('');
+  const [erroAno, setErroAno] = useState(false);
   const [editandoKm, setEditandoKm] = useState(false);
   const [kmMoto, setKmMoto] = useState('');
 
   const salvarCadastro = () => {
     if (!marca.trim() || !modelo.trim()) return;
+    // Antes gravava o ano corrente para toda moto: a ficha pesquisada por IA
+    // saía da versão errada (uma 2015 virava 2026).
+    const ano = parseAnoMoto(anoCadastro);
+    if (ano === null) {
+      setErroAno(true);
+      return;
+    }
     onSaveMotorcycle({
       id: `moto-${Date.now()}`,
       brand: marca.trim(),
       model: modelo.trim(),
-      year: new Date().getFullYear(),
+      year: ano,
       licensePlate: '',
       currentKm: parseInt(kmInicial, 10) || 0,
       avgKmPerMonth: 0,
@@ -132,6 +142,19 @@ export const MyMotorcycleScreen: React.FC<MyMotorcycleScreenProps> = ({
             <View style={styles.formulario}>
               <Campo value={marca} onChangeText={setMarca} placeholder="Marca (ex: Honda)" accessibilityLabel="Marca" />
               <Campo value={modelo} onChangeText={setModelo} placeholder="Modelo (ex: CB 500X)" accessibilityLabel="Modelo" />
+              <Campo
+                value={anoCadastro}
+                onChangeText={(t) => {
+                  setAnoCadastro(t);
+                  setErroAno(false);
+                }}
+                placeholder="Ano/modelo (ex: 2022)"
+                keyboardType="number-pad"
+                maxLength={4}
+                erro={erroAno}
+                accessibilityLabel="Ano/modelo"
+              />
+              {erroAno && <Text style={estilosBase.erro}>Informe o ano da moto, como está no documento (ex: 2022).</Text>}
               <Campo
                 value={kmInicial}
                 onChangeText={setKmInicial}

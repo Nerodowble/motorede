@@ -3,6 +3,7 @@ import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import {
   AVISO_FICHA_IA,
   linhasFichaMoto,
+  parseAnoMoto,
   rotuloUsoFicha,
   type ConsumableCategory,
   type Motorcycle,
@@ -10,7 +11,7 @@ import {
 } from '@motorede/shared';
 import { useFichaMoto } from '../hooks/useFichaMoto';
 import { Botao } from './ui/Botao';
-import { Ajuda, Cartao, TituloCartao } from './ui/Cartao';
+import { Ajuda, Campo, Cartao, TituloCartao, estilosBase } from './ui/Cartao';
 import { COLORS, ESPACO } from '../theme';
 
 /**
@@ -29,7 +30,61 @@ export const FichaIA: React.FC<{
   onSaveMotorcycle: (moto: Motorcycle) => void;
 }> = ({ motorcycle, onSetInterval, onSaveMotorcycle }) => {
   const [aberto, setAberto] = useState(false);
+  const [corrigindoAno, setCorrigindoAno] = useState(false);
+  const [ano, setAno] = useState('');
+  const [erroAno, setErroAno] = useState(false);
   const { situacao, pesquisar } = useFichaMoto(motorcycle.brand, motorcycle.model, motorcycle.year);
+
+  // Motos cadastradas pelo app antes do campo de ano ganharam o ano corrente.
+  // A ficha é por ano, então dá para corrigir aqui, onde o erro aparece.
+  const salvarAno = () => {
+    const valor = parseAnoMoto(ano);
+    if (valor === null) {
+      setErroAno(true);
+      return;
+    }
+    if (valor !== motorcycle.year) onSaveMotorcycle({ ...motorcycle, year: valor });
+    setCorrigindoAno(false);
+    setAberto(false); // a ficha anterior era de outro ano: pesquisa de novo no próximo toque
+  };
+
+  const linhaModelo = corrigindoAno ? (
+    <>
+      <View style={styles.linha}>
+        <Campo
+          value={ano}
+          onChangeText={(t) => {
+            setAno(t);
+            setErroAno(false);
+          }}
+          placeholder="Ano/modelo (ex: 2022)"
+          keyboardType="number-pad"
+          maxLength={4}
+          autoFocus
+          erro={erroAno}
+          style={{ flex: 1 }}
+          accessibilityLabel="Ano/modelo da moto"
+        />
+        <Botao rotulo="Salvar" variante="action" compacto altura={52} onPress={salvarAno} />
+      </View>
+      {erroAno && <Text style={estilosBase.erro}>Informe o ano como está no documento (ex: 2022).</Text>}
+    </>
+  ) : (
+    <View style={styles.linha}>
+      <Text style={[styles.nota, { flex: 1 }]}>
+        Modelo pesquisado: {motorcycle.brand} {motorcycle.model} {motorcycle.year}
+      </Text>
+      <Botao
+        rotulo="Corrigir ano"
+        variante="fantasma"
+        compacto
+        onPress={() => {
+          setAno(String(motorcycle.year));
+          setCorrigindoAno(true);
+        }}
+      />
+    </View>
+  );
 
   const usar = (uso: UsoFicha) => {
     if (uso.tipo === 'intervalo') onSetInterval(uso.categoria, uso.km);
@@ -119,6 +174,7 @@ export const FichaIA: React.FC<{
   return (
     <Cartao>
       <TituloCartao icone="sparkles-outline">Ficha do modelo · pesquisada por IA</TituloCartao>
+      {linhaModelo}
       {corpo}
     </Cartao>
   );
