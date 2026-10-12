@@ -1,12 +1,18 @@
 import React from 'react';
 import { Plus, Pencil } from 'lucide-react';
-import { describeIntervalSource, type MaintenanceItemStatus } from '@motorede/shared';
+import {
+  describeMeasuredHint,
+  describeRemaining,
+  type MaintenanceItemStatus,
+} from '@motorede/shared';
 import { InfoAjuda } from './InfoAjuda';
 
 /**
- * Cartão de um item de manutenção: as duas metades da frase do piloto
- * ("rodou 900 km · faltam 100"), de onde veio o intervalo e os dois botões —
- * informar o intervalo e registrar a troca.
+ * Cartão de um item de manutenção.
+ *
+ * O número em destaque é o mais simples de entender: "Próxima troca: 11.000
+ * km" — o mesmo que a oficina escreve na etiqueta. Embaixo, quanto falta, e
+ * de onde saiu a conta (km da troca + intervalo que o piloto informou).
  */
 
 const STATUS_STYLES: Record<
@@ -17,6 +23,12 @@ const STATUS_STYLES: Record<
     barra: 'bg-sos',
     texto: 'text-danger',
     rotulo: 'vencido',
+    borda: 'border-danger/40',
+  },
+  'hora-de-trocar': {
+    barra: 'bg-sos',
+    texto: 'text-danger',
+    rotulo: 'hora de trocar',
     borda: 'border-danger/40',
   },
   proximo: {
@@ -45,6 +57,8 @@ const STATUS_STYLES: Record<
   },
 };
 
+const km = (n: number) => `${n.toLocaleString('pt-BR')} km`;
+
 export const CartaoManutencao: React.FC<{
   item: MaintenanceItemStatus;
   onInformarIntervalo: () => void;
@@ -52,11 +66,12 @@ export const CartaoManutencao: React.FC<{
 }> = ({ item, onInformarIntervalo, onRegistrar }) => {
   const e = STATUS_STYLES[item.status];
   const semRegistro = item.status === 'sem-registro';
-  const semIntervalo = item.status === 'sem-intervalo';
+  const temConta = item.nextChangeKm !== undefined;
   const progresso =
     item.intervalKm && item.kmSinceLast !== undefined
       ? Math.min(100, Math.round((item.kmSinceLast / item.intervalKm) * 100))
       : 0;
+  const dica = describeMeasuredHint(item);
 
   return (
     <div className={`rounded-2xl bg-surface/80 border p-4 ${e.borda}`}>
@@ -75,78 +90,55 @@ export const CartaoManutencao: React.FC<{
       {semRegistro ? (
         <p className="text-[11px] text-ink-faint">
           Sem registro ainda.
-          {item.intervalSource === 'declarado' &&
-            ` Você troca a cada ${item.intervalKm!.toLocaleString('pt-BR')} km.`}
+          {item.intervalKm !== undefined && ` Você troca a cada ${km(item.intervalKm)}.`}
         </p>
-      ) : semIntervalo ? (
+      ) : temConta ? (
         <>
-          <p className="text-sm font-bold text-ink flex items-center gap-1.5">
-            rodou {item.kmSinceLast!.toLocaleString('pt-BR')} km desde a última troca
+          <div className="h-1.5 rounded-full bg-elevated overflow-hidden mb-2">
+            <div className={`h-full ${e.barra} transition-all`} style={{ width: `${progresso}%` }} />
+          </div>
+
+          <p className="text-base font-extrabold text-ink flex items-center gap-1.5 flex-wrap">
+            Próxima troca: {km(item.nextChangeKm!)}
             <InfoAjuda chave="rodouFaltam" />
           </p>
-          <p className="text-[11px] text-ink-muted mt-1">
-            Para saber quanto falta, diga de quantos em quantos km você troca.
+          <p className={`text-sm font-semibold ${e.texto}`}>{describeRemaining(item.kmRemaining!)}</p>
+
+          <p className="text-[11px] text-ink-muted mt-1.5">
+            Trocado com {km(item.last!.km)} em{' '}
+            {new Date(item.last!.date).toLocaleDateString('pt-BR')}
+            {item.last!.product && ` · ${item.last!.product}`}
           </p>
+          <p className="text-[11px] text-ink-muted">
+            Você troca a cada {km(item.intervalKm!)} · rodou {km(item.kmSinceLast!)} desde a troca
+          </p>
+          {dica && <p className="text-[10px] text-ink-faint mt-0.5">{dica}</p>}
         </>
       ) : (
         <>
-          <div className="h-1.5 rounded-full bg-elevated overflow-hidden mb-2">
-            <div
-              className={`h-full ${e.barra} transition-all`}
-              style={{ width: `${progresso}%` }}
-            />
-          </div>
-
-          {/* As duas metades da frase: o que passou e o que falta. */}
           <p className="text-sm font-bold text-ink flex items-center gap-1.5 flex-wrap">
-            <span>
-              rodou {item.kmSinceLast!.toLocaleString('pt-BR')} km
-              <span className={`font-normal ${e.texto}`}>
-                {item.kmRemaining! > 0
-                  ? ` · faltam ${item.kmRemaining!.toLocaleString('pt-BR')}`
-                  : ` · ${Math.abs(item.kmRemaining!).toLocaleString('pt-BR')} km além`}
-              </span>
-            </span>
+            Rodou {km(item.kmSinceLast!)} desde a troca
             <InfoAjuda chave="rodouFaltam" />
           </p>
-
           <p className="text-[11px] text-ink-muted mt-1">
-            última: {item.last!.km.toLocaleString('pt-BR')} km ·{' '}
-            {new Date(item.last!.date).toLocaleDateString('pt-BR', {
-              day: '2-digit',
-              month: 'short',
-            })}
-            {item.last!.product && ` · ${item.last!.product}`}
+            Trocado com {km(item.last!.km)} em{' '}
+            {new Date(item.last!.date).toLocaleDateString('pt-BR')}. Para saber a próxima troca,
+            diga de quantos em quantos km você troca.
           </p>
-
-          <p className="text-[10px] text-ink-faint">
-            {describeIntervalSource(
-              item.intervalSource!,
-              item.intervalKm!,
-              item.recordCount
-            )}
-          </p>
-          {item.intervalSource === 'declarado' &&
-            item.measuredIntervalKm &&
-            item.measuredIntervalKm !== item.intervalKm && (
-              <p className="text-[10px] text-ink-faint">
-                Nas suas últimas trocas, a média foi ~
-                {item.measuredIntervalKm.toLocaleString('pt-BR')} km.
-              </p>
-            )}
+          {dica && <p className="text-[10px] text-ink-faint mt-0.5">{dica}</p>}
         </>
       )}
 
       <button
         onClick={onInformarIntervalo}
         className={`mt-2 mb-3 flex items-center gap-1.5 text-[11px] font-semibold transition ${
-          item.intervalSource === 'declarado'
+          item.intervalKm !== undefined
             ? 'text-ink-muted hover:text-ink'
             : 'text-brand-soft hover:opacity-80'
         }`}
       >
         <Pencil className="w-3 h-3" />
-        {item.intervalSource === 'declarado'
+        {item.intervalKm !== undefined
           ? 'Mudar de quantos em quantos km troco'
           : 'Informar de quantos em quantos km troco'}
       </button>

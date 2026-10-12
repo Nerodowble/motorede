@@ -3,7 +3,8 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import {
   MAINTENANCE_LABELS,
-  describeIntervalSource,
+  describeMeasuredHint,
+  describeRemaining,
   parseIntervalKm,
   sortByUrgency,
   type ConsumableCategory,
@@ -47,8 +48,11 @@ interface MyMotorcycleScreenProps {
  * barra, em escala de atenção: vencido (vermelho claro), se aproximando
  * (branco, cheio), em dia (cinza, calmo).
  */
+const emKm = (n: number) => `${n.toLocaleString('pt-BR')} km`;
+
 const CORES_STATUS: Record<MaintenanceItemStatus['status'], string> = {
   vencido: COLORS.dangerText,
+  'hora-de-trocar': COLORS.dangerText,
   proximo: COLORS.ink,
   ok: COLORS.inkFaint,
   'sem-intervalo': COLORS.inkMuted,
@@ -57,6 +61,7 @@ const CORES_STATUS: Record<MaintenanceItemStatus['status'], string> = {
 
 const ICONES_STATUS: Record<MaintenanceItemStatus['status'], NomeIcone> = {
   vencido: 'alert-circle',
+  'hora-de-trocar': 'alert-circle',
   proximo: 'time',
   ok: 'checkmark-circle',
   'sem-intervalo': 'help-circle-outline',
@@ -65,6 +70,7 @@ const ICONES_STATUS: Record<MaintenanceItemStatus['status'], NomeIcone> = {
 
 const ROTULOS_STATUS: Record<MaintenanceItemStatus['status'], string> = {
   vencido: 'vencido',
+  'hora-de-trocar': 'hora de trocar',
   proximo: 'se aproximando',
   ok: 'em dia',
   'sem-intervalo': 'falta o intervalo',
@@ -273,6 +279,7 @@ export const MyMotorcycleScreen: React.FC<MyMotorcycleScreenProps> = ({
         {sortByUrgency(maintenance).map((item, indice) => {
           const cor = CORES_STATUS[item.status];
           const semRegistro = item.status === 'sem-registro';
+          const dica = describeMeasuredHint(item);
           const progresso =
             item.intervalKm && item.kmSinceLast !== undefined
               ? Math.min(100, Math.round((item.kmSinceLast / item.intervalKm) * 100))
@@ -284,7 +291,7 @@ export const MyMotorcycleScreen: React.FC<MyMotorcycleScreenProps> = ({
               <View style={styles.topoManutencao}>
                 <View style={{ flex: 1, gap: ESPACO.xs }}>
                   <Text style={styles.nomeManutencao}>{item.label}</Text>
-                  <View style={[styles.status, item.status === 'vencido' && styles.statusVencido]}>
+                  <View style={[styles.status, (item.status === 'vencido' || item.status === 'hora-de-trocar') && styles.statusVencido]}>
                     <Ionicons name={ICONES_STATUS[item.status]} size={16} color={cor} />
                     <Text style={[styles.statusTexto, { color: cor }]}>
                       {ROTULOS_STATUS[item.status] || 'sem registro'}
@@ -308,63 +315,51 @@ export const MyMotorcycleScreen: React.FC<MyMotorcycleScreenProps> = ({
 
               {semRegistro ? (
                 <Ajuda>
-                  Adicione a primeira troca para acompanhar o intervalo.
-                  {item.intervalSource === 'declarado' &&
-                    ` Você troca a cada ${item.intervalKm!.toLocaleString('pt-BR')} km.`}
+                  Adicione a primeira troca para acompanhar.
+                  {item.intervalKm !== undefined && ` Você troca a cada ${emKm(item.intervalKm)}.`}
                 </Ajuda>
-              ) : item.status === 'sem-intervalo' ? (
+              ) : item.nextChangeKm !== undefined ? (
                 <>
                   <View style={styles.linhaInfo}>
                     <Text style={[styles.frase, { flexShrink: 1 }]}>
-                      rodou {item.kmSinceLast!.toLocaleString('pt-BR')} km
+                      Próxima troca: {emKm(item.nextChangeKm)}
                     </Text>
                     <InfoAjuda chave="rodouFaltam" />
                   </View>
-                  <Ajuda>Para saber quanto falta, diga de quantos em quantos km você troca.</Ajuda>
+                  <Text style={[styles.fraseResto, { color: item.status === 'ok' ? COLORS.inkMuted : cor }]}>
+                    {describeRemaining(item.kmRemaining!)}
+                  </Text>
+                  <View style={styles.trilha}>
+                    <View style={[styles.barra, { width: `${progresso}%`, backgroundColor: cor }]} />
+                  </View>
+                  <Text style={styles.detalhe}>
+                    Trocado com {emKm(item.last!.km)} em {new Date(item.last!.date).toLocaleDateString('pt-BR')}
+                    {item.last!.product ? ` · ${item.last!.product}` : ''}
+                  </Text>
+                  <Text style={styles.origem}>
+                    Você troca a cada {emKm(item.intervalKm!)} · rodou {emKm(item.kmSinceLast!)} desde a troca
+                  </Text>
+                  {dica && <Text style={styles.origem}>{dica}</Text>}
                 </>
               ) : (
                 <>
                   <View style={styles.linhaInfo}>
                     <Text style={[styles.frase, { flexShrink: 1 }]}>
-                      rodou {item.kmSinceLast!.toLocaleString('pt-BR')} km
-                      <Text
-                        style={[
-                          styles.fraseResto,
-                          { color: item.status === 'ok' ? COLORS.inkMuted : cor },
-                        ]}
-                      >
-                        {item.kmRemaining! > 0
-                          ? ` · faltam ${item.kmRemaining!.toLocaleString('pt-BR')}`
-                          : ` · ${Math.abs(item.kmRemaining!).toLocaleString('pt-BR')} km além`}
-                      </Text>
+                      Rodou {emKm(item.kmSinceLast!)} desde a troca
                     </Text>
                     <InfoAjuda chave="rodouFaltam" />
                   </View>
-                  <View style={styles.trilha}>
-                    <View style={[styles.barra, { width: `${progresso}%`, backgroundColor: cor }]} />
-                  </View>
-                  <Text style={styles.detalhe}>
-                    última: {item.last!.km.toLocaleString('pt-BR')} km ·{' '}
-                    {new Date(item.last!.date).toLocaleDateString('pt-BR')}
-                    {item.last!.product ? ` · ${item.last!.product}` : ''}
-                  </Text>
-                  <Text style={styles.origem}>
-                    {describeIntervalSource(item.intervalSource!, item.intervalKm!, item.recordCount)}
-                  </Text>
-                  {item.intervalSource === 'declarado' &&
-                    item.measuredIntervalKm !== undefined &&
-                    item.measuredIntervalKm !== item.intervalKm && (
-                      <Text style={styles.origem}>
-                        Nas suas últimas trocas, a média foi ~
-                        {item.measuredIntervalKm.toLocaleString('pt-BR')} km.
-                      </Text>
-                    )}
+                  <Ajuda>
+                    Trocado com {emKm(item.last!.km)} em {new Date(item.last!.date).toLocaleDateString('pt-BR')}.
+                    Para saber a próxima troca, diga de quantos em quantos km você troca.
+                  </Ajuda>
+                  {dica && <Text style={styles.origem}>{dica}</Text>}
                 </>
               )}
 
               <Botao
                 rotulo={
-                  item.intervalSource === 'declarado'
+                  item.intervalKm !== undefined
                     ? 'Mudar a cada quantos km troco'
                     : 'Informar a cada quantos km troco'
                 }

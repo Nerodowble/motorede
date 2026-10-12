@@ -29,7 +29,7 @@ export const CampoIntervalo: React.FC<{
       value={valor}
       onChange={(e) => onChange(e.target.value)}
       autoFocus={autoFocus}
-      placeholder={category === 'engine_oil' ? 'ex: 1000' : 'deixe vazio para usar o padrão'}
+      placeholder={category === 'engine_oil' ? 'ex: 1000' : 'veja no manual ou pergunte ao mecânico'}
       className={`w-full px-3 py-2.5 rounded-xl bg-canvas border text-ink text-sm font-mono placeholder:text-ink-faint focus:outline-none focus:border-brand/60 ${
         erro ? 'border-danger' : 'border-line-strong'
       }`}

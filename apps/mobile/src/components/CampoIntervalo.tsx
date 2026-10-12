@@ -35,7 +35,7 @@ export const CampoIntervalo: React.FC<{
       keyboardType="number-pad"
       autoFocus={autoFocus}
       erro={erro}
-      placeholder={category === 'engine_oil' ? 'ex: 1000' : 'vazio = usar o padrão'}
+      placeholder={category === 'engine_oil' ? 'ex: 1000' : 'veja no manual ou pergunte ao mecânico'}
       accessibilityLabel="De quantos em quantos km você troca"
     />
     {erro && (

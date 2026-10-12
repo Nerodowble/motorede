@@ -1069,6 +1069,26 @@ Bugs achados na análise e corrigidos junto:
 - Piloto logado na web perdia km e intervalos ao recarregar: a moto do perfil
   ficava desatualizada e vencia a do armazenamento.
 
+### Revisão no mesmo dia: só números que o piloto digitou
+
+O dono do projeto testou com o cenário real — moto com 10.000 km, óleo
+trocado hoje, troca a cada 1.000 — e a preocupação foi que os números fossem
+**confusos e incertos**. As contas estavam certas; o problema era a origem e a
+apresentação. Mudou:
+
+- **Nenhum item tem padrão** (antes só o óleo). Pneu a 15.000 e freio a 12.000
+  eram chute disfarçado de cálculo; pneu e freio variam demais com a pilotagem.
+- **A média medida nunca entra na conta**, nem quando o piloto não informou.
+  Aparece só como dica ("nas suas últimas trocas, a média foi de 1.200 km").
+- **Destaque do cartão: "Próxima troca: 11.000 km"** — o número da etiqueta da
+  oficina —, com "faltam 1.000 km" embaixo, e de onde saiu a conta (trocado com
+  10.000 km, troca a cada 1.000).
+- **"Hora de trocar"** quando o odômetro chega exatamente no km da troca;
+  "vencido" só depois de passar.
+
+Regra que fica: próxima troca = km da troca + intervalo informado; faltam =
+próxima troca − km atual. Só soma e subtração.
+
 ---
 
 ## 32. Ficha do modelo pesquisada por IA (plugin de IA)

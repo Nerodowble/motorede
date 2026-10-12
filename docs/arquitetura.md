@@ -241,9 +241,11 @@ Totalmente local, nos dois clientes. Domínio em
 
 - O piloto registra **eventos** (troca de óleo aos X km, com produto e data),
   não estado.
-- `summarizeMaintenance` deriva o status de cada categoria; o intervalo diz de
-  onde veio: **medido** (3+ registros), **declarado** pelo piloto ou
-  **padrão**. Categoria sem registro não vira número inventado.
+- `summarizeMaintenance` deriva o status de cada categoria só com números que
+  o piloto digitou: próxima troca = km da última troca + intervalo
+  **informado**; faltam = próxima troca − km atual. Não há intervalo padrão;
+  a média das trocas registradas aparece só como dica. Categoria sem registro
+  ou sem intervalo não vira número inventado.
 - A moto é opcional (`Motorcycle | null`).
 
 ## Identidade e login

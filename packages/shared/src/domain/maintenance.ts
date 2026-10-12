@@ -7,42 +7,26 @@ import type { ConsumableCategory, MaintenanceRecord, Motorcycle } from '../types
  * foi feito, com qual produto e em que quilometragem. Nada mais. É um hábito
  * que já existe, e por isso tem chance de ser mantido.
  *
- * A versão anterior pedia o contrário: que o piloto mantivesse intervalos e
- * datas de seis consumíveis sempre atualizados. Ninguém faz isso — e a prova
- * é que o protótipo precisou preencher tudo com valores fictícios, já que não
- * havia de onde tirar valores reais.
+ * TODO número da tela vem de algo que o piloto digitou — o km atual da moto,
+ * o km da troca e de quantos em quantos km ele troca — e as contas são só
+ * soma e subtração:
  *
- * Com eventos, cada registro aumenta o que dá para afirmar:
- *   1 registro  → lembrete: o que foi trocado, quando e com qual produto
- *   2 registros → primeiro intervalo observado
- *   3+          → o intervalo REAL do piloto e o ritmo em km por mês
+ *   próxima troca = km da última troca + intervalo
+ *   rodou         = km atual − km da última troca
+ *   faltam        = próxima troca − km atual
  *
- * O intervalo que o piloto INFORMA vence o medido: ele é quem sabe de quanto
- * em quanto quer trocar. O medido só entra quando ele não informou nada.
+ * Não há intervalo padrão nem média que entra sozinha no lugar do informado.
+ * Versões anteriores usavam um "padrão típico" (5.000 km no óleo, 15.000 nos
+ * pneus) e trocavam o informado pela média medida após 3 registros; o piloto
+ * via números que nunca digitou e não sabia de onde vinham. A média medida
+ * continua calculada, mas só aparece como dica.
  */
 
-/** A partir de quantos registros o intervalo observado vence o declarado. */
+/** A partir de quantos registros a média observada aparece como dica. */
 const MEASURED_MIN_RECORDS = 3;
 
-/**
- * Intervalos típicos, usados só enquanto o piloto não informou o dele.
- *
- * Exibidos sempre identificados como padrão — a diferença entre "observei isso
- * em você" e "isso é o número do manual" importa para o piloto confiar no que
- * o app diz.
- *
- * Óleo NÃO tem padrão: varia demais entre motos e pilotos (muita gente troca
- * de 1.000 em 1.000 km), e um número genérico como 5.000 km deixava o piloto
- * achar que estava em dia quando já tinha passado do ponto. Sem o intervalo
- * informado, o cartão do óleo pede o número em vez de inventar.
- */
-const DEFAULT_INTERVALS: Partial<Record<ConsumableCategory, number>> = {
-  transmission_chain: 25000,
-  tires: 15000,
-  brakes: 12000,
-  air_filter_spark_plug: 12000,
-  battery: 40000,
-};
+/** Abaixo desta fração do intervalo restante, o item está "se aproximando". */
+const FRACAO_PROXIMO = 0.15;
 
 export const MAINTENANCE_LABELS: Record<ConsumableCategory, string> = {
   engine_oil: 'Óleo do motor',
@@ -71,9 +55,6 @@ export const MAINTENANCE_CATEGORIES = Object.keys(
   MAINTENANCE_LABELS
 ) as ConsumableCategory[];
 
-/** De onde veio o intervalo usado no cálculo. */
-export type IntervalSource = 'medido' | 'declarado' | 'padrao';
-
 export interface MaintenanceItemStatus {
   category: ConsumableCategory;
   label: string;
@@ -89,17 +70,19 @@ export interface MaintenanceItemStatus {
     product?: string;
   };
 
-  /** Intervalo adotado e sua origem. Ausente quando não há base nenhuma. */
+  /** De quantos em quantos km o piloto troca. Só existe se ele informou. */
   intervalKm?: number;
-  intervalSource?: IntervalSource;
 
-  /** Intervalo observado nos registros (3+), mesmo quando o informado vence. */
+  /** Média observada entre as trocas registradas (3+). Só dica, nunca entra na conta. */
   measuredIntervalKm?: number;
+
+  /** Km do odômetro em que a próxima troca deve acontecer. */
+  nextChangeKm?: number;
 
   /** Quilômetros rodados desde a última troca. */
   kmSinceLast?: number;
 
-  /** Quilômetros até a próxima. Negativo significa vencido. */
+  /** Quilômetros até a próxima. Zero é hora de trocar; negativo, passou. */
   kmRemaining?: number;
 
   /**
@@ -109,10 +92,13 @@ export interface MaintenanceItemStatus {
   estimatedDate?: string;
 
   /**
-   * `sem-intervalo`: há registro, mas o piloto não informou de quanto em
-   * quanto troca e não existe padrão (óleo). Mostra só o que já rodou.
+   * - `sem-registro`: nenhuma troca registrada.
+   * - `sem-intervalo`: há troca, mas o piloto não disse de quanto em quanto
+   *   troca. Mostra só quanto rodou.
+   * - `hora-de-trocar`: chegou exatamente no km da próxima troca.
+   * - `vencido`: passou do km da próxima troca.
    */
-  status: 'sem-registro' | 'sem-intervalo' | 'ok' | 'proximo' | 'vencido';
+  status: 'sem-registro' | 'sem-intervalo' | 'ok' | 'proximo' | 'hora-de-trocar' | 'vencido';
 }
 
 /**
@@ -159,7 +145,8 @@ function measureInterval(recordsDaCategoria: MaintenanceRecord[]): number | null
 }
 
 /**
- * Situação de cada item de manutenção, a partir do histórico.
+ * Situação de cada item de manutenção, a partir do histórico e do intervalo
+ * que o piloto informou.
  *
  * Categorias sem nenhum registro voltam como `sem-registro`: sem barra, sem
  * porcentagem, sem alerta. Item sem histórico não vira número inventado — a
@@ -175,35 +162,11 @@ export function summarizeMaintenance(
   return MAINTENANCE_CATEGORIES.map((category) => {
     const daCategoria = records.filter((r) => r.category === category);
     const label = MAINTENANCE_LABELS[category];
-
-    const medido = measureInterval(daCategoria);
-    const declarado = motorcycle.customIntervals?.[category];
-    const padrao = DEFAULT_INTERVALS[category];
-
-    // O que o piloto informou manda; o medido só preenche quando ele não disse.
-    let intervalKm: number | undefined;
-    let intervalSource: IntervalSource | undefined;
-
-    if (declarado && declarado > 0) {
-      intervalKm = declarado;
-      intervalSource = 'declarado';
-    } else if (medido !== null) {
-      intervalKm = medido;
-      intervalSource = 'medido';
-    } else if (padrao) {
-      intervalKm = padrao;
-      intervalSource = 'padrao';
-    }
+    const informado = motorcycle.customIntervals?.[category];
+    const intervalKm = informado && informado > 0 ? informado : undefined;
 
     if (daCategoria.length === 0) {
-      return {
-        category,
-        label,
-        recordCount: 0,
-        intervalKm,
-        intervalSource,
-        status: 'sem-registro' as const,
-      };
+      return { category, label, recordCount: 0, intervalKm, status: 'sem-registro' as const };
     }
 
     const maisRecente = [...daCategoria].sort((a, b) => b.km - a.km)[0];
@@ -213,6 +176,7 @@ export function summarizeMaintenance(
       date: maisRecente.date,
       product: maisRecente.product,
     };
+    const measuredIntervalKm = measureInterval(daCategoria) ?? undefined;
 
     if (intervalKm === undefined) {
       return {
@@ -220,11 +184,13 @@ export function summarizeMaintenance(
         label,
         recordCount: daCategoria.length,
         last,
+        measuredIntervalKm,
         kmSinceLast,
         status: 'sem-intervalo' as const,
       };
     }
 
+    const nextChangeKm = maisRecente.km + intervalKm;
     const kmRemaining = intervalKm - kmSinceLast;
 
     let estimatedDate: string | undefined;
@@ -236,8 +202,9 @@ export function summarizeMaintenance(
     }
 
     let status: MaintenanceItemStatus['status'] = 'ok';
-    if (kmRemaining <= 0) status = 'vencido';
-    else if (kmRemaining <= intervalKm * 0.15) status = 'proximo';
+    if (kmRemaining < 0) status = 'vencido';
+    else if (kmRemaining === 0) status = 'hora-de-trocar';
+    else if (kmRemaining <= intervalKm * FRACAO_PROXIMO) status = 'proximo';
 
     return {
       category,
@@ -245,8 +212,8 @@ export function summarizeMaintenance(
       recordCount: daCategoria.length,
       last,
       intervalKm,
-      intervalSource,
-      measuredIntervalKm: medido ?? undefined,
+      measuredIntervalKm,
+      nextChangeKm,
       kmSinceLast,
       kmRemaining,
       estimatedDate,
@@ -255,25 +222,9 @@ export function summarizeMaintenance(
   });
 }
 
-/** Texto curto explicando de onde veio o intervalo. Para exibir ao piloto. */
-export function describeIntervalSource(
-  source: IntervalSource,
-  intervalKm: number,
-  recordCount: number
-): string {
-  const km = intervalKm.toLocaleString('pt-BR');
-  switch (source) {
-    case 'medido':
-      return `Você troca a cada ~${km} km (${recordCount} registros)`;
-    case 'declarado':
-      return `Você troca a cada ${km} km`;
-    case 'padrao':
-      return `Recomendação típica: ${km} km`;
-  }
-}
-
 /**
- * Ordena por urgência: vencido, se aproximando, em dia, sem registro.
+ * Ordena por urgência: vencido, hora de trocar, se aproximando, sem
+ * intervalo, em dia, sem registro.
  *
  * A ordem fixa por categoria fazia um item vencido aparecer em sexto lugar,
  * abaixo de coisas em dia — o piloto rolava a tela para descobrir o que já
@@ -281,10 +232,11 @@ export function describeIntervalSource(
  */
 const STATUS_ORDER: Record<MaintenanceItemStatus['status'], number> = {
   vencido: 0,
-  proximo: 1,
-  'sem-intervalo': 2,
-  ok: 3,
-  'sem-registro': 4,
+  'hora-de-trocar': 1,
+  proximo: 2,
+  'sem-intervalo': 3,
+  ok: 4,
+  'sem-registro': 5,
 };
 
 export function sortByUrgency(items: MaintenanceItemStatus[]): MaintenanceItemStatus[] {
@@ -294,4 +246,23 @@ export function sortByUrgency(items: MaintenanceItemStatus[]): MaintenanceItemSt
     // Dentro do mesmo status, o que vence antes vem primeiro.
     return (a.kmRemaining ?? Infinity) - (b.kmRemaining ?? Infinity);
   });
+}
+
+const km = (n: number) => `${n.toLocaleString('pt-BR')} km`;
+
+/** "faltam 100 km", "chegou a hora de trocar" ou "passou 200 km". */
+export function describeRemaining(kmRemaining: number): string {
+  if (kmRemaining > 0) return `faltam ${km(kmRemaining)}`;
+  if (kmRemaining === 0) return 'chegou a hora de trocar';
+  return `passou ${km(-kmRemaining)}`;
+}
+
+/**
+ * Dica com a média das trocas registradas, quando ela difere do informado.
+ * Nunca entra na conta — o piloto decide se quer usar esse número.
+ */
+export function describeMeasuredHint(item: MaintenanceItemStatus): string | null {
+  const media = item.measuredIntervalKm;
+  if (!media || media === item.intervalKm) return null;
+  return `Nas suas últimas trocas, a média foi de ${km(media)}.`;
 }

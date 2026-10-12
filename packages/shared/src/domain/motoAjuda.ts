@@ -38,18 +38,19 @@ export const AJUDA_MOTO: Record<ChaveAjudaMoto, AjudaMoto> = {
     ],
   },
   rodouFaltam: {
-    titulo: 'Rodou e faltam',
+    titulo: 'Próxima troca e quanto falta',
     paragrafos: [
-      '"Rodou" é quanto você andou desde a última troca: km de agora menos o km da troca.',
-      '"Faltam" é quanto ainda dá para rodar até a próxima: o intervalo menos o que você rodou.',
-      'Exemplo: trocou o óleo com 10.000 km e troca a cada 1.000. Hoje a moto está com 10.900. Rodou 900, faltam 100.',
+      'Próxima troca = km em que você trocou + de quantos em quantos km você troca.',
+      'Faltam = km da próxima troca − km que a moto está agora.',
+      'Exemplo: trocou o óleo hoje com 10.000 km e troca a cada 1.000. A próxima troca é com 11.000 km. Quando a moto estiver com 10.900, faltam 100.',
+      'O app só usa números que você digitou. Por isso, mantenha o km da moto atualizado.',
     ],
   },
   situacao: {
     titulo: 'Em dia, se aproximando e vencido',
     paragrafos: [
       'A barra enche conforme você roda. Cheia quer dizer que chegou a hora da troca.',
-      'Em dia: ainda falta bastante. Se aproximando: falta pouco (menos de 15% do intervalo). Vencido: já passou do ponto, troque o quanto antes.',
+      'Em dia: ainda falta bastante. Se aproximando: falta pouco (menos de 15% do intervalo). Hora de trocar: chegou no km da troca. Vencido: já passou, troque o quanto antes.',
       'Se você ainda não informou de quantos em quantos km troca, o app mostra só quanto você rodou.',
     ],
   },

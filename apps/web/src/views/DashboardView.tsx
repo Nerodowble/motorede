@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Radio, Wrench, ChevronRight, Bike, Gauge, Share2, Check, Repeat } from 'lucide-react';
-import { Motorcycle, VoiceRoom, type MaintenanceItemStatus } from '@motorede/shared';
+import { Motorcycle, VoiceRoom, describeRemaining, type MaintenanceItemStatus } from '@motorede/shared';
 import { ActiveTab } from '../components/Navigation';
 import { MotorcycleEmptyState } from '../components/MotorcycleEmptyState';
 import { useConvoyBrowser } from '../hooks/useConvoyBrowser';
@@ -73,7 +73,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   // Só o que realmente pede ação, e só com base em registro do próprio piloto.
   // Item sem histórico não aparece: não há o que afirmar sobre ele.
   const needsAttention = maintenance
-    .filter((m) => m.status === 'vencido' || m.status === 'proximo')
+    .filter((m) => m.status === 'vencido' || m.status === 'hora-de-trocar' || m.status === 'proximo')
     .sort((a, b) => (a.kmRemaining ?? 0) - (b.kmRemaining ?? 0));
 
   const handleSaveKm = (e: React.FormEvent) => {
@@ -247,12 +247,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 <span className="text-xs text-ink-muted truncate">{m.label}</span>
                 <span
                   className={`text-xs font-mono font-bold shrink-0 ${
-                    m.status === 'vencido' ? 'text-danger' : 'text-warning'
+                    m.status === 'proximo' ? 'text-warning' : 'text-danger'
                   }`}
                 >
-                  {m.status === 'vencido'
-                    ? `${Math.abs(m.kmRemaining ?? 0).toLocaleString('pt-BR')} km atrasado`
-                    : `faltam ${(m.kmRemaining ?? 0).toLocaleString('pt-BR')} km`}
+                  {describeRemaining(m.kmRemaining ?? 0)}
                 </span>
               </div>
             ))}
