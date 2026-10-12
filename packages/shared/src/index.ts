@@ -1,5 +1,6 @@
 export * from './types.js';
 export * from './domain/maintenance.js';
+export * from './domain/motoAjuda.js';
 export * from './domain/diagnostics.js';
 export * from './domain/voice.js';
 export * from './domain/rooms.js';

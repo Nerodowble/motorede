@@ -4,6 +4,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import {
   MAINTENANCE_LABELS,
   describeIntervalSource,
+  parseIntervalKm,
   sortByUrgency,
   type ConsumableCategory,
   type MaintenanceItemStatus,
@@ -13,6 +14,8 @@ import {
 import { Botao, BotaoIcone, type NomeIcone } from '../components/ui/Botao';
 import { Ajuda, Campo, Cartao, Rotulo, TituloCartao, TituloTela, estilosBase } from '../components/ui/Cartao';
 import { Folha } from '../components/ui/Folha';
+import { InfoAjuda } from '../components/InfoAjuda';
+import { CampoIntervalo, FolhaIntervalo } from '../components/CampoIntervalo';
 import { ALVO, COLORS, ESPACO, FONTE_CONDENSADA, RAIO, TIPO } from '../theme';
 
 /**
@@ -33,6 +36,8 @@ interface MyMotorcycleScreenProps {
   onAddRecord: (record: Omit<MaintenanceRecord, 'id'>) => void;
   onUpdateKm: (km: number) => void;
   onSaveMotorcycle: (moto: Motorcycle) => void;
+  /** null volta ao padrão (ou a nenhum intervalo, no óleo). */
+  onSetInterval: (category: ConsumableCategory, km: number | null) => void;
 }
 
 /*
@@ -45,6 +50,7 @@ const CORES_STATUS: Record<MaintenanceItemStatus['status'], string> = {
   vencido: COLORS.dangerText,
   proximo: COLORS.ink,
   ok: COLORS.inkFaint,
+  'sem-intervalo': COLORS.inkMuted,
   'sem-registro': COLORS.inkFaint,
 };
 
@@ -52,6 +58,7 @@ const ICONES_STATUS: Record<MaintenanceItemStatus['status'], NomeIcone> = {
   vencido: 'alert-circle',
   proximo: 'time',
   ok: 'checkmark-circle',
+  'sem-intervalo': 'help-circle-outline',
   'sem-registro': 'ellipse-outline',
 };
 
@@ -59,6 +66,7 @@ const ROTULOS_STATUS: Record<MaintenanceItemStatus['status'], string> = {
   vencido: 'vencido',
   proximo: 'se aproximando',
   ok: 'em dia',
+  'sem-intervalo': 'falta o intervalo',
   'sem-registro': '',
 };
 
@@ -69,10 +77,14 @@ export const MyMotorcycleScreen: React.FC<MyMotorcycleScreenProps> = ({
   onAddRecord,
   onUpdateKm,
   onSaveMotorcycle,
+  onSetInterval,
 }) => {
   const [registrando, setRegistrando] = useState<ConsumableCategory | null>(null);
   const [km, setKm] = useState('');
   const [produto, setProduto] = useState('');
+  const [intervalo, setIntervalo] = useState('');
+  const [erroIntervalo, setErroIntervalo] = useState(false);
+  const [editandoIntervalo, setEditandoIntervalo] = useState<ConsumableCategory | null>(null);
   const [cadastrando, setCadastrando] = useState(false);
   const [marca, setMarca] = useState('');
   const [modelo, setModelo] = useState('');
@@ -143,12 +155,41 @@ export const MyMotorcycleScreen: React.FC<MyMotorcycleScreenProps> = ({
     setRegistrando(categoria);
     setKm(motorcycle.currentKm.toString());
     setProduto(ultimo?.product ?? '');
+    setIntervalo(motorcycle.customIntervals?.[categoria]?.toString() ?? '');
+    setErroIntervalo(false);
+  };
+
+  const abrirIntervalo = (categoria: ConsumableCategory) => {
+    setEditandoIntervalo(categoria);
+    setIntervalo(motorcycle.customIntervals?.[categoria]?.toString() ?? '');
+    setErroIntervalo(false);
+  };
+
+  /** Vazio limpa; preenchido precisa ser válido. Volta false se não deu. */
+  const aplicarIntervalo = (categoria: ConsumableCategory): boolean => {
+    if (!intervalo.trim()) {
+      if (motorcycle.customIntervals?.[categoria]) onSetInterval(categoria, null);
+      return true;
+    }
+    const valor = parseIntervalKm(intervalo);
+    if (valor === null) {
+      setErroIntervalo(true);
+      return false;
+    }
+    if (valor !== motorcycle.customIntervals?.[categoria]) onSetInterval(categoria, valor);
+    return true;
+  };
+
+  const mudarIntervalo = (v: string) => {
+    setIntervalo(v);
+    setErroIntervalo(false);
   };
 
   const salvarRegistro = () => {
     if (!registrando) return;
     const kmNum = parseInt(km, 10);
     if (isNaN(kmNum) || kmNum <= 0) return;
+    if (!aplicarIntervalo(registrando)) return;
 
     onAddRecord({
       motorcycleId: motorcycle.id,
@@ -205,7 +246,10 @@ export const MyMotorcycleScreen: React.FC<MyMotorcycleScreenProps> = ({
         ) : (
           <View style={styles.linha}>
             <View style={{ flex: 1 }}>
-              <Rotulo>Odômetro</Rotulo>
+              <View style={styles.linhaInfo}>
+                <Rotulo>Odômetro</Rotulo>
+                <InfoAjuda chave="odometro" />
+              </View>
               <Text style={styles.km}>
                 {motorcycle.currentKm.toLocaleString('pt-BR')}
                 <Text style={styles.kmUnidade}> km</Text>
@@ -244,6 +288,7 @@ export const MyMotorcycleScreen: React.FC<MyMotorcycleScreenProps> = ({
                     <Text style={[styles.statusTexto, { color: cor }]}>
                       {ROTULOS_STATUS[item.status] || 'sem registro'}
                     </Text>
+                    {!semRegistro && <InfoAjuda chave="situacao" />}
                   </View>
                 </View>
                 <Botao
@@ -261,22 +306,39 @@ export const MyMotorcycleScreen: React.FC<MyMotorcycleScreenProps> = ({
               </View>
 
               {semRegistro ? (
-                <Ajuda>Adicione a primeira troca para acompanhar o intervalo.</Ajuda>
+                <Ajuda>
+                  Adicione a primeira troca para acompanhar o intervalo.
+                  {item.intervalSource === 'declarado' &&
+                    ` Você troca a cada ${item.intervalKm!.toLocaleString('pt-BR')} km.`}
+                </Ajuda>
+              ) : item.status === 'sem-intervalo' ? (
+                <>
+                  <View style={styles.linhaInfo}>
+                    <Text style={[styles.frase, { flexShrink: 1 }]}>
+                      rodou {item.kmSinceLast!.toLocaleString('pt-BR')} km
+                    </Text>
+                    <InfoAjuda chave="rodouFaltam" />
+                  </View>
+                  <Ajuda>Para saber quanto falta, diga de quantos em quantos km você troca.</Ajuda>
+                </>
               ) : (
                 <>
-                  <Text style={styles.frase}>
-                    rodou {item.kmSinceLast!.toLocaleString('pt-BR')} km
-                    <Text
-                      style={[
-                        styles.fraseResto,
-                        { color: item.status === 'ok' ? COLORS.inkMuted : cor },
-                      ]}
-                    >
-                      {item.kmRemaining! > 0
-                        ? ` · faltam ${item.kmRemaining!.toLocaleString('pt-BR')}`
-                        : ` · ${Math.abs(item.kmRemaining!).toLocaleString('pt-BR')} km além`}
+                  <View style={styles.linhaInfo}>
+                    <Text style={[styles.frase, { flexShrink: 1 }]}>
+                      rodou {item.kmSinceLast!.toLocaleString('pt-BR')} km
+                      <Text
+                        style={[
+                          styles.fraseResto,
+                          { color: item.status === 'ok' ? COLORS.inkMuted : cor },
+                        ]}
+                      >
+                        {item.kmRemaining! > 0
+                          ? ` · faltam ${item.kmRemaining!.toLocaleString('pt-BR')}`
+                          : ` · ${Math.abs(item.kmRemaining!).toLocaleString('pt-BR')} km além`}
+                      </Text>
                     </Text>
-                  </Text>
+                    <InfoAjuda chave="rodouFaltam" />
+                  </View>
                   <View style={styles.trilha}>
                     <View style={[styles.barra, { width: `${progresso}%`, backgroundColor: cor }]} />
                   </View>
@@ -288,8 +350,29 @@ export const MyMotorcycleScreen: React.FC<MyMotorcycleScreenProps> = ({
                   <Text style={styles.origem}>
                     {describeIntervalSource(item.intervalSource!, item.intervalKm!, item.recordCount)}
                   </Text>
+                  {item.intervalSource === 'declarado' &&
+                    item.measuredIntervalKm !== undefined &&
+                    item.measuredIntervalKm !== item.intervalKm && (
+                      <Text style={styles.origem}>
+                        Nas suas últimas trocas, a média foi ~
+                        {item.measuredIntervalKm.toLocaleString('pt-BR')} km.
+                      </Text>
+                    )}
                 </>
               )}
+
+              <Botao
+                rotulo={
+                  item.intervalSource === 'declarado'
+                    ? 'Mudar a cada quantos km troco'
+                    : 'Informar a cada quantos km troco'
+                }
+                icone="pencil"
+                variante="fantasma"
+                compacto
+                style={styles.botaoIntervalo}
+                onPress={() => abrirIntervalo(item.category)}
+              />
             </View>
           );
         })}
@@ -328,14 +411,31 @@ export const MyMotorcycleScreen: React.FC<MyMotorcycleScreenProps> = ({
         <Rotulo>PRODUTO USADO (OPCIONAL)</Rotulo>
         <Campo value={produto} onChangeText={setProduto} placeholder="ex: Motul 5100 10W40" accessibilityLabel="Produto usado (opcional)" />
 
+        {registrando && (
+          <CampoIntervalo category={registrando} valor={intervalo} onChange={mudarIntervalo} erro={erroIntervalo} />
+        )}
+
         <Botao rotulo="Salvar" variante="action" onPress={salvarRegistro} />
         <Botao rotulo="Cancelar" variante="fantasma" onPress={() => setRegistrando(null)} />
       </Folha>
+
+      <FolhaIntervalo
+        categoria={editandoIntervalo}
+        valor={intervalo}
+        onChange={mudarIntervalo}
+        erro={erroIntervalo}
+        aoFechar={() => setEditandoIntervalo(null)}
+        aoSalvar={() => {
+          if (editandoIntervalo && aplicarIntervalo(editandoIntervalo)) setEditandoIntervalo(null);
+        }}
+      />
     </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
+  linhaInfo: { flexDirection: 'row', alignItems: 'center', gap: ESPACO.sm },
+  botaoIntervalo: { alignSelf: 'flex-start', paddingHorizontal: 0 },
   convite: { alignItems: 'center', paddingVertical: ESPACO.xl, gap: ESPACO.lg },
   itemManutencao: { gap: ESPACO.md, paddingTop: ESPACO.md },
   topoManutencao: { flexDirection: 'row', alignItems: 'center', gap: ESPACO.md },

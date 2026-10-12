@@ -18,6 +18,7 @@ import {
   normalizeRoomCode,
   profileFromGoogle,
   summarizeMaintenance,
+  type ConsumableCategory,
   type MaintenanceRecord,
   type Motorcycle,
   type RiderProfile,
@@ -163,15 +164,28 @@ function Aplicativo() {
     void storage.saveMotorcycle(moto);
   }, []);
 
-  const atualizarKm = useCallback(
-    (km: number) => {
-      if (!motorcycle) return;
-      const atualizada = { ...motorcycle, currentKm: km, lastKmUpdate: new Date().toISOString() };
-      setMotorcycle(atualizada);
+  // Atualização funcional: registrar troca pode mudar intervalo e km no mesmo
+  // toque, e cada um precisa partir do que o outro já gravou.
+  const atualizarKm = useCallback((km: number) => {
+    setMotorcycle((atual) => {
+      if (!atual) return atual;
+      const atualizada = { ...atual, currentKm: km, lastKmUpdate: new Date().toISOString() };
       void storage.saveMotorcycle(atualizada);
-    },
-    [motorcycle]
-  );
+      return atualizada;
+    });
+  }, []);
+
+  const definirIntervalo = useCallback((categoria: ConsumableCategory, km: number | null) => {
+    setMotorcycle((atual) => {
+      if (!atual) return atual;
+      const customIntervals = { ...atual.customIntervals };
+      if (km === null) delete customIntervals[categoria];
+      else customIntervals[categoria] = km;
+      const atualizada = { ...atual, customIntervals };
+      void storage.saveMotorcycle(atualizada);
+      return atualizada;
+    });
+  }, []);
 
   const adicionarRegistro = useCallback(
     (dados: Omit<MaintenanceRecord, 'id'>) => {
@@ -268,6 +282,7 @@ function Aplicativo() {
             onAddRecord={adicionarRegistro}
             onUpdateKm={atualizarKm}
             onSaveMotorcycle={salvarMoto}
+            onSetInterval={definirIntervalo}
           />
         )}
         {aba === 'ajustes' && <SettingsScreen profile={profile} onSair={sair} />}

@@ -12,7 +12,8 @@ import {
   Clock,
   ShieldCheck,
 } from 'lucide-react';
-import { Motorcycle, ConsumableCategory } from '@motorede/shared';
+import { Motorcycle } from '@motorede/shared';
+import { InfoAjuda } from './InfoAjuda';
 
 interface MotorcycleEditModalProps {
   isOpen: boolean;
@@ -33,22 +34,23 @@ export const MotorcycleEditModal: React.FC<MotorcycleEditModalProps> = ({
   const [year, setYear] = useState(motorcycle?.year.toString() ?? String(new Date().getFullYear()));
   const [licensePlate, setLicensePlate] = useState(motorcycle?.licensePlate ?? '');
   const [currentKm, setCurrentKm] = useState(motorcycle?.currentKm.toString() ?? '');
+  // Campos técnicos nascem vazios: valores de exemplo pré-preenchidos eram
+  // salvos como se fossem da moto do piloto (500 cc, 26,5 km/l, 17,7 L) e
+  // viravam autonomia inventada.
   const [displacementCc, setDisplacementCc] = useState(
-    motorcycle?.displacementCc ? motorcycle?.displacementCc.toString() : '500'
+    motorcycle?.displacementCc ? motorcycle?.displacementCc.toString() : ''
   );
   const [fuelType, setFuelType] = useState<'gasoline' | 'flex' | 'ethanol'>(
     motorcycle?.fuelType || 'gasoline'
   );
   const [avgConsumptionKmL, setAvgConsumptionKmL] = useState(
-    motorcycle?.avgConsumptionKmL ? motorcycle?.avgConsumptionKmL.toString() : '26.5'
+    motorcycle?.avgConsumptionKmL ? motorcycle?.avgConsumptionKmL.toString() : ''
   );
   const [tankCapacityLiters, setTankCapacityLiters] = useState(
-    motorcycle?.tankCapacityLiters ? motorcycle?.tankCapacityLiters.toString() : '17.7'
+    motorcycle?.tankCapacityLiters ? motorcycle?.tankCapacityLiters.toString() : ''
   );
   const [chassisVin, setChassisVin] = useState(motorcycle?.chassisVin || '');
   const [notes, setNotes] = useState(motorcycle?.notes || '');
-
-  // Custom intervals
 
   const [feedback, setFeedback] = useState<string | null>(null);
 
@@ -65,7 +67,7 @@ export const MotorcycleEditModal: React.FC<MotorcycleEditModalProps> = ({
       return;
     }
 
-    const customIntervals: Partial<Record<ConsumableCategory, number>> = {};
+    const positivo = (n: number) => (n > 0 ? n : undefined);
 
     const updated: Motorcycle = {
       // Sem moto anterior, este é o primeiro cadastro: nasce com id próprio.
@@ -76,14 +78,16 @@ export const MotorcycleEditModal: React.FC<MotorcycleEditModalProps> = ({
       year: parsedYear || new Date().getFullYear(),
       licensePlate: licensePlate.trim().toUpperCase(),
       currentKm: parsedKm,
-      avgKmPerMonth: 0,
-      displacementCc: parseInt(displacementCc, 10) || 500,
+      avgKmPerMonth: motorcycle?.avgKmPerMonth ?? 0,
+      displacementCc: positivo(parseInt(displacementCc, 10)),
       fuelType,
-      avgConsumptionKmL: parseFloat(avgConsumptionKmL) || 25,
-      tankCapacityLiters: parseFloat(tankCapacityLiters) || 15,
+      avgConsumptionKmL: positivo(parseFloat(avgConsumptionKmL)),
+      tankCapacityLiters: positivo(parseFloat(tankCapacityLiters)),
       chassisVin: chassisVin.trim() || undefined,
       notes: notes.trim(),
-      customIntervals,
+      // Os intervalos são editados na tela Minha moto; salvar a ficha não
+      // pode apagá-los (antes gravava {} e o piloto perdia o que informou).
+      customIntervals: motorcycle?.customIntervals,
       lastKmUpdate: new Date().toISOString(),
     };
 
@@ -199,7 +203,10 @@ export const MotorcycleEditModal: React.FC<MotorcycleEditModalProps> = ({
             </h3>
             <div className="grid grid-cols-2 gap-3">
               <label className="block">
-                <span className="text-[11px] text-ink-muted mb-1.5 block">Odômetro (km)</span>
+                <span className="text-[11px] text-ink-muted mb-1.5 flex items-center gap-1.5">
+                  Odômetro (km)
+                  <InfoAjuda chave="odometro" />
+                </span>
                 <input
                   type="number"
                   value={currentKm}
@@ -245,7 +252,10 @@ export const MotorcycleEditModal: React.FC<MotorcycleEditModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-ink-muted font-medium mb-1">Consumo Médio Real</label>
+                <label className="text-ink-muted font-medium mb-1 flex items-center gap-1.5">
+                  Consumo Médio Real
+                  <InfoAjuda chave="consumo" />
+                </label>
                 <div className="relative">
                   <input
                     type="number"
@@ -278,7 +288,10 @@ export const MotorcycleEditModal: React.FC<MotorcycleEditModalProps> = ({
             {/* Calculated Autonomy preview */}
             {parseFloat(avgConsumptionKmL) > 0 && parseFloat(tankCapacityLiters) > 0 && (
               <div className="bg-surface/90 rounded-lg p-2.5 flex items-center justify-between text-xs border border-line">
-                <span className="text-ink-muted">Autonomia estimada por tanque cheio:</span>
+                <span className="text-ink-muted flex items-center gap-1.5">
+                  Autonomia estimada por tanque cheio
+                  <InfoAjuda chave="autonomia" />
+                </span>
                 <span className="font-bold text-brand-soft font-mono text-sm">
                   ~{Math.round(parseFloat(avgConsumptionKmL) * parseFloat(tankCapacityLiters))} km
                 </span>

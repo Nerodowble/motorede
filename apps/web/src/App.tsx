@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react';
-import { UserRole, UserProfile, Motorcycle, SOSAlert, SOSVolunteer, VoiceRoom, Coupon, MaintenanceRecord, EmergencyType, summarizeMaintenance } from '@motorede/shared';
+import { UserRole, UserProfile, Motorcycle, SOSAlert, SOSVolunteer, VoiceRoom, Coupon, MaintenanceRecord, EmergencyType, ConsumableCategory, summarizeMaintenance } from '@motorede/shared';
 import { storageService } from './services/storage';
 import { useSocorroRede } from './hooks/useSocorroRede';
 import { GeoPoint, geolocationService, calculateDistanceKm } from './services/geolocation';
@@ -77,6 +77,18 @@ export default function App() {
     storageService.getMaintenanceRecords()
   );
 
+  // Na abertura, a moto do perfil vence a do armazenamento. Sem manter as duas
+  // iguais, km e intervalos alterados voltavam ao valor antigo ao recarregar.
+  useEffect(() => {
+    if (!motorcycle) return;
+    setCurrentUser((u) => {
+      if (!u || u.role !== 'rider' || u.motorcycle === motorcycle) return u;
+      const atualizado: UserProfile = { ...u, motorcycle };
+      storageService.setCurrentUser(atualizado);
+      return atualizado;
+    });
+  }, [motorcycle]);
+
   // A manutenção é DERIVADA do histórico, não guardada em paralelo. Antes havia
   // um estado de consumíveis com valores próprios, que podia divergir do que o
   // passaporte registrava — duas verdades sobre a mesma moto.
@@ -133,11 +145,27 @@ export default function App() {
   }, []);
 
   // Recalculate wear when motorcycle KM changes
+  // Atualização funcional: registrar troca pode mudar intervalo e km no mesmo
+  // clique, e cada um precisa partir do que o outro já gravou.
   const handleUpdateKm = (newKm: number) => {
-    if (!motorcycle) return;
-    const updatedBike = { ...motorcycle, currentKm: newKm };
-    setMotorcycle(updatedBike);
-    storageService.saveMotorcycle(updatedBike);
+    setMotorcycle((atual) => {
+      if (!atual) return atual;
+      const updatedBike = { ...atual, currentKm: newKm, lastKmUpdate: new Date().toISOString() };
+      storageService.saveMotorcycle(updatedBike);
+      return updatedBike;
+    });
+  };
+
+  const handleSetInterval = (category: ConsumableCategory, km: number | null) => {
+    setMotorcycle((atual) => {
+      if (!atual) return atual;
+      const customIntervals = { ...atual.customIntervals };
+      if (km === null) delete customIntervals[category];
+      else customIntervals[category] = km;
+      const updatedBike = { ...atual, customIntervals };
+      storageService.saveMotorcycle(updatedBike);
+      return updatedBike;
+    });
   };
 
   // Full motorcycle data & technical sheet update
@@ -397,6 +425,7 @@ export default function App() {
               records={maintenanceRecords}
               onAddRecord={handleAddMaintenanceRecord}
               onUpdateKm={handleUpdateKm}
+              onSetInterval={handleSetInterval}
               onOpenEditMotorcycle={() => setIsMotorcycleEditOpen(true)}
             />
           )}

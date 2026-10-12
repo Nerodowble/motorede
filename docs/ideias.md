@@ -539,7 +539,8 @@ confiar no app:
 - **padrão** — "recomendação típica: 5.000 km"
 
 Com 3+ registros o medido vence o declarado: o hábito real vale mais que a
-intenção.
+intenção. *(Invertido em 2026-10-12 — ver ideia 31: o informado vence, e o
+óleo deixou de ter padrão.)*
 
 **Categoria sem registro não vira número inventado.** Sem barra, sem
 porcentagem, sem alerta — vira convite para registrar. Previsão de data só
@@ -1031,3 +1032,39 @@ Consequências:
   tela bloqueada, e anuncia o **app para iOS como "em breve"** (sem data).
 - O app nativo para iOS continua configurado (`UIBackgroundModes`), mas não é
   distribuído; fica para depois.
+
+---
+
+## 31. Óleo sem padrão: o piloto informa de quanto em quanto troca
+
+**Status:** `decidido` — implementado (web e app)
+**Data:** 2026-10-12
+
+O padrão de 5.000 km para o óleo foi removido. Na prática muita gente troca de
+1.000 em 1.000 km, e um número genérico fazia o piloto achar que estava em dia
+quando já tinha passado do ponto. Agora:
+
+- **Óleo não tem padrão.** Sem intervalo informado, o cartão mostra só "rodou
+  X km desde a última troca" e pede o número (status `sem-intervalo`). Atalhos
+  de 1.000 / 1.500 / 2.000 / 3.000 km para não precisar digitar.
+- **O intervalo informado vence o medido** (inverte a regra da ideia 18). Quem
+  decide de quanto em quanto troca é o piloto; o medido só entra quando ele não
+  informou, e aparece como observação quando difere ("nas suas últimas trocas,
+  a média foi ~1.200 km").
+- Os outros itens (kit, pneus, freio, filtro, bateria) mantêm o padrão típico
+  até o piloto informar o dele.
+- O intervalo é informado no próprio cartão ou ao registrar a troca.
+
+**Botão "i" pulsante** ao lado de cada campo de cálculo (odômetro, intervalo,
+rodou/faltam, situação, consumo, autonomia), com texto para leigo e um exemplo
+com números redondos. Os textos ficam em `packages/shared` (`motoAjuda.ts`)
+para web e app dizerem o mesmo. Pulsa até a explicação ser aberta uma vez.
+
+Bugs achados na análise e corrigidos junto:
+- Salvar a ficha da moto na web apagava os intervalos (`customIntervals = {}`).
+- A ficha vinha com 500 cc, 26,5 km/l e 17,7 L preenchidos, que eram salvos
+  como dados reais da moto e geravam autonomia inventada.
+- Data da troca na web aparecia um dia antes (meia-noite UTC = dia anterior
+  no Brasil).
+- Piloto logado na web perdia km e intervalos ao recarregar: a moto do perfil
+  ficava desatualizada e vencia a do armazenamento.

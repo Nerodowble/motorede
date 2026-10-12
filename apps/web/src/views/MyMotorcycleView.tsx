@@ -1,15 +1,19 @@
 import React, { useState } from 'react';
-import { Plus, Check, X, ChevronDown, FileText, Pencil } from 'lucide-react';
+import { ChevronDown, FileText, Pencil } from 'lucide-react';
 import {
   Motorcycle,
   MaintenanceRecord,
   ConsumableCategory,
   MAINTENANCE_LABELS,
-  describeIntervalSource,
+  parseIntervalKm,
   sortByUrgency,
   type MaintenanceItemStatus,
 } from '@motorede/shared';
 import { MotorcycleEmptyState } from '../components/MotorcycleEmptyState';
+import { InfoAjuda } from '../components/InfoAjuda';
+import { CampoIntervalo } from '../components/CampoIntervalo';
+import { FolhaFormulario } from '../components/FolhaFormulario';
+import { CartaoManutencao } from '../components/CartaoManutencao';
 
 /**
  * Minha moto — uma aba só.
@@ -35,38 +39,10 @@ interface MyMotorcycleViewProps {
   records: MaintenanceRecord[];
   onAddRecord: (record: Omit<MaintenanceRecord, 'id'>) => void;
   onUpdateKm: (km: number) => void;
+  /** null volta ao padrão (ou a nenhum intervalo, no óleo). */
+  onSetInterval: (category: ConsumableCategory, km: number | null) => void;
   onOpenEditMotorcycle?: () => void;
 }
-
-const STATUS_STYLES: Record<
-  MaintenanceItemStatus['status'],
-  { barra: string; texto: string; rotulo: string; borda: string }
-> = {
-  vencido: {
-    barra: 'bg-sos',
-    texto: 'text-danger',
-    rotulo: 'vencido',
-    borda: 'border-danger/40',
-  },
-  proximo: {
-    barra: 'bg-warning',
-    texto: 'text-warning',
-    rotulo: 'se aproximando',
-    borda: 'border-warning/40',
-  },
-  ok: {
-    barra: 'bg-live',
-    texto: 'text-success',
-    rotulo: 'em dia',
-    borda: 'border-line',
-  },
-  'sem-registro': {
-    barra: 'bg-line-strong',
-    texto: 'text-ink-faint',
-    rotulo: '',
-    borda: 'border-line',
-  },
-};
 
 export const MyMotorcycleView: React.FC<MyMotorcycleViewProps> = ({
   motorcycle,
@@ -74,12 +50,16 @@ export const MyMotorcycleView: React.FC<MyMotorcycleViewProps> = ({
   records,
   onAddRecord,
   onUpdateKm,
+  onSetInterval,
   onOpenEditMotorcycle,
 }) => {
   const [registrando, setRegistrando] = useState<ConsumableCategory | null>(null);
   const [km, setKm] = useState('');
   const [data, setData] = useState('');
   const [produto, setProduto] = useState('');
+  const [intervalo, setIntervalo] = useState('');
+  const [erroIntervalo, setErroIntervalo] = useState(false);
+  const [editandoIntervalo, setEditandoIntervalo] = useState<ConsumableCategory | null>(null);
   const [historicoAberto, setHistoricoAberto] = useState(false);
   const [tecnicosAberto, setTecnicosAberto] = useState(false);
   const [editandoKm, setEditandoKm] = useState(false);
@@ -105,6 +85,39 @@ export const MyMotorcycleView: React.FC<MyMotorcycleViewProps> = ({
     setKm(motorcycle.currentKm.toString());
     setData(new Date().toISOString().split('T')[0]);
     setProduto(ultimoDaCategoria?.product ?? '');
+    setIntervalo(motorcycle.customIntervals?.[category]?.toString() ?? '');
+    setErroIntervalo(false);
+  };
+
+  const abrirIntervalo = (category: ConsumableCategory) => {
+    setEditandoIntervalo(category);
+    setIntervalo(motorcycle.customIntervals?.[category]?.toString() ?? '');
+    setErroIntervalo(false);
+  };
+
+  /** Vazio limpa; preenchido precisa ser válido. Volta false se não deu. */
+  const aplicarIntervalo = (category: ConsumableCategory): boolean => {
+    if (!intervalo.trim()) {
+      if (motorcycle.customIntervals?.[category]) onSetInterval(category, null);
+      return true;
+    }
+    const valor = parseIntervalKm(intervalo);
+    if (valor === null) {
+      setErroIntervalo(true);
+      return false;
+    }
+    if (valor !== motorcycle.customIntervals?.[category]) onSetInterval(category, valor);
+    return true;
+  };
+
+  const mudarIntervalo = (v: string) => {
+    setIntervalo(v);
+    setErroIntervalo(false);
+  };
+
+  const salvarIntervalo = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editandoIntervalo && aplicarIntervalo(editandoIntervalo)) setEditandoIntervalo(null);
   };
 
   const salvar = (e: React.FormEvent) => {
@@ -113,10 +126,13 @@ export const MyMotorcycleView: React.FC<MyMotorcycleViewProps> = ({
 
     const kmNum = parseInt(km, 10);
     if (isNaN(kmNum) || kmNum <= 0) return;
+    if (!aplicarIntervalo(registrando)) return;
 
     onAddRecord({
       motorcycleId: motorcycle.id,
-      date: new Date(data).toISOString(),
+      // Meio-dia local: "2026-10-12" sozinho vira meia-noite UTC, que no
+      // Brasil é o dia anterior — a troca aparecia com a data errada.
+      date: new Date(`${data}T12:00:00`).toISOString(),
       km: kmNum,
       category: registrando,
       title: MAINTENANCE_LABELS[registrando],
@@ -180,16 +196,19 @@ export const MyMotorcycleView: React.FC<MyMotorcycleViewProps> = ({
                 </button>
               </form>
             ) : (
-              <button
-                onClick={() => {
-                  setKmMoto(motorcycle.currentKm.toString());
-                  setEditandoKm(true);
-                }}
-                className="text-sm font-mono text-brand-soft mt-1 flex items-center gap-1.5 hover:text-brand-soft transition"
-              >
-                {motorcycle.currentKm.toLocaleString('pt-BR')} km
-                <Pencil className="w-3 h-3 opacity-60" />
-              </button>
+              <div className="mt-1 flex items-center gap-1.5">
+                <button
+                  onClick={() => {
+                    setKmMoto(motorcycle.currentKm.toString());
+                    setEditandoKm(true);
+                  }}
+                  className="text-sm font-mono text-brand-soft flex items-center gap-1.5 hover:text-brand-soft transition"
+                >
+                  {motorcycle.currentKm.toLocaleString('pt-BR')} km
+                  <Pencil className="w-3 h-3 opacity-60" />
+                </button>
+                <InfoAjuda chave="odometro" />
+              </div>
             )}
           </div>
 
@@ -205,80 +224,14 @@ export const MyMotorcycleView: React.FC<MyMotorcycleViewProps> = ({
       </div>
 
       {/* Itens de manutenção, do mais urgente ao sem registro */}
-      {ordenados.map((item) => {
-        const e = STATUS_STYLES[item.status];
-        const semRegistro = item.status === 'sem-registro';
-        const progresso =
-          item.intervalKm && item.kmSinceLast !== undefined
-            ? Math.min(100, Math.round((item.kmSinceLast / item.intervalKm) * 100))
-            : 0;
-
-        return (
-          <div
-            key={item.category}
-            className={`rounded-2xl bg-surface/80 border p-4 ${e.borda}`}
-          >
-            <div className="flex items-center justify-between gap-2 mb-2">
-              <h3 className="text-xs font-bold text-ink uppercase tracking-wider font-mono">
-                {item.label}
-              </h3>
-              {e.rotulo && (
-                <span className={`text-[10px] font-bold font-mono ${e.texto}`}>
-                  {e.rotulo}
-                </span>
-              )}
-            </div>
-
-            {semRegistro ? (
-              <p className="text-[11px] text-ink-faint mb-3">Sem registro ainda.</p>
-            ) : (
-              <>
-                <div className="h-1.5 rounded-full bg-elevated overflow-hidden mb-2">
-                  <div
-                    className={`h-full ${e.barra} transition-all`}
-                    style={{ width: `${progresso}%` }}
-                  />
-                </div>
-
-                {/* As duas metades da frase: o que passou e o que falta. */}
-                <p className="text-sm font-bold text-ink">
-                  rodou {item.kmSinceLast!.toLocaleString('pt-BR')} km
-                  <span className={`font-normal ${e.texto}`}>
-                    {item.kmRemaining! > 0
-                      ? ` · faltam ${item.kmRemaining!.toLocaleString('pt-BR')}`
-                      : ` · ${Math.abs(item.kmRemaining!).toLocaleString('pt-BR')} km além`}
-                  </span>
-                </p>
-
-                <p className="text-[11px] text-ink-muted mt-1">
-                  última: {item.last!.km.toLocaleString('pt-BR')} km ·{' '}
-                  {new Date(item.last!.date).toLocaleDateString('pt-BR', {
-                    day: '2-digit',
-                    month: 'short',
-                  })}
-                  {item.last!.product && ` · ${item.last!.product}`}
-                </p>
-
-                <p className="text-[10px] text-ink-faint mb-3">
-                  {describeIntervalSource(
-                    item.intervalSource!,
-                    item.intervalKm!,
-                    item.recordCount
-                  )}
-                </p>
-              </>
-            )}
-
-            <button
-              onClick={() => abrirRegistro(item.category)}
-              className="w-full py-2.5 rounded-xl bg-elevated hover:bg-line-strong text-ink text-xs font-bold border border-line-strong transition active:scale-95 flex items-center justify-center gap-1.5"
-            >
-              <Plus className="w-3.5 h-3.5 text-brand-soft" />
-              {semRegistro ? 'Registrar primeira' : `Troquei: ${item.label.toLowerCase()}`}
-            </button>
-          </div>
-        );
-      })}
+      {ordenados.map((item) => (
+        <CartaoManutencao
+          key={item.category}
+          item={item}
+          onInformarIntervalo={() => abrirIntervalo(item.category)}
+          onRegistrar={() => abrirRegistro(item.category)}
+        />
+      ))}
 
       {/* Histórico */}
       <div className="rounded-2xl bg-surface/80 border border-line overflow-hidden">
@@ -358,14 +311,20 @@ export const MyMotorcycleView: React.FC<MyMotorcycleViewProps> = ({
               .filter(([, valor]) => Boolean(valor))
               .map(([rotulo, valor]) => (
                 <div key={rotulo as string} className="flex justify-between gap-3">
-                  <span className="text-ink-faint">{rotulo}</span>
+                  <span className="text-ink-faint flex items-center gap-1.5">
+                    {rotulo}
+                    {rotulo === 'Consumo' && <InfoAjuda chave="consumo" />}
+                  </span>
                   <span className="text-ink-muted font-mono">{valor}</span>
                 </div>
               ))}
 
             {motorcycle.tankCapacityLiters && motorcycle.avgConsumptionKmL && (
               <div className="flex justify-between gap-3 pt-2 border-t border-line">
-                <span className="text-ink-faint">Autonomia estimada</span>
+                <span className="text-ink-faint flex items-center gap-1.5">
+                  Autonomia estimada
+                  <InfoAjuda chave="autonomia" />
+                </span>
                 <span className="text-brand-soft font-mono">
                   {Math.round(
                     motorcycle.tankCapacityLiters * motorcycle.avgConsumptionKmL
@@ -387,74 +346,72 @@ export const MyMotorcycleView: React.FC<MyMotorcycleViewProps> = ({
         )}
       </div>
 
-      {/* Registro: três campos, categoria vinda do cartão */}
+      {/* Registro: categoria vinda do cartão */}
       {registrando && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm">
-          <form
-            onSubmit={salvar}
-            className="w-full sm:max-w-sm bg-surface border-t sm:border border-line sm:rounded-2xl p-5 space-y-4"
-          >
-            <div className="flex items-center justify-between gap-2">
-              <h3 className="text-sm font-extrabold text-ink truncate">
-                Troquei: {MAINTENANCE_LABELS[registrando].toLowerCase()}
-              </h3>
-              <button
-                type="button"
-                onClick={() => setRegistrando(null)}
-                className="p-1.5 rounded-lg hover:bg-elevated text-ink-muted transition shrink-0"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
+        <FolhaFormulario
+          titulo={`Troquei: ${MAINTENANCE_LABELS[registrando].toLowerCase()}`}
+          onFechar={() => setRegistrando(null)}
+          onSalvar={salvar}
+        >
+          <label className="block">
+            <span className="text-[11px] text-ink-muted mb-1.5 block">Quilometragem na troca</span>
+            <input
+              type="number"
+              value={km}
+              onChange={(e) => setKm(e.target.value)}
+              required
+              autoFocus
+              className="w-full px-3 py-2.5 rounded-xl bg-canvas border border-line-strong text-ink text-sm font-mono focus:outline-none focus:border-brand/60"
+            />
+          </label>
 
-            <label className="block">
-              <span className="text-[11px] text-ink-muted mb-1.5 block">
-                Quilometragem na troca
-              </span>
-              <input
-                type="number"
-                value={km}
-                onChange={(e) => setKm(e.target.value)}
-                required
-                autoFocus
-                className="w-full px-3 py-2.5 rounded-xl bg-canvas border border-line-strong text-ink text-sm font-mono focus:outline-none focus:border-brand/60"
-              />
-            </label>
+          <label className="block">
+            <span className="text-[11px] text-ink-muted mb-1.5 block">Quando foi</span>
+            <input
+              type="date"
+              value={data}
+              onChange={(e) => setData(e.target.value)}
+              required
+              className="w-full px-3 py-2.5 rounded-xl bg-canvas border border-line-strong text-ink text-sm focus:outline-none focus:border-brand/60"
+            />
+          </label>
 
-            <label className="block">
-              <span className="text-[11px] text-ink-muted mb-1.5 block">
-                Quando foi
-              </span>
-              <input
-                type="date"
-                value={data}
-                onChange={(e) => setData(e.target.value)}
-                required
-                className="w-full px-3 py-2.5 rounded-xl bg-canvas border border-line-strong text-ink text-sm focus:outline-none focus:border-brand/60"
-              />
-            </label>
+          <label className="block">
+            <span className="text-[11px] text-ink-muted mb-1.5 block">
+              Produto usado <span className="text-ink-faint">(opcional)</span>
+            </span>
+            <input
+              value={produto}
+              onChange={(e) => setProduto(e.target.value)}
+              placeholder="ex: Motul 5100 10W40"
+              className="w-full px-3 py-2.5 rounded-xl bg-canvas border border-line-strong text-ink text-sm placeholder:text-ink-faint focus:outline-none focus:border-brand/60"
+            />
+          </label>
 
-            <label className="block">
-              <span className="text-[11px] text-ink-muted mb-1.5 block">
-                Produto usado <span className="text-ink-faint">(opcional)</span>
-              </span>
-              <input
-                value={produto}
-                onChange={(e) => setProduto(e.target.value)}
-                placeholder="ex: Motul 5100 10W40"
-                className="w-full px-3 py-2.5 rounded-xl bg-canvas border border-line-strong text-ink text-sm placeholder:text-ink-faint focus:outline-none focus:border-brand/60"
-              />
-            </label>
+          <CampoIntervalo
+            category={registrando}
+            valor={intervalo}
+            onChange={mudarIntervalo}
+            erro={erroIntervalo}
+          />
+        </FolhaFormulario>
+      )}
 
-            <button
-              type="submit"
-              className="w-full py-3 rounded-xl bg-action hover:opacity-90 text-on-action font-bold text-sm transition active:scale-95 flex items-center justify-center gap-2"
-            >
-              <Check className="w-4 h-4" />
-              Salvar
-            </button>
-          </form>
-        </div>
+      {/* Só o intervalo, sem registrar troca */}
+      {editandoIntervalo && (
+        <FolhaFormulario
+          titulo={MAINTENANCE_LABELS[editandoIntervalo]}
+          onFechar={() => setEditandoIntervalo(null)}
+          onSalvar={salvarIntervalo}
+        >
+          <CampoIntervalo
+            category={editandoIntervalo}
+            valor={intervalo}
+            onChange={mudarIntervalo}
+            erro={erroIntervalo}
+            autoFocus
+          />
+        </FolhaFormulario>
       )}
     </div>
   );
