@@ -6,6 +6,17 @@ mesmo conjunto de dados. A navegação é aberta no Google Maps ou Waze.
 
 ## O que foi integrado
 
+- Navegação **Explorar / Salvas**, com favoritos locais por aparelho ou navegador
+  (sem sincronização entre dispositivos).
+- Cards compactos e detalhes em tela própria, preservando busca, filtros, lote
+  e posição da lista ao voltar. Planejamento de gastos fica nos detalhes.
+- Filtros separados com rascunho, contagem de resultados e aplicação explícita:
+  região, extensão, pavimento e curvas. Cancelar não modifica a busca.
+- Atalhos **Perto de mim**, **Até 100 km** e **Asfalto**; ordenação por nome,
+  menor percurso ou proximidade. Proximidade exige localização disponível.
+- Resultados em lotes de 20; lista virtualizada no app e grade adaptável na web.
+  O catálogo continua sendo um snapshot local, sem paginação de servidor.
+
 - Busca por nome, cidade ou estado, filtros de pavimento e curvas.
 - Ordenação por proximidade ao início, em linha reta, quando há localização.
   No app a consulta é manual, apenas em primeiro plano, e não registra presença

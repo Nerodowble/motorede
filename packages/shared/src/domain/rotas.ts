@@ -87,6 +87,27 @@ export interface FiltrosRotas {
   pavimento?: PavimentoRota | '';
   curvas?: CurvasRota | '';
   origem?: GeoPoint | null;
+  regiao?: string;
+  extensao?: '' | 'curta' | 'media' | 'longa';
+  ordem?: 'nome' | 'extensao' | 'proximidade';
+}
+
+export const TAMANHO_LOTE_ROTAS = 20;
+export const CHAVE_ROTAS_SALVAS = 'motorede_saved_routes';
+export const ROTULOS_EXTENSAO = { curta: 'Até 100 km', media: 'Mais de 100 até 300 km', longa: 'Acima de 300 km' } as const;
+
+/** IDs locais, sem depender da versão atual do catálogo. */
+export function lerRotasSalvas(raw: string | null): string[] {
+  if (!raw) return [];
+  const valor: unknown = JSON.parse(raw);
+  if (!Array.isArray(valor) || valor.some((id) => typeof id !== 'string')) {
+    throw new Error('Formato de rotas salvas inválido.');
+  }
+  return [...new Set(valor as string[])];
+}
+
+export function alternarRotaSalva(ids: readonly string[], id: string): string[] {
+  return ids.includes(id) ? ids.filter((salvo) => salvo !== id) : [...ids, id];
 }
 function normalizar(texto: string) {
   return texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -95,13 +116,19 @@ export function buscarRotas(catalogo: readonly RotaCatalogo[], filtros: FiltrosR
   const busca = normalizar(filtros.busca?.trim() ?? '');
   return catalogo.filter((rota) =>
     (!busca || normalizar(`${rota.nome} ${rota.regiao} ${rota.inicio.cidade} ${rota.fim.cidade}`).includes(busca)) &&
+    (!filtros.regiao || rota.regiao === filtros.regiao) &&
+    (!filtros.extensao || (filtros.extensao === 'curta' ? rota.distanciaKm <= 100
+      : filtros.extensao === 'media' ? rota.distanciaKm > 100 && rota.distanciaKm <= 300 : rota.distanciaKm > 300)) &&
     (!filtros.pavimento || rota.pavimento === filtros.pavimento) &&
     (!filtros.curvas || rota.curvas === filtros.curvas)
   ).map((rota) => ({
     rota,
     distanciaInicioKm: filtros.origem ? distanceKm(filtros.origem, rota.inicio) : null,
   })).sort((a, b) => {
-    if (a.distanciaInicioKm !== null && b.distanciaInicioKm !== null) return a.distanciaInicioKm - b.distanciaInicioKm;
+    const ordem = filtros.ordem ?? (filtros.origem ? 'proximidade' : 'nome');
+    if (ordem === 'extensao' && a.rota.distanciaKm !== b.rota.distanciaKm) return a.rota.distanciaKm - b.rota.distanciaKm;
+    if (ordem === 'proximidade' && a.distanciaInicioKm !== null && b.distanciaInicioKm !== null
+      && a.distanciaInicioKm !== b.distanciaInicioKm) return a.distanciaInicioKm - b.distanciaInicioKm;
     return a.rota.nome.localeCompare(b.rota.nome, 'pt-BR');
   });
 }

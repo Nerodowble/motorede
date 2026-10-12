@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   buscarRotas, estimarCustoRota, lerNumeroRota, linksNavegacaoRota, fonteRotaSegura,
+  lerRotasSalvas, alternarRotaSalva, TAMANHO_LOTE_ROTAS,
   type RotaCatalogo,
 } from '../../packages/shared/src/domain/rotas.ts';
 import { CATALOGO_ROTAS } from '../../packages/shared/src/data/catalogoRotas.ts';
@@ -12,6 +13,44 @@ const rota: RotaCatalogo = {
   distanciaKm: 100, pavimento: 'asfalto', curvas: 'alto', trechoSemPostoKm: 60,
   pedagioIda: 12, pontosApoio: [], observacoes: [], fontes: [],
 };
+
+test('filtros de região e extensão respeitam limites e combinam com a busca', () => {
+  const catalogo = [100, 100.5, 300, 301].map((distanciaKm, i) => ({ ...rota, id: `r-${i}`, distanciaKm }));
+  assert.deepEqual(buscarRotas(catalogo, { extensao: 'curta' }).map(r => r.rota.distanciaKm), [100]);
+  assert.deepEqual(buscarRotas(catalogo, { extensao: 'media' }).map(r => r.rota.distanciaKm), [100.5, 300]);
+  assert.deepEqual(buscarRotas(catalogo, { extensao: 'longa', regiao: 'SP, Brasil', busca: 'sao', pavimento: 'asfalto', curvas: 'alto' }).map(r => r.rota.distanciaKm), [301]);
+  assert.equal(buscarRotas(catalogo, { regiao: 'RJ, Brasil' }).length, 0);
+});
+
+test('ordenação explícita permite nome e extensão mesmo com GPS disponível', () => {
+  const catalogo = [{ ...rota, id: 'a', nome: 'A', distanciaKm: 200 }, { ...rota, id: 'b', nome: 'B', distanciaKm: 50 }];
+  assert.deepEqual(buscarRotas(catalogo, { ordem: 'extensao', origem: rota.inicio }).map(r => r.rota.id), ['b', 'a']);
+  assert.deepEqual(buscarRotas(catalogo, { ordem: 'nome', origem: rota.inicio }).map(r => r.rota.id), ['a', 'b']);
+  assert.deepEqual(buscarRotas(catalogo, { ordem: 'proximidade' }).map(r => r.rota.id), ['a', 'b']);
+});
+
+test('catálogo com 1205 rotas pode ser percorrido em lotes sem duplicar ou perder IDs', () => {
+  const catalogo = Array.from({ length: 1205 }, (_, i) => ({ ...rota, id: `r-${i}`, nome: `Rota ${i}`, distanciaKm: i + 1 }));
+  const resultados = buscarRotas(catalogo, { ordem: 'extensao' });
+  assert.equal(resultados.slice(0, TAMANHO_LOTE_ROTAS).length, 20);
+  const percorridas = [];
+  for (let i = 0; i < resultados.length; i += TAMANHO_LOTE_ROTAS) percorridas.push(...resultados.slice(i, i + TAMANHO_LOTE_ROTAS));
+  assert.equal(new Set(percorridas.map(r => r.rota.id)).size, 1205);
+  assert.equal(percorridas.at(-1)?.rota.distanciaKm, 1205);
+  assert.equal(catalogo[0].id, 'r-0');
+});
+
+test('rotas salvas validam armazenamento e alternam sem modificar o estado anterior', () => {
+  assert.deepEqual(lerRotasSalvas(null), []);
+  assert.deepEqual(lerRotasSalvas('["a","a","b"]'), ['a', 'b']);
+  assert.throws(() => lerRotasSalvas('{"id":"a"}'));
+  assert.throws(() => lerRotasSalvas('["a",42]'));
+  assert.throws(() => lerRotasSalvas('quebrado'));
+  const ids = ['a'];
+  assert.deepEqual(alternarRotaSalva(ids, 'b'), ['a', 'b']);
+  assert.deepEqual(alternarRotaSalva(ids, 'a'), []);
+  assert.deepEqual(ids, ['a']);
+});
 
 test('ida e volta duplica combustível e pedágios apenas do trecho cadastrado', () => {
   const ida = estimarCustoRota(rota, 25, 6, false);

@@ -959,3 +959,20 @@ A curadoria e a ampliação ficam previstas para um projeto externo, com
 publicação versionada e importação manual. Tarifas, acessos e pontos de apoio
 da origem são identificados como não revisados pelo MotoRede. Contrato,
 limitações dos cálculos e reprodução: [rotas.md](rotas.md).
+
+## 27. Navegação no catálogo de rotas
+
+**Status:** `implementado`
+**Data:** 2026-10-12
+
+Para permitir explorar um catálogo maior, app e web passam a ter abas
+Explorar/Salvas, atalhos de busca, filtros separados com confirmação e cards
+compactos. Região, extensão, pavimento e curvas podem ser combinados; a
+ordenação permite nome, menor percurso e proximidade em linha reta.
+
+Os detalhes abrem sobre a lista preservada, com planejamento de gastos e
+navegação externa. Favoritos ficam no aparelho/navegador, sem sincronização.
+Resultados são apresentados em lotes de 20, com virtualização no app e grade
+adaptável na web. O snapshot local continua sendo a fonte dos dados; não foi
+criado serviço de busca ou paginação no servidor. A interface não menciona
+o projeto de origem; os avisos de revisão permanecem visíveis.
