@@ -4,6 +4,8 @@ Instruções para Codex, Claude e outros agentes que trabalham neste
 repositório. Leia antes de mudar qualquer coisa. Visão de produto no
 [README.md](README.md); detalhes em [docs/](docs).
 
+Para retomar o trabalho recente, leia primeiro [docs/retomada.md](docs/retomada.md).
+
 ## O que é o projeto
 
 MotoRede: comboio por voz para motociclistas (LiveKit), rede de socorro por
