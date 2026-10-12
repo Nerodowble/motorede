@@ -168,6 +168,13 @@ Push para quem está perto, sem guardar o pedido além do necessário e sem
 expor o endereço exato a desconhecidos. Regras de domínio em
 `packages/shared/src/domain/sos.ts`; servidor em `apps/web/api/_sos.ts`.
 
+**Push no Android:** o app obtém um Expo Push Token e a API envia pelo Expo
+Push, que entrega via Firebase Cloud Messaging (FCM). O Firebase é usado só
+para esse transporte, sem banco, autenticação ou Analytics. O build inclui
+`apps/mobile/google-services.json` pelo `android.googleServicesFile`; a chave
+privada FCM V1 da conta de serviço é cadastrada no EAS, nunca no repositório.
+O Web Push com VAPID continua independente do Firebase.
+
 **Presença:** enquanto o app/página está aberto e a pessoa está na rede, o
 cliente chama `POST /api/presenca` com `{ deviceId, pushToken, position }`.
 O servidor arredonda a posição para uma **célula de ~1 km**

@@ -7,6 +7,11 @@ coverage/
 .env*
 !.env.example
 
+# Credenciais privadas de envio do FCM (google-services.json é configuração pública)
+*firebase-adminsdk*.json
+service-account*.json
+apps/mobile/credentials.json
+
 # Binários de ferramentas (baixados por scripts/, não versionados)
 tools/
 

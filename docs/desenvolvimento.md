@@ -191,6 +191,29 @@ Antes de commitar: `npm run lint`, `npm run build:web` e os dois `test:*`.
 
 ### App (EAS)
 
+#### Notificações Android (FCM)
+
+- Firebase: projeto `motorede-9247a`, app Android `br.com.motorede.app`.
+- `apps/mobile/google-services.json` é a configuração pública do app,
+  referenciada por `android.googleServicesFile` em `app.json`. Não é a chave
+  privada da conta de serviço e pode ser versionada.
+- No Firebase, gere a chave em **Configurações do projeto → Contas de serviço →
+  Firebase Admin SDK → Gerar nova chave privada**. Guarde o JSON fora do
+  repositório.
+- Na conta Expo `willianvidallima`, rode `npx eas-cli credentials --platform
+  android` em `apps/mobile`, escolha `preview` → **Google Service Account** →
+  **Manage your Google Service Account Key for Push Notifications (FCM V1)**
+  e envie a chave do mesmo projeto Firebase.
+- O Expo gerencia a integração Gradle. Não adicione Firebase Analytics nem
+  os trechos genéricos de SDK sugeridos pelo console.
+- É necessário um APK novo para incluir essa configuração nativa. OTA não
+  corrige APKs antigos. Valide entrar na rede e receber um SOS em Android real;
+  os testes da API não verificam a entrega via FCM.
+
+Referência: [configurar FCM V1 no Expo](https://docs.expo.dev/push-notifications/fcm-credentials/).
+
+#### Build e atualização
+
 | Perfil (`eas.json`) | Saída | Canal OTA | Uso |
 |---|---|---|---|
 | `development` | APK com dev client | `development` | desenvolvimento com Metro |

@@ -24,8 +24,11 @@ socorro). **Mudou um contrato da API? Atualize os dois clientes.**
 - **Nada de Gemini, Google AI Studio, `GEMINI_API_KEY` ou qualquer IA.** O
   repositório nasceu de um modelo do AI Studio; isso foi removido. Se encontrar
   um resto, apague.
-- **Nada de Firebase.** O nome da pasta local (`Projetos_Firebase/...`) é só o
-  lugar onde o mantenedor guarda projetos.
+- **Firebase só como transporte FCM para o push do Android**, via Expo Push.
+  Nenhum outro serviço do Firebase é usado. `google-services.json` contém a
+  configuração pública do app; a chave privada da conta de serviço fica no EAS,
+  nunca no git. O nome da pasta local (`Projetos_Firebase/...`) é só o lugar
+  onde o mantenedor guarda projetos.
 - **Nada de Supabase em uso** (há um projeto criado, reservado para quando
   houver banco). **Não há banco de dados**: estado temporário vai no Redis
   (Upstash) com TTL; dados do piloto ficam no aparelho.

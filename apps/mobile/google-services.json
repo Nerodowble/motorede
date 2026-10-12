@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "106305756896",
+    "project_id": "motorede-9247a",
+    "storage_bucket": "motorede-9247a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:106305756896:android:d0d79cfccc727324d5ba85",
+        "android_client_info": {
+          "package_name": "br.com.motorede.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDIFdPTgk0jH5joTwDeJX1uEqp54KTM88E"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
