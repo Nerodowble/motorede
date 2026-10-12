@@ -1068,3 +1068,38 @@ Bugs achados na análise e corrigidos junto:
   no Brasil).
 - Piloto logado na web perdia km e intervalos ao recarregar: a moto do perfil
   ficava desatualizada e vencia a do armazenamento.
+
+---
+
+## 32. Ficha do modelo pesquisada por IA (plugin de IA)
+
+**Status:** `decidido` — implementado (API, web e app)
+**Data:** 2026-10-12
+
+Capacidade do tanque, óleo, intervalos do manual: cada modelo de moto tem os
+seus, e manter um acervo seria cadastrar milhares de modelos à mão. Em vez
+disso, o MotoRede pergunta a uma IA e guarda a resposta **por modelo**.
+
+- **Quem pesquisa é um "plugin de IA"**: o projeto `IA_web_crawler`, rodando no
+  computador de quem opera o servidor, igual ao plugin de música. Registrado em
+  `MOTOREDE_PLUGINS` com `"tipo": "ia"`. Ele pergunta "tem tarefa?" a cada 5 s
+  (o mesmo `aguardar`), roda a IA e devolve com `concluir`. Não entra em
+  comboio, não pareia e não aparece na lista de plugins do app.
+- **O MotoRede não chama IA nenhuma**: não há chave de IA no servidor nem no
+  app. O prompt é montado aqui (`fichaMoto.ts`), a partir de marca, modelo e
+  ano; o app não manda texto livre e ninguém usa a IA para outra coisa.
+- **O que se pergunta sai dos campos que o app já usa**: cilindrada,
+  combustível, tanque, consumo de referência, óleo (viscosidade, litros,
+  intervalo do manual) e os intervalos dos outros itens de manutenção.
+- **Cache por modelo** (Redis, 180 dias): a primeira pessoa com uma CB 500F
+  2022 espera a IA; as seguintes recebem na hora.
+- **A resposta só vale validada**: JSON com faixas plausíveis por campo. Campo
+  absurdo some sozinho; texto sem JSON é descartado; "não sei" vira `null`.
+- **Honestidade na tela**: cartão "Ficha do modelo · pesquisada por IA", com o
+  aviso de que pode estar errado, a data da pesquisa e o estado real — inclusive
+  "fora do ar" quando o computador está desligado. Nada vai para a moto sem o
+  piloto tocar em **usar**. Consumo de referência não tem "usar": o campo da
+  moto é o consumo real, medido (ver os 26,5 km/l fictícios da ideia 31).
+
+**Adiado:** validar e criar rotas com a mesma IA. Rota inventada é perigosa;
+quando vier, entra como rascunho revisado antes de ir para o catálogo.

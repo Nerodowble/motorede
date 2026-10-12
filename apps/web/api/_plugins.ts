@@ -40,6 +40,12 @@ import { redis } from './_redis.js';
  *
  * O código só vale enquanto o plugin está ligado: ele é renovado a cada
  * pergunta e expira 90 s depois que o computador desliga.
+ *
+ * PLUGIN DE IA (`"tipo": "ia"` no registro)
+ *
+ * Não entra em comboio, não pareia e não aparece na lista do app: atende o
+ * MotoRede inteiro. Usa o mesmo `aguardar` para recolher tarefas de pesquisa
+ * (ver `_fichaMoto.ts`) e o mesmo "vivo" para o app saber se a IA está no ar.
  */
 
 export interface PluginEntry {
@@ -47,6 +53,8 @@ export interface PluginEntry {
   nome: string;
   chave: string;
   salas?: string[];
+  /** Ausente = plugin de áudio. */
+  tipo?: 'ia';
 }
 
 export interface PluginInvite {
@@ -86,7 +94,8 @@ export function pluginRegistry(): PluginEntry[] {
       // Chave curta é chave adivinhável.
       e.chave.length >= 24 &&
       (e.salas === undefined ||
-        (Array.isArray(e.salas) && e.salas.every((s) => typeof s === 'string')))
+        (Array.isArray(e.salas) && e.salas.every((s) => typeof s === 'string'))) &&
+      (e.tipo === undefined || e.tipo === 'ia')
     );
   });
 }
@@ -94,6 +103,11 @@ export function pluginRegistry(): PluginEntry[] {
 export function findPlugin(id: unknown): PluginEntry | null {
   if (typeof id !== 'string') return null;
   return pluginRegistry().find((p) => p.id === id) ?? null;
+}
+
+/** O plugin de IA registrado, se houver. Um só: o primeiro da lista. */
+export function iaPlugin(): PluginEntry | null {
+  return pluginRegistry().find((p) => p.tipo === 'ia') ?? null;
 }
 
 /** Compara a chave em tempo constante, para não vazar por cronometragem. */
@@ -114,10 +128,12 @@ export function pluginFixedIn(plugin: PluginEntry, sala: string): boolean {
 export async function pluginsForRoom(sala: string): Promise<PluginEntry[]> {
   const [pareados] = await redis<string[] | null>([['SMEMBERS', `mr:plgsala:${sala}`]]);
   const ids = new Set(pareados ?? []);
-  return pluginRegistry().filter((p) => pluginFixedIn(p, sala) || ids.has(p.id));
+  return pluginRegistry().filter((p) => p.tipo !== 'ia' && (pluginFixedIn(p, sala) || ids.has(p.id)));
 }
 
 export async function pluginAllowedIn(plugin: PluginEntry, sala: string): Promise<boolean> {
+  // A IA não entra em comboio: nem chamado, nem token de sala.
+  if (plugin.tipo === 'ia') return false;
   if (pluginFixedIn(plugin, sala)) return true;
   const [membro] = await redis<number>([['SISMEMBER', `mr:plgsala:${sala}`, plugin.id]]);
   return membro === 1;
@@ -155,7 +171,7 @@ export async function pairRoom(sala: string, codigo: string): Promise<PairResult
 
   const [id] = await redis<string | null>([['GET', `mr:plgcod:${codigo}`]]);
   const plugin = id ? findPlugin(id) : null;
-  if (!plugin) {
+  if (!plugin || plugin.tipo === 'ia') {
     await redis([
       ['INCR', chaveTent],
       ['EXPIRE', chaveTent, TENTATIVAS_JANELA_SEGUNDOS],

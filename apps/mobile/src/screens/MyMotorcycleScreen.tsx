@@ -16,6 +16,7 @@ import { Ajuda, Campo, Cartao, Rotulo, TituloCartao, TituloTela, estilosBase } f
 import { Folha } from '../components/ui/Folha';
 import { InfoAjuda } from '../components/InfoAjuda';
 import { CampoIntervalo, FolhaIntervalo } from '../components/CampoIntervalo';
+import { FichaIA } from '../components/FichaIA';
 import { ALVO, COLORS, ESPACO, FONTE_CONDENSADA, RAIO, TIPO } from '../theme';
 
 /**
@@ -377,6 +378,8 @@ export const MyMotorcycleScreen: React.FC<MyMotorcycleScreenProps> = ({
           );
         })}
       </Cartao>
+
+      <FichaIA motorcycle={motorcycle} onSetInterval={onSetInterval} onSaveMotorcycle={onSaveMotorcycle} />
 
       {records.length > 0 && (
         <Cartao>

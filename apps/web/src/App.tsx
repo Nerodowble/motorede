@@ -427,6 +427,7 @@ export default function App() {
               onUpdateKm={handleUpdateKm}
               onSetInterval={handleSetInterval}
               onOpenEditMotorcycle={() => setIsMotorcycleEditOpen(true)}
+              onSaveMotorcycle={handleSaveMotorcycle}
             />
           )}
 

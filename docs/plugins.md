@@ -113,3 +113,30 @@ que é o que o app mostra antes de chamar.
 Cada plugin na sala consome minutos de participante no LiveKit, como um
 piloto. Áudio contínuo também não se beneficia do DTX (não para de tocar), então
 cada ouvinte baixa ~64 kbps a mais enquanto o plugin toca.
+
+## Plugin de IA
+
+Um plugin com `"tipo": "ia"` no registro **não é de comboio**: atende o
+MotoRede inteiro, pesquisando dados que o app pede — hoje, a ficha técnica do
+modelo da moto (ver [ideias.md, ideia 32](ideias.md) e [api.md](api.md)).
+
+```json
+[{ "id": "ia", "nome": "IA de casa", "chave": "<segredo com 24+ caracteres>", "tipo": "ia" }]
+```
+
+Ele roda atrás de roteador como qualquer plugin, então usa o mesmo
+`POST /api/plugins`, autenticado pela chave:
+
+| Ação | Corpo | Resposta |
+|---|---|---|
+| `aguardar` | `{ plugin, chave }` | `{ convites: [], tarefas: [{ id, prompt, em }] }` — e marca a IA como no ar por 20 s |
+| `concluir` | `{ plugin, chave, id, resposta? }` | `{ resultado }`: `guardada`, `sem-dados`, `invalida` ou `falhou`. Sem `resposta` = a IA falhou. `404` tarefa expirada |
+
+- O plugin recebe **só o prompt pronto** e devolve o texto da IA como veio.
+  Montar o prompt e validar a resposta é trabalho do MotoRede: o que o plugin
+  manda não é confiável até passar pela validação.
+- Tarefa não recolhida em 2 min expira. Com o computador desligado, o app
+  nem enfileira: mostra "fora do ar".
+- O plugin de IA não pareia, não recebe convite nem token de sala e não
+  aparece na lista de plugins do comboio.
+- Um só plugin de IA vale: o primeiro com `"tipo": "ia"` no registro.

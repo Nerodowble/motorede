@@ -3,6 +3,7 @@ import { AccessToken, TokenVerifier } from 'livekit-server-sdk';
 import { normalizePairCode, PLUGIN_IDENTITY_PREFIX } from '@motorede/shared';
 import { encodeMetadata } from './_livekit.js';
 import { storeConfigured } from './_redis.js';
+import { coletarTarefas, concluirTarefa } from './_fichaMoto.js';
 import {
   announceCode,
   checkPluginKey,
@@ -34,6 +35,10 @@ import {
  *
  *   aguardar   { plugin, chave, codigo? } "alguém me chamou?" (e anuncia o código)
  *   entrar     { plugin, chave, sala }    token de uma sala para a qual foi chamado
+ *   concluir   { plugin, chave, id, resposta? }  só o plugin de IA: devolve uma tarefa
+ *
+ * O plugin de IA (`"tipo": "ia"`) recebe `tarefas` no `aguardar`, em vez de
+ * convites, e nunca entra em sala. Ver `_fichaMoto.ts` e docs/plugins.md.
  *
  * O token do plugin sai SEM permissão de assinar faixas: ele publica áudio mas
  * não ouve o comboio. Sem isso, qualquer plugin viraria escuta da conversa de
@@ -47,6 +52,8 @@ interface Corpo {
   chave?: unknown;
   sala?: unknown;
   codigo?: unknown;
+  id?: unknown;
+  resposta?: unknown;
 }
 
 async function lerCorpo(req: IncomingMessage): Promise<Corpo> {
@@ -179,6 +186,13 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
         }
         if (!storeConfigured()) return responder(503, { error: 'convites não configurados' });
 
+        // A IA não pareia nem entra em comboio: só recolhe tarefas. O "vivo"
+        // vem do collectInvites, igual ao dos plugins de áudio.
+        if (plugin.tipo === 'ia') {
+          await collectInvites(plugin);
+          return responder(200, { convites: [], tarefas: await coletarTarefas(plugin) });
+        }
+
         // Código fora do formato é ignorado, não recusado: o plugin continua
         // recebendo convites dos comboios já pareados.
         const codigo = normalizePairCode(corpo.codigo);
@@ -218,6 +232,25 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
         });
 
         return responder(200, { token: await at.toJwt(), url: livekitUrl });
+      }
+
+      case 'concluir': {
+        const plugin = findPlugin(corpo.plugin);
+        if (!plugin || !checkPluginKey(plugin, corpo.chave)) {
+          return responder(401, { error: 'plugin ou chave inválidos' });
+        }
+        if (plugin.tipo !== 'ia') return responder(403, { error: 'só o plugin de IA conclui tarefas' });
+        if (!storeConfigured()) return responder(503, { error: 'tarefas não configuradas' });
+        if (typeof corpo.id !== 'string') return responder(400, { error: 'falta o id da tarefa' });
+
+        // Sem resposta (ou vazia) = a IA falhou. Texto enorme é cortado: ficha cabe em pouco.
+        const resposta =
+          typeof corpo.resposta === 'string' && corpo.resposta.trim() ? corpo.resposta.slice(0, 20_000) : null;
+        const resultado = await concluirTarefa(plugin, corpo.id, resposta);
+        if (resultado === 'desconhecida') {
+          return responder(404, { error: 'tarefa não encontrada ou expirada' });
+        }
+        return responder(200, { resultado });
       }
 
       default:

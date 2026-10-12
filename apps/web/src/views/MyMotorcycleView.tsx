@@ -14,6 +14,7 @@ import { InfoAjuda } from '../components/InfoAjuda';
 import { CampoIntervalo } from '../components/CampoIntervalo';
 import { FolhaFormulario } from '../components/FolhaFormulario';
 import { CartaoManutencao } from '../components/CartaoManutencao';
+import { FichaIA } from '../components/FichaIA';
 
 /**
  * Minha moto — uma aba só.
@@ -42,6 +43,8 @@ interface MyMotorcycleViewProps {
   /** null volta ao padrão (ou a nenhum intervalo, no óleo). */
   onSetInterval: (category: ConsumableCategory, km: number | null) => void;
   onOpenEditMotorcycle?: () => void;
+  /** Para o "usar" da ficha pesquisada por IA. Sem ela, a ficha não aparece. */
+  onSaveMotorcycle?: (moto: Motorcycle) => void;
 }
 
 export const MyMotorcycleView: React.FC<MyMotorcycleViewProps> = ({
@@ -52,6 +55,7 @@ export const MyMotorcycleView: React.FC<MyMotorcycleViewProps> = ({
   onUpdateKm,
   onSetInterval,
   onOpenEditMotorcycle,
+  onSaveMotorcycle,
 }) => {
   const [registrando, setRegistrando] = useState<ConsumableCategory | null>(null);
   const [km, setKm] = useState('');
@@ -345,6 +349,10 @@ export const MyMotorcycleView: React.FC<MyMotorcycleViewProps> = ({
           </div>
         )}
       </div>
+
+      {onSaveMotorcycle && (
+        <FichaIA motorcycle={motorcycle} onSetInterval={onSetInterval} onSaveMotorcycle={onSaveMotorcycle} />
+      )}
 
       {/* Registro: categoria vinda do cartão */}
       {registrando && (

@@ -23,9 +23,12 @@ socorro). **Mudou um contrato da API? Atualize os dois clientes.**
 
 ## O que NÃO existe aqui (contexto legado)
 
-- **Nada de Gemini, Google AI Studio, `GEMINI_API_KEY` ou qualquer IA.** O
-  repositório nasceu de um modelo do AI Studio; isso foi removido. Se encontrar
-  um resto, apague.
+- **Nenhuma IA roda ou é chamada daqui: nada de Gemini, Google AI Studio ou
+  `GEMINI_API_KEY`.** O repositório nasceu de um modelo do AI Studio; isso foi
+  removido. Se encontrar um resto, apague. A única IA do produto é o **plugin
+  de IA** (ideia 32 em [docs/ideias.md](docs/ideias.md)): um programa externo,
+  no computador de quem opera, que recolhe tarefas pela API de plugins. Aqui
+  ficam só o prompt, a validação e o cache (`fichaMoto.ts`, `_fichaMoto.ts`).
 - **Firebase só como transporte FCM para o push do Android**, via Expo Push.
   Nenhum outro serviço do Firebase é usado. `google-services.json` contém a
   configuração pública do app; a chave privada da conta de serviço fica no EAS,
@@ -68,6 +71,7 @@ deploy em [docs/desenvolvimento.md](docs/desenvolvimento.md).
 | Voz no app | `apps/mobile/src/hooks/useVoiceConnection.ts`, `screens/ConvoyScreen.tsx`, `services/foregroundService.ts` |
 | Socorro | web: `services/socorroRede.ts`, `hooks/useSocorroRede.ts`, `views/SOSRescueView.tsx` · app: `services/socorro.ts`, `hooks/useSocorro.ts`, `screens/SocorroScreen.tsx` |
 | Plugins de áudio | `hooks/usePluginAudio.ts` (nos dois), `apps/web/api/plugins.ts`, `_plugins.ts`, [docs/plugins.md](docs/plugins.md) |
+| Ficha do modelo por IA (plugin de IA) | domínio: `fichaMoto.ts` · API: `api/ficha-moto.ts`, `_fichaMoto.ts` · telas: `FichaIA.tsx` e `hooks/useFichaMoto.ts` (nos dois) |
 | Moto e manutenção | web: `views/MyMotorcycleView.tsx` · app: `screens/MyMotorcycleScreen.tsx` · domínio: `maintenance.ts` |
 | Endereços da API no app | `apps/mobile/src/config.ts` |
 | Configuração nativa do app | `apps/mobile/app.json`, `eas.json`, `plugins/withVoiceForegroundService.js` |

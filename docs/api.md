@@ -113,6 +113,23 @@ completo, regras e exemplos em [plugins.md](plugins.md). Arquivo:
 |---|---|---|
 | App/web | `listar`, `parear`, `desparear`, `convidar` | `token` do LiveKit da sessão (prova que a pessoa está na sala) |
 | Plugin | `aguardar`, `entrar` | `plugin` + `chave` registrados em `MOTOREDE_PLUGINS` |
+| Plugin de IA | `aguardar` (recebe `tarefas`), `concluir` | `plugin` + `chave`, com `"tipo": "ia"` no registro |
+
+## `POST /api/ficha-moto`
+
+Ficha técnica do modelo pesquisada pelo plugin de IA. Corpo
+`{ marca, modelo, ano }`; sem login (não leva nada da pessoa). Arquivos:
+`api/ficha-moto.ts`, `api/_fichaMoto.ts`; domínio em
+`packages/shared/src/domain/fichaMoto.ts`.
+
+| Resposta | Quando |
+|---|---|
+| `200 { estado: 'pronta', ficha, em }` | já pesquisada (cache por modelo) |
+| `200 { estado: 'pendente' }` | na fila da IA — o app pergunta de novo a cada 4 s |
+| `200 { estado: 'sem-dados' }` | a IA não soube (vale 1 dia) |
+| `200 { estado: 'falhou' }` | a última tentativa falhou (espera 2 min) |
+| `200 { estado: 'indisponivel' }` | computador da IA desligado ou sem plugin de IA registrado |
+| `400` / `429` | moto inválida / mais de 30 pesquisas novas por hora do mesmo endereço |
 
 ## Estado no Redis
 
@@ -129,3 +146,7 @@ que são limpos durante as buscas.
 | `mr:plgcod:<código>`, `mr:plgcodde:<id>` | código de pareamento | 90 s |
 | `mr:plgsala:<sala>` | plugins pareados com o comboio | 12 h |
 | `mr:plgtent:<sala>` | tentativas erradas de código | 10 min |
+| `mr:ficha:<moto>` | ficha do modelo pesquisada por IA | 180 dias (1 dia se "sem dados") |
+| `mr:fichapend:<moto>`, `mr:fichaerro:<moto>` | ficha na fila / última tentativa falhou | 5 min / 2 min |
+| `mr:iaq:<id>`, `mr:iatar:<tarefa>` | fila de tarefas do plugin de IA | 2 min / 5 min |
+| `mr:fichaip:<ip>` | pesquisas novas por endereço | 1 h |
