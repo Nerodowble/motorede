@@ -12,11 +12,12 @@ import type { NomeIcone } from './ui/Botao';
  * #64748b de antes falhava contraste e era difícil de acertar de luva.
  */
 
-export type Aba = 'comboio' | 'socorro' | 'moto' | 'ajustes';
+export type Aba = 'comboio' | 'socorro' | 'rotas' | 'moto' | 'ajustes';
 
 const ABAS: Array<{ id: Aba; rotulo: string; icone: NomeIcone; iconeAtivo: NomeIcone }> = [
   { id: 'comboio', rotulo: 'Comboio', icone: 'radio-outline', iconeAtivo: 'radio' },
   { id: 'socorro', rotulo: 'SOS', icone: 'medkit-outline', iconeAtivo: 'medkit' },
+  { id: 'rotas', rotulo: 'Rotas', icone: 'trail-sign-outline', iconeAtivo: 'trail-sign' },
   { id: 'moto', rotulo: 'Moto', icone: 'speedometer-outline', iconeAtivo: 'speedometer' },
   { id: 'ajustes', rotulo: 'Ajustes', icone: 'settings-outline', iconeAtivo: 'settings' },
 ];
@@ -61,7 +62,7 @@ export const BarraAbas: React.FC<{
     {ABAS.map(({ id, rotulo, icone, iconeAtivo }) => {
       const ativa = aba === id;
       const alerta = id === 'socorro' && sosAtivo;
-      const cor = ativa ? COLORS.ink : COLORS.inkMuted;
+      const cor = ativa ? COLORS.brandText : COLORS.inkMuted;
       return (
         <Pressable
           key={id}
@@ -72,7 +73,7 @@ export const BarraAbas: React.FC<{
           style={styles.item}
         >
           <View style={[styles.indicador, ativa && styles.indicadorAtivo]} />
-          <View style={[styles.iconeFundo, alerta && styles.iconeAlerta]}>
+          <View style={[styles.iconeFundo, ativa && styles.iconeAtivo, alerta && styles.iconeAlerta]}>
             <Ionicons
               name={ativa ? iconeAtivo : icone}
               size={24}
@@ -145,6 +146,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  iconeAtivo: { backgroundColor: COLORS.elevated },
   iconeAlerta: { backgroundColor: COLORS.sos },
   itemTexto: { fontSize: 13, fontWeight: '600' },
   itemTextoAtivo: { fontWeight: '800' },

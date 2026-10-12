@@ -12,7 +12,7 @@ import type {
 import type { EstadoRede } from '../services/socorro';
 import { ALVO, COLORS, ESPACO, RAIO, TIPO } from '../theme';
 import { Botao, type NomeIcone } from '../components/ui/Botao';
-import { Ajuda, Campo, Cartao, Rotulo, TituloCartao, estilosBase } from '../components/ui/Cartao';
+import { Ajuda, Campo, Cartao, Rotulo, TituloCartao, TituloTela, estilosBase } from '../components/ui/Cartao';
 import {
   CartaoAceites,
   CartaoChamados,
@@ -192,11 +192,16 @@ export const SocorroScreen: React.FC<SocorroScreenProps> = ({
   if (!rede.disponivel) {
     return (
       <ScrollView contentContainerStyle={estilosBase.conteudo}>
+        <TituloTela
+          sobrelinha="MOTOREDE · REDE DE APOIO"
+          titulo="Rede de socorro"
+          descricao="Peça ou ofereça ajuda a motociclistas por perto."
+        />
         <Cartao style={styles.convite}>
           <View style={styles.conviteIcone}>
             <Ionicons name="people" size={34} color={COLORS.ink} />
           </View>
-          <Text style={[TIPO.titulo, styles.centro]}>Rede de socorro</Text>
+          <Text style={[TIPO.titulo, styles.centro]}>Ative sua presença</Text>
           <Ajuda>
             Pilotos por perto recebem um aviso no celular quando você pede ajuda — e
             você recebe quando alguém precisa perto de você.
@@ -231,6 +236,10 @@ export const SocorroScreen: React.FC<SocorroScreenProps> = ({
 
   return (
     <ScrollView contentContainerStyle={estilosBase.conteudo} keyboardShouldPersistTaps="handled">
+      <TituloTela
+        sobrelinha="MOTOREDE · REDE DE APOIO"
+        titulo="Rede de socorro"
+      />
       {aceites.length > 0 && <CartaoAceites aceites={aceites} />}
       {meusPedidos.length > 0 && (
         <CartaoMeusPedidos pedidos={meusPedidos} aoEncerrar={onEncerrarPedido} />
@@ -299,6 +308,8 @@ export const SocorroScreen: React.FC<SocorroScreenProps> = ({
           value={referencia}
           onChangeText={setReferencia}
           placeholder="Imigrantes km 28, sentido litoral, acostamento"
+          accessibilityLabel="Onde você está, com palavras"
+          accessibilityHint="Descreva o local para ajudar os motociclistas a encontrar você."
         />
         {/* O GPS erra, cai, é negado. Quem vai te socorrer chega pela frase. */}
         {!!validacao.errors.reference && referencia.length > 0 && (
@@ -311,6 +322,7 @@ export const SocorroScreen: React.FC<SocorroScreenProps> = ({
           onChangeText={setTelefone}
           placeholder="(11) 98765-4321"
           keyboardType="phone-pad"
+          accessibilityLabel="Seu telefone"
         />
         <Ajuda>
           {telefone.trim()
@@ -329,6 +341,7 @@ export const SocorroScreen: React.FC<SocorroScreenProps> = ({
           }
           multiline
           style={styles.campoAlto}
+          accessibilityLabel="O que houve"
         />
 
         <Rotulo icone="radio-outline">Quem avisar</Rotulo>

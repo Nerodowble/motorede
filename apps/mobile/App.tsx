@@ -28,11 +28,13 @@ import { ConvoyScreen } from './src/screens/ConvoyScreen';
 import { MyMotorcycleScreen } from './src/screens/MyMotorcycleScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
 import { SocorroScreen } from './src/screens/SocorroScreen';
+import { RoutesScreen } from './src/screens/RoutesScreen';
 import { useSocorro } from './src/hooks/useSocorro';
 import { storage } from './src/services/storage';
 import { DEV_ROOM_CODE } from './src/config';
 import { COLORS } from './src/theme';
 import { BarraAbas, Cabecalho, type Aba } from './src/components/BarraAbas';
+import { Botao } from './src/components/ui/Botao';
 
 // Instala as APIs de WebRTC no ambiente do React Native. Precisa rodar uma vez,
 // antes de qualquer uso do LiveKit.
@@ -76,6 +78,7 @@ function Aplicativo() {
   const socorro = useSocorro();
 
   const [aba, setAba] = useState<Aba>('comboio');
+  const [estadoVoz, setEstadoVoz] = useState({ conectada: false, mudo: true });
   const [roomCode, setRoomCode] = useState(DEV_ROOM_CODE);
   const [profile, setProfile] = useState<RiderProfile | null>(null);
   const [motorcycle, setMotorcycle] = useState<Motorcycle | null>(null);
@@ -149,6 +152,7 @@ function Aplicativo() {
   }, []);
 
   const sair = useCallback(() => {
+    setEstadoVoz({ conectada: false, mudo: true });
     void auth.signOut();
     void storage.clearProfile();
     setProfile(null);
@@ -218,14 +222,23 @@ function Aplicativo() {
       />
 
       <View style={{ flex: 1 }}>
-        {aba === 'comboio' && (
+        {aba !== 'comboio' && estadoVoz.conectada && <Botao
+          rotulo={`Comboio · Microfone ${estadoVoz.mudo ? 'mudo' : 'aberto'}`}
+          accessibilityLabel={`Voltar ao comboio. Microfone ${estadoVoz.mudo ? 'mudo' : 'aberto'}`}
+          icone={estadoVoz.mudo ? 'mic-off-outline' : 'mic-outline'}
+          onPress={() => setAba('comboio')}
+          style={{ marginHorizontal: 16, marginBottom: 8, borderColor: estadoVoz.mudo ? COLORS.lineStrong : COLORS.live }}
+        />}
+        {/* Consultar rotas ou abrir o navegador não encerra a sessão de voz. */}
+        <View style={{ flex: 1, display: aba === 'comboio' ? 'flex' : 'none' }}>
           <ConvoyScreen
             roomCode={roomCode}
             onChangeRoom={trocarSala}
             displayName={profile.name}
             idToken={auth.getIdToken()}
+            onEstadoVoz={setEstadoVoz}
           />
-        )}
+        </View>
         {aba === 'socorro' && (
           <SocorroScreen
             profile={profile}
@@ -246,6 +259,7 @@ function Aplicativo() {
             onDispensar={socorro.dispensarChamado}
           />
         )}
+        {aba === 'rotas' && <RoutesScreen motorcycle={motorcycle} />}
         {aba === 'moto' && (
           <MyMotorcycleScreen
             motorcycle={motorcycle}

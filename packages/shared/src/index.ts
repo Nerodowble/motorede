@@ -7,3 +7,5 @@ export * from './domain/convoy.js';
 export * from './domain/profile.js';
 export * from './domain/sos.js';
 export * from './domain/plugins.js';
+export * from './domain/rotas.js';
+export * from './data/catalogoRotas.js';

@@ -35,6 +35,7 @@ interface ConvoyScreenProps {
   onChangeRoom: (codigo: string) => void;
   displayName: string;
   idToken: string | null;
+  onEstadoVoz?: (estado: { conectada: boolean; mudo: boolean }) => void;
 }
 
 export const ConvoyScreen: React.FC<ConvoyScreenProps> = ({
@@ -42,10 +43,14 @@ export const ConvoyScreen: React.FC<ConvoyScreenProps> = ({
   onChangeRoom,
   displayName,
   idToken,
+  onEstadoVoz,
 }) => {
   const voice = useVoiceConnection(TOKEN_ENDPOINT);
   const browser = useConvoyBrowser();
   const isLive = voice.status === 'connected' || voice.status === 'reconnecting';
+  useEffect(() => {
+    onEstadoVoz?.({ conectada: isLive, mudo: voice.isMuted });
+  }, [isLive, voice.isMuted, onEstadoVoz]);
   const pluginAudio = usePluginAudio(voice.room, voice.sessionToken);
   const souLider = voice.participants.some(
     (p) => p.isHost && p.id === voice.room?.localParticipant.identity

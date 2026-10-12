@@ -48,6 +48,7 @@ interface ConvoyVoiceViewProps {
   entrarAoAbrir?: boolean;
   /** Avisa que o pedido foi atendido, para não reconectar numa volta à aba. */
   onEntradaAutomaticaFeita?: () => void;
+  onEstadoVoz?: (estado: { conectada: boolean; mudo: boolean }) => void;
 }
 
 export const ConvoyVoiceView: React.FC<ConvoyVoiceViewProps> = ({
@@ -57,6 +58,7 @@ export const ConvoyVoiceView: React.FC<ConvoyVoiceViewProps> = ({
   onToggleBackgroundSession,
   entrarAoAbrir,
   onEntradaAutomaticaFeita,
+  onEstadoVoz,
 }) => {
   const [showQRModal, setShowQRModal] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
@@ -66,6 +68,9 @@ export const ConvoyVoiceView: React.FC<ConvoyVoiceViewProps> = ({
   const auth = useGoogleAuth();
   const googleButtonRef = useRef<HTMLDivElement | null>(null);
   const isLive = voice.status === 'connected' || voice.status === 'reconnecting';
+  useEffect(() => {
+    onEstadoVoz?.({ conectada: isLive, mudo: voice.isMuted });
+  }, [isLive, voice.isMuted, onEstadoVoz]);
   const pluginAudio = usePluginAudio(voice.room, voice.sessionToken);
   const souLider = voice.participants.some(
     (p) => p.isHost && p.id === voice.room?.localParticipant.identity
@@ -154,7 +159,13 @@ export const ConvoyVoiceView: React.FC<ConvoyVoiceViewProps> = ({
   // nova renderização — sem ele sairia uma segunda tentativa de conexão.
   const entradaAutomaticaFeita = useRef(false);
   useEffect(() => {
-    if (!entrarAoAbrir || entradaAutomaticaFeita.current) return;
+    // A tela agora sobrevive à troca de aba; um novo clique no painel deve
+    // poder entrar novamente depois que o piloto saiu do comboio.
+    if (!entrarAoAbrir) {
+      entradaAutomaticaFeita.current = false;
+      return;
+    }
+    if (entradaAutomaticaFeita.current) return;
     entradaAutomaticaFeita.current = true;
     onEntradaAutomaticaFeita?.();
     if (voice.status === 'disconnected' || voice.status === 'error') void handleToggleLive();

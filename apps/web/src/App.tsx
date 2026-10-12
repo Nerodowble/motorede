@@ -27,6 +27,7 @@ import { DashboardView } from './views/DashboardView';
 const ConvoyVoiceView = lazy(() => import('./views/ConvoyVoiceView').then((m) => ({ default: m.ConvoyVoiceView })));
 const SOSRescueView = lazy(() => import('./views/SOSRescueView').then((m) => ({ default: m.SOSRescueView })));
 const MyMotorcycleView = lazy(() => import('./views/MyMotorcycleView').then((m) => ({ default: m.MyMotorcycleView })));
+const RoutesView = lazy(() => import('./views/RoutesView').then((m) => ({ default: m.RoutesView })));
 const DiagnosticView = lazy(() => import('./views/DiagnosticView').then((m) => ({ default: m.DiagnosticView })));
 const PartnerShopView = lazy(() => import('./views/PartnerShopView').then((m) => ({ default: m.PartnerShopView })));
 const AdminView = lazy(() => import('./views/AdminView').then((m) => ({ default: m.AdminView })));
@@ -45,11 +46,9 @@ export default function App() {
   const [isMotorcycleEditOpen, setIsMotorcycleEditOpen] = useState(false);
   // Folha "Mais": aberta pela barra de baixo e pelo avatar do cabeçalho.
   const [isMoreOpen, setIsMoreOpen] = useState(false);
-  // "Entrar no comboio" do painel. A conexão de voz é UMA e mora na tela do
-  // comboio (useVoiceConnection dentro de ConvoyVoiceView); o painel não abre
-  // outra. Ele liga esta bandeira e troca de aba, e a tela do comboio conecta
-  // ao abrir e apaga a bandeira. Subir a conexão para o App seria o caminho
-  // "certo", mas mexe no ciclo de vida da voz — fica para depois.
+  // "Entrar no comboio" do painel usa a mesma conexão da tela de comboio.
+  // Após a primeira visita a tela permanece montada entre abas: consultar
+  // rotas não pode desligar o microfone no meio da conversa.
   const [entrarNoComboioAoAbrir, setEntrarNoComboioAoAbrir] = useState(false);
   const [currentRole, setCurrentRole] = useState<UserRole>(() => currentUser?.role || 'rider');
   const [activeTab, setActiveTab] = useState<ActiveTab>(() => {
@@ -57,6 +56,11 @@ export default function App() {
     if (currentUser?.role === 'admin') return 'admin';
     return 'dashboard';
   });
+  const [comboioVisitado, setComboioVisitado] = useState(false);
+  const [estadoVoz, setEstadoVoz] = useState({ conectada: false, mudo: true });
+  useEffect(() => {
+    if (activeTab === 'convoy') setComboioVisitado(true);
+  }, [activeTab]);
 
   // Application Data States (lazy initializers so localStorage is parsed only once)
   // null enquanto o piloto não cadastrar. Antes o app entregava uma moto de
@@ -266,6 +270,10 @@ export default function App() {
   };
 
   const handleLogout = () => {
+    setEstadoVoz({ conectada: false, mudo: true });
+    setActiveTab('dashboard');
+    setComboioVisitado(false);
+    setEntrarNoComboioAoAbrir(false);
     storageService.logout();
     setCurrentUser(null);
     if (auth.isConfigured) {
@@ -308,6 +316,10 @@ export default function App() {
 
       {/* Main View Container */}
       <main className="flex-1 w-full max-w-5xl mx-auto">
+        {activeTab !== 'convoy' && estadoVoz.conectada && <button
+          onClick={() => setActiveTab('convoy')}
+          className={`mx-4 mt-3 min-h-14 px-4 rounded-xl border bg-surface text-ink font-bold ${estadoVoz.mudo ? 'border-line-strong' : 'border-live'}`}
+        >Voltar ao comboio · Microfone {estadoVoz.mudo ? 'mudo' : 'aberto'}</button>}
         {activeTab === 'dashboard' && (
           <DashboardView
             motorcycle={motorcycle}
@@ -331,7 +343,8 @@ export default function App() {
             </div>
           }
         >
-          {activeTab === 'convoy' && (
+          {/* Preserva a conexão ao consultar rotas e outras abas. */}
+          {(activeTab === 'convoy' || comboioVisitado) && <div key={currentUser?.id ?? 'local'} hidden={activeTab !== 'convoy'}>
             <ConvoyVoiceView
               voiceRoom={voiceRoom}
               onUpdateVoiceRoom={(patch) => {
@@ -352,8 +365,9 @@ export default function App() {
               }}
               entrarAoAbrir={entrarNoComboioAoAbrir}
               onEntradaAutomaticaFeita={() => setEntrarNoComboioAoAbrir(false)}
+              onEstadoVoz={setEstadoVoz}
             />
-          )}
+          </div>}
 
           {activeTab === 'sos' && (
             <SOSRescueView
@@ -373,6 +387,8 @@ export default function App() {
           
 
           
+
+          {activeTab === 'routes' && <RoutesView motorcycle={motorcycle} origem={userCoords} />}
 
           {activeTab === 'motorcycle' && (
             <MyMotorcycleView
@@ -444,7 +460,7 @@ export default function App() {
         onTabChange={(tab) => setActiveTab(tab)}
         userRole={currentRole}
         activeSOSCount={activeSOSCount}
-        isVoiceActive={isBackgroundAudioActive}
+        isVoiceActive={estadoVoz.conectada}
         onOpenMore={() => setIsMoreOpen(true)}
         isMoreOpen={isMoreOpen}
       />

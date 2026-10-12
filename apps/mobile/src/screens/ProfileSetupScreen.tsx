@@ -78,6 +78,8 @@ export const ProfileSetupScreen: React.FC<ProfileSetupScreenProps> = ({
           setErros((e) => ({ ...e, [chave]: undefined }));
         }}
         placeholder={placeholder}
+        accessibilityLabel={rotulo}
+        accessibilityHint={erros[chave]}
         keyboardType={teclado}
         autoCapitalize={chave === 'name' ? 'words' : 'none'}
         autoCorrect={false}

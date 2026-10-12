@@ -136,7 +136,7 @@ export const BotaoIcone: React.FC<{
 
 const styles = StyleSheet.create({
   base: {
-    borderRadius: RAIO.md,
+    borderRadius: RAIO.lg,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
   texto: { fontSize: 16, fontWeight: '800' },
   textoCompacto: { fontSize: 14 },
   inativo: { opacity: 0.4 },
-  pressionado: { opacity: 0.75 },
+  pressionado: { opacity: 0.82, transform: [{ scale: 0.99 }] },
   icone: {
     width: ALVO.min,
     height: ALVO.min,

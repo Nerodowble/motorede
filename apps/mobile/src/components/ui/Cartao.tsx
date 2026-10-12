@@ -90,21 +90,34 @@ export const Ajuda: React.FC<{ children: React.ReactNode; cor?: string }> = ({
   cor,
 }) => <Text style={[TIPO.apoio, cor ? { color: cor } : null]}>{children}</Text>;
 
+/** Cabeçalho editorial compartilhado das telas. */
+export const TituloTela: React.FC<{
+  sobrelinha: string;
+  titulo: string;
+  descricao?: string;
+}> = ({ sobrelinha, titulo, descricao }) => (
+  <View style={styles.tituloTela}>
+    <Text style={styles.sobrelinha}>{sobrelinha}</Text>
+    <Text style={styles.tituloTelaTexto}>{titulo}</Text>
+    {descricao && <Ajuda>{descricao}</Ajuda>}
+  </View>
+);
+
 export const estilosBase = StyleSheet.create({
-  conteudo: { padding: ESPACO.lg, gap: ESPACO.md, paddingBottom: ESPACO.xxl },
+  conteudo: { padding: ESPACO.xl - 4, gap: ESPACO.lg, paddingBottom: ESPACO.xxl },
   linhaBotoes: { flexDirection: 'row', gap: ESPACO.md },
-  erro: { color: COLORS.dangerText, fontSize: 13, lineHeight: 18 },
+  erro: { color: COLORS.dangerText, fontSize: 14, lineHeight: 20 },
   divisoria: { height: 1, backgroundColor: COLORS.line },
 });
 
 const styles = StyleSheet.create({
   cartao: {
     backgroundColor: COLORS.surface,
-    borderRadius: RAIO.lg,
+    borderRadius: RAIO.lg + 2,
     borderWidth: 1,
     borderColor: COLORS.line,
-    padding: ESPACO.lg,
-    gap: ESPACO.md,
+    padding: ESPACO.xl - 2,
+    gap: ESPACO.lg,
   },
   linhaRotulo: { flexDirection: 'row', alignItems: 'center', gap: ESPACO.sm },
   linhaTitulo: { flexDirection: 'row', alignItems: 'center', gap: ESPACO.md },
@@ -129,4 +142,12 @@ const styles = StyleSheet.create({
     color: COLORS.ink,
     fontSize: 16,
   },
+  tituloTela: { gap: ESPACO.xs, paddingTop: ESPACO.xs, paddingBottom: ESPACO.sm },
+  sobrelinha: {
+    color: COLORS.inkMuted,
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 1.5,
+  },
+  tituloTelaTexto: { color: COLORS.ink, fontSize: 28, fontWeight: '800', letterSpacing: -0.5 },
 });

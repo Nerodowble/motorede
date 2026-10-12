@@ -8,6 +8,7 @@ import {
   LogOut,
   UserRound,
   Palette,
+  Route,
 } from 'lucide-react';
 import type { UserProfile, UserRole } from '@motorede/shared';
 import type { ThemeChoice } from '../hooks/useTheme';
@@ -96,6 +97,19 @@ export const MoreSheet: React.FC<MoreSheetProps> = ({
             <X className="w-5 h-5" />
           </button>
         </div>
+
+        <section>
+          <h3 className={tituloSecao}>Planejar uma saída</h3>
+          <button onClick={fecharE(() => onTabChange('routes'))}
+            className={`${linha} ${activeTab === 'routes' ? 'border-brand/40' : ''}`}
+            aria-current={activeTab === 'routes' ? 'page' : undefined}>
+            <span className="flex items-center gap-3 min-w-0">
+              <Route className="w-5 h-5 shrink-0" />
+              <span><span className="block text-sm font-bold">Rotas</span><span className="block text-xs text-ink-muted">Roteiros, combustível e pedágios</span></span>
+            </span>
+            <ChevronRight className="w-4 h-4 text-ink-faint shrink-0" />
+          </button>
+        </section>
 
         {/* Ferramentas. Diagnóstico é só do piloto; admin e oficina já têm a
             triagem (ou não precisam dela) nas próprias abas. */}

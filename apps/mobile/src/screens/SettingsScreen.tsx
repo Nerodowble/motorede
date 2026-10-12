@@ -1,11 +1,11 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Updates from 'expo-updates';
 import type { RiderProfile } from '@motorede/shared';
-import { COLORS, ESPACO, TIPO } from '../theme';
+import { ALVO, COLORS, ESPACO, TIPO } from '../theme';
 import { Botao, type NomeIcone } from '../components/ui/Botao';
-import { Ajuda, Cartao, TituloCartao, estilosBase } from '../components/ui/Cartao';
+import { Ajuda, Cartao, TituloCartao, TituloTela, estilosBase } from '../components/ui/Cartao';
 import { storage, type ModoAudio } from '../services/storage';
 
 /**
@@ -43,6 +43,7 @@ type EstadoBusca =
 export const SettingsScreen: React.FC<SettingsScreenProps> = ({ profile, onSair }) => {
   const [estado, setEstado] = useState<EstadoBusca>({ fase: 'parado' });
   const [modoAudio, setModoAudio] = useState<ModoAudio>('conversa');
+  const [diagnosticoAberto, setDiagnosticoAberto] = useState(false);
 
   useEffect(() => {
     void storage.getModoAudio().then(setModoAudio);
@@ -100,6 +101,11 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ profile, onSair 
 
   return (
     <ScrollView contentContainerStyle={estilosBase.conteudo}>
+      <TituloTela
+        sobrelinha="CONTA E PREFERÊNCIAS"
+        titulo="Ajustes"
+        descricao="Personalize o app e confira sua conta."
+      />
       <Cartao>
         <View style={styles.perfil}>
           <View style={styles.avatar}>
@@ -198,18 +204,39 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ profile, onSair 
       </Cartao>
 
       <Cartao>
-        <TituloCartao icone="information-circle-outline">Versão</TituloCartao>
-        <Linha rotulo="App" valor={Updates.runtimeVersion ?? '—'} />
-        <Linha rotulo="Canal" valor={Updates.channel ?? 'nenhum (build local)'} />
-        <Linha
-          rotulo="Pacote em uso"
-          valor={Updates.isEmbeddedLaunch ? 'o que veio no APK' : 'baixado depois'}
-        />
-        <Linha rotulo="Identificador" valor={Updates.updateId ?? '—'} />
-        <Ajuda>
-          O identificador muda a cada atualização aplicada. Se ele continuar igual
-          depois de reiniciar, a atualização não entrou.
-        </Ajuda>
+        <Pressable
+          onPress={() => setDiagnosticoAberto((aberto) => !aberto)}
+          accessibilityRole="button"
+          accessibilityLabel="Informações técnicas do app"
+          accessibilityState={{ expanded: diagnosticoAberto }}
+          style={styles.diagnosticoTopo}
+        >
+          <View style={{ flex: 1 }}>
+            <TituloCartao icone="information-circle-outline">Informações técnicas</TituloCartao>
+          </View>
+          <Ionicons
+            name={diagnosticoAberto ? 'chevron-up' : 'chevron-down'}
+            size={20}
+            color={COLORS.inkMuted}
+          />
+        </Pressable>
+        {diagnosticoAberto ? (
+          <>
+            <Linha rotulo="App" valor={Updates.runtimeVersion ?? '—'} />
+            <Linha rotulo="Canal" valor={Updates.channel ?? 'nenhum (build local)'} />
+            <Linha
+              rotulo="Pacote em uso"
+              valor={Updates.isEmbeddedLaunch ? 'o que veio no APK' : 'baixado depois'}
+            />
+            <Linha rotulo="Identificador" valor={Updates.updateId ?? '—'} />
+            <Ajuda>
+              O identificador muda a cada atualização aplicada. Se ele continuar igual
+              depois de reiniciar, a atualização não entrou.
+            </Ajuda>
+          </>
+        ) : (
+          <Ajuda>Versão, canal de atualização e identificador do app.</Ajuda>
+        )}
       </Cartao>
 
       {/* Sair mora aqui, e não mais no cabeçalho: apaga o perfil deste
@@ -263,4 +290,5 @@ const styles = StyleSheet.create({
   status: { fontSize: 14, color: COLORS.inkMuted, lineHeight: 20 },
   statusBom: { color: COLORS.ink, flex: 1 },
   statusRuim: { color: COLORS.dangerText },
+  diagnosticoTopo: { flexDirection: 'row', alignItems: 'center', minHeight: ALVO.botao },
 });

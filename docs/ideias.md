@@ -943,3 +943,19 @@ Junto com isso, a documentação foi refeita (README, `AGENTS.md`,
 `docs/arquitetura.md`, `docs/api.md`, `docs/desenvolvimento.md`) e os restos do
 modelo do Google AI Studio (Gemini, `metadata.json`, dependências sem uso)
 foram removidos.
+
+## 26. Rotas do BikerWay no MotoRede
+
+**Status:** `implementado — catálogo inicial pendente de revisão`
+**Data:** 2026-10-12
+
+App e web compartilham um catálogo inicial de 15 rotas importadas do BikerWay,
+busca por nome/cidade/estado, filtros de pavimento e curvas, custo do trecho
+com combustível e pedágios, orçamento e autonomia planejados. A navegação é
+aberta em Google Maps ou Waze. O MotoRede mantém seu formato e não incorpora
+um mapa próprio. A consulta a rotas preserva a tela de comboio montada.
+
+A curadoria e a ampliação ficam previstas para um projeto externo, com
+publicação versionada e importação manual. Tarifas, acessos e pontos de apoio
+da origem são identificados como não revisados pelo MotoRede. Contrato,
+limitações dos cálculos e reprodução: [rotas.md](rotas.md).

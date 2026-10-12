@@ -17,6 +17,7 @@ export type ActiveTab =
   | 'convoy'
   | 'sos'
   | 'motorcycle'
+  | 'routes'
   | 'diagnostic'
   | 'partner_shop'
   | 'admin';
@@ -93,7 +94,7 @@ export const Navigation: React.FC<NavigationProps> = ({
   const itens = itensPorPapel();
   // Para o piloto, o diagnóstico vive no "Mais": acender o Mais é o jeito de
   // dizer onde ele está.
-  const maisAtivo = isMoreOpen || (userRole === 'rider' && activeTab === 'diagnostic');
+  const maisAtivo = isMoreOpen || activeTab === 'routes' || (userRole === 'rider' && activeTab === 'diagnostic');
 
   const botaoAba = (item: NavItem, desktop: boolean) => {
     const Icon = item.icon;

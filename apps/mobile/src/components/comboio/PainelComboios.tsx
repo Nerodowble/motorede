@@ -66,7 +66,22 @@ export const PainelComboios: React.FC<{
 
       <ScrollView style={{ maxHeight: 360 }}>
         {browser.isLoading && <ActivityIndicator color={COLORS.ink} style={{ padding: ESPACO.lg }} />}
-        {!browser.isLoading && browser.convoys.length === 0 && (
+        {!!browser.error && (
+          <View style={styles.erroRede}>
+            <Ionicons name="cloud-offline-outline" size={20} color={COLORS.dangerText} />
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={styles.erroTitulo}>Não foi possível atualizar</Text>
+              <Text style={styles.erroTexto}>Confira sua conexão e tente novamente.</Text>
+            </View>
+            <Botao
+              rotulo="Tentar"
+              icone="refresh"
+              compacto
+              onPress={() => void browser.refresh({ idToken })}
+            />
+          </View>
+        )}
+        {!browser.isLoading && !browser.error && browser.convoys.length === 0 && (
           <EstadoVazio icone="radio-outline" texto="Nenhum comboio ativo no momento." />
         )}
         {browser.convoys.map((c) => (
@@ -120,4 +135,14 @@ const styles = StyleSheet.create({
   codigo: { color: COLORS.ink, fontSize: 18, fontWeight: '800', letterSpacing: 1.5 },
   aqui: { flexDirection: 'row', alignItems: 'center', gap: ESPACO.xs },
   aquiTexto: { color: COLORS.brandText, fontSize: 13, fontWeight: '700' },
+  erroRede: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: ESPACO.sm,
+    paddingVertical: ESPACO.md,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.line,
+  },
+  erroTitulo: { color: COLORS.ink, fontSize: 14, fontWeight: '700' },
+  erroTexto: { color: COLORS.inkMuted, fontSize: 13, lineHeight: 18 },
 });

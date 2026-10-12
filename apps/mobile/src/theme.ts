@@ -106,10 +106,10 @@ export const FONTE_CONDENSADA = Platform.select({
 
 /** Tipografia com hierarquia fixa: título, seção, corpo, apoio, rótulo. */
 export const TIPO = {
-  titulo: { fontSize: 24, fontWeight: '800' as const, color: COLORS.ink },
-  tituloCard: { fontSize: 18, fontWeight: '800' as const, color: COLORS.ink },
-  corpo: { fontSize: 15, color: COLORS.ink },
-  apoio: { fontSize: 13, lineHeight: 19, color: COLORS.inkMuted },
+  titulo: { fontSize: 28, fontWeight: '800' as const, color: COLORS.ink, letterSpacing: -0.5 },
+  tituloCard: { fontSize: 19, fontWeight: '800' as const, color: COLORS.ink },
+  corpo: { fontSize: 16, color: COLORS.ink },
+  apoio: { fontSize: 14, lineHeight: 20, color: COLORS.inkMuted },
   // Caixa-alta com espaçamento: nomeia a seção sem competir com o conteúdo.
   rotulo: {
     fontSize: 12,

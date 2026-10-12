@@ -11,9 +11,9 @@ import {
   type Motorcycle,
 } from '@motorede/shared';
 import { Botao, BotaoIcone, type NomeIcone } from '../components/ui/Botao';
-import { Ajuda, Campo, Cartao, Rotulo, TituloCartao, estilosBase } from '../components/ui/Cartao';
+import { Ajuda, Campo, Cartao, Rotulo, TituloCartao, TituloTela, estilosBase } from '../components/ui/Cartao';
 import { Folha } from '../components/ui/Folha';
-import { COLORS, ESPACO, FONTE_CONDENSADA, RAIO, TIPO } from '../theme';
+import { ALVO, COLORS, ESPACO, FONTE_CONDENSADA, RAIO, TIPO } from '../theme';
 
 /**
  * Minha moto — a mesma tela da web, adaptada ao app.
@@ -111,13 +111,14 @@ export const MyMotorcycleScreen: React.FC<MyMotorcycleScreenProps> = ({
 
           {cadastrando ? (
             <View style={styles.formulario}>
-              <Campo value={marca} onChangeText={setMarca} placeholder="Marca (ex: Honda)" />
-              <Campo value={modelo} onChangeText={setModelo} placeholder="Modelo (ex: CB 500X)" />
+              <Campo value={marca} onChangeText={setMarca} placeholder="Marca (ex: Honda)" accessibilityLabel="Marca" />
+              <Campo value={modelo} onChangeText={setModelo} placeholder="Modelo (ex: CB 500X)" accessibilityLabel="Modelo" />
               <Campo
                 value={kmInicial}
                 onChangeText={setKmInicial}
                 placeholder="Quilometragem atual"
                 keyboardType="number-pad"
+                accessibilityLabel="Quilometragem atual"
               />
               <Botao rotulo="Salvar" variante="action" onPress={salvarCadastro} />
             </View>
@@ -169,6 +170,11 @@ export const MyMotorcycleScreen: React.FC<MyMotorcycleScreenProps> = ({
 
   return (
     <ScrollView contentContainerStyle={estilosBase.conteudo} keyboardShouldPersistTaps="handled">
+      <TituloTela
+        sobrelinha="GARAGEM DO PILOTO"
+        titulo="Sua moto"
+        descricao="Quilometragem e manutenção em um só lugar."
+      />
       {/* Painel da moto: nome em cima, o odômetro como número grande. */}
       <Cartao>
         <TituloCartao icone="speedometer">
@@ -182,6 +188,7 @@ export const MyMotorcycleScreen: React.FC<MyMotorcycleScreenProps> = ({
               keyboardType="number-pad"
               autoFocus
               style={[styles.campoKm, { flex: 1 }]}
+              accessibilityLabel="Quilometragem atual da moto"
             />
             <Botao
               rotulo="Salvar"
@@ -216,78 +223,77 @@ export const MyMotorcycleScreen: React.FC<MyMotorcycleScreenProps> = ({
         )}
       </Cartao>
 
-      {sortByUrgency(maintenance).map((item) => {
-        const cor = CORES_STATUS[item.status];
-        const semRegistro = item.status === 'sem-registro';
-        const progresso =
-          item.intervalKm && item.kmSinceLast !== undefined
-            ? Math.min(100, Math.round((item.kmSinceLast / item.intervalKm) * 100))
-            : 0;
+      <Cartao>
+        <TituloCartao icone="construct-outline">Plano de manutenção</TituloCartao>
+        {sortByUrgency(maintenance).map((item, indice) => {
+          const cor = CORES_STATUS[item.status];
+          const semRegistro = item.status === 'sem-registro';
+          const progresso =
+            item.intervalKm && item.kmSinceLast !== undefined
+              ? Math.min(100, Math.round((item.kmSinceLast / item.intervalKm) * 100))
+              : 0;
 
-        return (
-          <Cartao
-            key={item.category}
-            destaque={item.status === 'vencido' ? COLORS.dangerText : undefined}
-          >
-            <Rotulo
-              direita={
-                ROTULOS_STATUS[item.status] !== '' && (
-                  <View style={styles.status}>
+          return (
+            <View key={item.category} style={styles.itemManutencao}>
+              {indice > 0 && <View style={estilosBase.divisoria} />}
+              <View style={styles.topoManutencao}>
+                <View style={{ flex: 1, gap: ESPACO.xs }}>
+                  <Text style={styles.nomeManutencao}>{item.label}</Text>
+                  <View style={[styles.status, item.status === 'vencido' && styles.statusVencido]}>
                     <Ionicons name={ICONES_STATUS[item.status]} size={16} color={cor} />
                     <Text style={[styles.statusTexto, { color: cor }]}>
-                      {ROTULOS_STATUS[item.status]}
+                      {ROTULOS_STATUS[item.status] || 'sem registro'}
                     </Text>
                   </View>
-                )
-              }
-            >
-              {item.label.toUpperCase()}
-            </Rotulo>
-
-            {semRegistro ? (
-              <Ajuda>Sem registro ainda.</Ajuda>
-            ) : (
-              <>
-                {/* As duas metades da frase: o que passou e o que falta. */}
-                <Text style={styles.frase}>
-                  rodou {item.kmSinceLast!.toLocaleString('pt-BR')} km
-                  <Text
-                    style={[
-                      styles.fraseResto,
-                      { color: item.status === 'ok' ? COLORS.inkMuted : cor },
-                    ]}
-                  >
-                    {item.kmRemaining! > 0
-                      ? ` · faltam ${item.kmRemaining!.toLocaleString('pt-BR')}`
-                      : ` · ${Math.abs(item.kmRemaining!).toLocaleString('pt-BR')} km além`}
-                  </Text>
-                </Text>
-
-                <View style={styles.trilha}>
-                  <View style={[styles.barra, { width: `${progresso}%`, backgroundColor: cor }]} />
                 </View>
+                <Botao
+                  rotulo={semRegistro ? 'Registrar' : 'Registrar troca'}
+                  icone="add"
+                  compacto
+                  altura={ALVO.min}
+                  onPress={() => abrirRegistro(item.category)}
+                  accessibilityLabel={
+                    semRegistro
+                      ? `Registrar primeira troca: ${item.label}`
+                      : `Registrar troca: ${item.label}`
+                  }
+                />
+              </View>
 
-                <Text style={styles.detalhe}>
-                  última: {item.last!.km.toLocaleString('pt-BR')} km ·{' '}
-                  {new Date(item.last!.date).toLocaleDateString('pt-BR')}
-                  {item.last!.product ? ` · ${item.last!.product}` : ''}
-                </Text>
-
-                <Text style={styles.origem}>
-                  {describeIntervalSource(item.intervalSource!, item.intervalKm!, item.recordCount)}
-                </Text>
-              </>
-            )}
-
-            <Botao
-              rotulo={semRegistro ? 'Registrar primeira' : `Troquei: ${item.label.toLowerCase()}`}
-              icone="add"
-              compacto
-              onPress={() => abrirRegistro(item.category)}
-            />
-          </Cartao>
-        );
-      })}
+              {semRegistro ? (
+                <Ajuda>Adicione a primeira troca para acompanhar o intervalo.</Ajuda>
+              ) : (
+                <>
+                  <Text style={styles.frase}>
+                    rodou {item.kmSinceLast!.toLocaleString('pt-BR')} km
+                    <Text
+                      style={[
+                        styles.fraseResto,
+                        { color: item.status === 'ok' ? COLORS.inkMuted : cor },
+                      ]}
+                    >
+                      {item.kmRemaining! > 0
+                        ? ` · faltam ${item.kmRemaining!.toLocaleString('pt-BR')}`
+                        : ` · ${Math.abs(item.kmRemaining!).toLocaleString('pt-BR')} km além`}
+                    </Text>
+                  </Text>
+                  <View style={styles.trilha}>
+                    <View style={[styles.barra, { width: `${progresso}%`, backgroundColor: cor }]} />
+                  </View>
+                  <Text style={styles.detalhe}>
+                    última: {item.last!.km.toLocaleString('pt-BR')} km ·{' '}
+                    {new Date(item.last!.date).toLocaleDateString('pt-BR')}
+                    {item.last!.product ? ` · ${item.last!.product}` : ''}
+                  </Text>
+                  <Text style={styles.origem}>
+                    {describeIntervalSource(item.intervalSource!, item.intervalKm!, item.recordCount)}
+                  </Text>
+                </>
+              )}
+            </View>
+          );
+        })}
+      </Cartao>
 
       {records.length > 0 && (
         <Cartao>
@@ -317,10 +323,10 @@ export const MyMotorcycleScreen: React.FC<MyMotorcycleScreenProps> = ({
         titulo={`Troquei: ${registrando ? MAINTENANCE_LABELS[registrando].toLowerCase() : ''}`}
       >
         <Rotulo>QUILOMETRAGEM NA TROCA</Rotulo>
-        <Campo value={km} onChangeText={setKm} keyboardType="number-pad" style={styles.campoKm} />
+        <Campo value={km} onChangeText={setKm} keyboardType="number-pad" style={styles.campoKm} accessibilityLabel="Quilometragem da troca" />
 
         <Rotulo>PRODUTO USADO (OPCIONAL)</Rotulo>
-        <Campo value={produto} onChangeText={setProduto} placeholder="ex: Motul 5100 10W40" />
+        <Campo value={produto} onChangeText={setProduto} placeholder="ex: Motul 5100 10W40" accessibilityLabel="Produto usado (opcional)" />
 
         <Botao rotulo="Salvar" variante="action" onPress={salvarRegistro} />
         <Botao rotulo="Cancelar" variante="fantasma" onPress={() => setRegistrando(null)} />
@@ -331,6 +337,9 @@ export const MyMotorcycleScreen: React.FC<MyMotorcycleScreenProps> = ({
 
 const styles = StyleSheet.create({
   convite: { alignItems: 'center', paddingVertical: ESPACO.xl, gap: ESPACO.lg },
+  itemManutencao: { gap: ESPACO.md, paddingTop: ESPACO.md },
+  topoManutencao: { flexDirection: 'row', alignItems: 'center', gap: ESPACO.md },
+  nomeManutencao: { color: COLORS.ink, fontSize: 17, fontWeight: '800' },
   conviteIcone: {
     width: 72,
     height: 72,
@@ -353,7 +362,13 @@ const styles = StyleSheet.create({
   },
   kmUnidade: { color: COLORS.inkMuted, fontSize: 18, fontWeight: '700' },
   campoKm: { fontSize: 20, fontWeight: '700' },
-  status: { flexDirection: 'row', alignItems: 'center', gap: ESPACO.xs },
+  status: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: ESPACO.xs },
+  statusVencido: {
+    paddingHorizontal: ESPACO.sm,
+    paddingVertical: ESPACO.xs,
+    borderRadius: RAIO.pill,
+    backgroundColor: COLORS.sosTint,
+  },
   statusTexto: { fontSize: 13, fontWeight: '800' },
   trilha: {
     height: 8,
@@ -365,7 +380,7 @@ const styles = StyleSheet.create({
   frase: { color: COLORS.ink, fontSize: 18, fontWeight: '800' },
   fraseResto: { fontWeight: '600' },
   detalhe: { color: COLORS.inkMuted, fontSize: 13 },
-  origem: { color: COLORS.inkFaint, fontSize: 12 },
+  origem: { color: COLORS.inkMuted, fontSize: 13 },
   linhaHistorico: {
     flexDirection: 'row',
     alignItems: 'center',
