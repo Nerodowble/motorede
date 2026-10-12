@@ -1,5 +1,6 @@
 // Importado por scripts/importar-catalogo-bikerway.mjs; revisão das fontes ainda pendente.
 import type { RotaCatalogo } from '../domain/rotas.js';
+import { revisarRotaCatalogo } from './revisoesRotas.js';
 
 export const ORIGEM_CATALOGO_ROTAS = {
   "projeto": "BikerWay",
@@ -8,7 +9,7 @@ export const ORIGEM_CATALOGO_ROTAS = {
   "versao": 1
 } as const;
 
-export const CATALOGO_ROTAS: readonly RotaCatalogo[] = [
+export const CATALOGO_ROTAS: readonly RotaCatalogo[] = ([
   {
     "id": "serra-do-rio-do-rastro-sc",
     "nome": "Serra do Rio do Rastro (SC-390)",
@@ -1047,4 +1048,4 @@ export const CATALOGO_ROTAS: readonly RotaCatalogo[] = [
       "https://www.openstreetmap.org/"
     ]
   }
-];
+] satisfies RotaCatalogo[]).map(revisarRotaCatalogo);

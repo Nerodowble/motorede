@@ -35,6 +35,7 @@ export interface RotaCatalogo {
   melhorEpoca?: string;
   observacoes: string[];
   fontes: string[];
+  restricaoMoto?: { motivo: string; fonte: string };
 }
 
 export const ROTULOS_PAVIMENTO: Record<PavimentoRota, string> = {
@@ -141,12 +142,13 @@ export function fonteRotaSegura(url: string): boolean {
 }
 const coordenada = (ponto: GeoPoint) => encodeURIComponent(`${ponto.lat},${ponto.lng}`);
 
-/** URLs universais; Waze recebe apenas o início, sem prometer um roteiro. */
+/** A viagem usa o início como parada e o fim como destino. O Maps resolve a origem atual. */
 export function linksNavegacaoRota(rota: RotaCatalogo) {
   const inicio = coordenada(rota.inicio);
   return {
+    googleViagem: rota.restricaoMoto ? null : `https://www.google.com/maps/dir/?api=1&destination=${coordenada(rota.fim)}&waypoints=${inicio}&travelmode=driving`,
     googleInicio: `https://www.google.com/maps/dir/?api=1&destination=${inicio}&travelmode=driving&dir_action=navigate`,
     wazeInicio: `https://waze.com/ul?ll=${inicio}&navigate=yes`,
-    googleTrecho: `https://www.google.com/maps/dir/?api=1&origin=${inicio}&destination=${coordenada(rota.fim)}&travelmode=driving`,
+    googleTrecho: rota.restricaoMoto ? null : `https://www.google.com/maps/dir/?api=1&origin=${inicio}&destination=${coordenada(rota.fim)}&travelmode=driving`,
   };
 }

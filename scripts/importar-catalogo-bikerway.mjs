@@ -58,7 +58,8 @@ const catalogo = bruto.map((r) => {
 const destino = fileURLToPath(new URL('../packages/shared/src/data/catalogoRotas.ts', import.meta.url));
 mkdirSync(dirname(destino), { recursive: true });
 writeFileSync(destino, `// Importado por scripts/importar-catalogo-bikerway.mjs; revisão das fontes ainda pendente.\n` +
-  `import type { RotaCatalogo } from '../domain/rotas.js';\n\n` +
+  `import type { RotaCatalogo } from '../domain/rotas.js';\n` +
+  `import { revisarRotaCatalogo } from './revisoesRotas.js';\n\n` +
   `export const ORIGEM_CATALOGO_ROTAS = ${JSON.stringify({ projeto: 'BikerWay', url: 'https://github.com/Nerodowble/BikerWay', commit, versao: 1 }, null, 2)} as const;\n\n` +
-  `export const CATALOGO_ROTAS: readonly RotaCatalogo[] = ${JSON.stringify(catalogo, null, 2)};\n`, 'utf8');
+  `export const CATALOGO_ROTAS: readonly RotaCatalogo[] = (${JSON.stringify(catalogo, null, 2)} satisfies RotaCatalogo[]).map(revisarRotaCatalogo);\n`, 'utf8');
 console.log(`${catalogo.length} rotas importadas em ${resolve(destino)}`);

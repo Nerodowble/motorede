@@ -123,17 +123,37 @@ test('proximidade usa linha reta e não modifica o catálogo nem o custo', () =>
 test('links externos distinguem aproximação ao início e trecho início-fim', () => {
   const links = linksNavegacaoRota(rota);
   const inicio = new URL(links.googleInicio);
+  assert.ok(links.googleTrecho);
   const trecho = new URL(links.googleTrecho);
+  assert.ok(links.googleViagem);
+  const viagem = new URL(links.googleViagem);
   const waze = new URL(links.wazeInicio);
   assert.equal(inicio.searchParams.get('api'), '1');
   assert.equal(inicio.searchParams.get('destination'), '-23,-46');
   assert.equal(inicio.searchParams.has('origin'), false);
   assert.equal(trecho.searchParams.get('origin'), '-23,-46');
   assert.equal(trecho.searchParams.get('destination'), '-24,-47');
+  assert.equal(viagem.searchParams.get('api'), '1');
+  assert.equal(viagem.searchParams.get('destination'), '-24,-47');
+  assert.equal(viagem.searchParams.get('waypoints'), '-23,-46');
+  assert.equal(viagem.searchParams.has('origin'), false);
+  assert.equal(viagem.searchParams.get('travelmode'), 'driving');
   assert.equal(waze.searchParams.get('ll'), '-23,-46');
   assert.equal(waze.searchParams.get('navigate'), 'yes');
   assert.equal(fonteRotaSegura('javascript:alert(1)'), false);
   assert.equal(fonteRotaSegura('https://example.com/rota'), true);
+});
+
+test('Caminho do Mar expõe a restrição e não oferece travessia de moto', () => {
+  const caminho = CATALOGO_ROTAS.find(r => r.id === 'caminho-do-mar-sp-148-sp');
+  assert.ok(caminho?.restricaoMoto);
+  assert.equal(caminho.restricaoMoto.fonte, 'https://caminhosdomar.com.br/sua-visita');
+  assert.ok(!caminho.descricao?.includes('conta e risco'));
+  assert.ok(!caminho.observacoes.some(o => o.includes('conta e risco')));
+  const links = linksNavegacaoRota(caminho);
+  assert.equal(links.googleViagem, null);
+  assert.equal(links.googleTrecho, null);
+  assert.equal(new URL(links.googleInicio).searchParams.get('destination'), `${caminho.inicio.lat},${caminho.inicio.lng}`);
 });
 
 test('catálogo importado tem IDs únicos, coordenadas válidas e pedágios consistentes', () => {

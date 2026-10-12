@@ -27,8 +27,14 @@ mesmo conjunto de dados. A navegação é aberta no Google Maps ou Waze.
   calculada por um serviço de roteamento.
 - Comparação com orçamento e autonomia planejados, pontos de apoio,
   observações e fontes disponíveis na origem.
-- Links distintos para chegar ao início e consultar início → fim. O navegador
-  decide o percurso; esses links não garantem passagem pela estrada catalogada.
+- **Montar viagem · Google Maps** abre origem atual (ou informada no Maps) →
+  início como parada → final como destino, numa única solicitação. Há também
+  links distintos para somente chegar ao início e consultar início → fim.
+  O Waze recebe somente o início. Pontos de apoio não viram paradas automáticas:
+  podem ser desvios ou locais sem acesso de moto.
+  O navegador decide o percurso; esses links não garantem passagem pela estrada
+  catalogada. Alguns produtos Google Maps ignoram paradas intermediárias;
+  confira os pontos e o trajeto antes de iniciar.
 - A tela de comboio permanece montada durante a consulta a outras abas para
   preservar a sessão de voz. Um aviso informa o estado do microfone e permite
   voltar ao comboio. Sair da conta desmonta a sessão. Tela bloqueada
@@ -38,6 +44,19 @@ Os cálculos não incluem aproximação, retorno por outro caminho, desvios ou
 pedágios fora do trecho cadastrado. Sem consumo, preço ou tarifa conhecidos,
 o custo total aparece como não calculado. Zero sem detalhamento explícito na
 origem é tratado como tarifa desconhecida.
+
+### Restrições e correções locais
+
+`packages/shared/src/data/revisoesRotas.ts` aplica correções após importar o
+snapshot, preservando-as numa nova importação. O Caminho do Mar tem restrição
+de circulação de veículos particulares no trecho de serra; sua ficha informa
+essa condição e não oferece viagem completa, travessia ou cálculo do trecho
+como passeio de moto. O link de aproximação vai somente ao início cadastrado,
+sem prometer acesso ao parque. Consulte o [operador](https://caminhosdomar.com.br/sua-visita).
+
+Os links do Google Maps não devolvem quilômetros, tempo ou tarifas ao MotoRede.
+Para estimar o total dentro do app é necessária uma integração de roteamento
+rodoviário; não se deve somar a distância em linha reta aos quilômetros do catálogo.
 
 ## Origem e curadoria externa
 

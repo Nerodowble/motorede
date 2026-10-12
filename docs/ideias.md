@@ -976,3 +976,17 @@ Resultados são apresentados em lotes de 20, com virtualização no app e grade
 adaptável na web. O snapshot local continua sendo a fonte dos dados; não foi
 criado serviço de busca ou paginação no servidor. A interface não menciona
 o projeto de origem; os avisos de revisão permanecem visíveis.
+
+## 28. Viagem com aproximação e passeio no navegador
+
+**Status:** `implementado no navegador externo; cálculo total no MotoRede pendente`
+**Data:** 2026-10-12
+
+O link principal passa a solicitar origem atual → início como parada → fim
+como destino no Google Maps. Os links para somente o início ficam explícitos;
+Waze continua oferecendo somente a aproximação. O cálculo interno de gastos
+permanece limitado ao trecho cadastrado, sem inventar distância rodoviária.
+
+O Caminho do Mar foi corrigido com restrição explícita para motos no trecho
+de serra, fonte oficial e remoção do incentivo a atravessá-lo por conta e risco.
+Correções locais são aplicadas após importar o catálogo, para não serem perdidas.

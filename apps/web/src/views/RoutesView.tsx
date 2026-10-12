@@ -105,6 +105,15 @@ export function RoutesView({ motorcycle, origem: origemInicial }: { motorcycle: 
   const renderDetalhe = () => {
     const rota = rotaSelecionada;
     if (!rota) return null;
+    if (rota.restricaoMoto) return <div className="space-y-5">
+      <h1 className="text-3xl font-extrabold">{rota.nome}</h1>
+      <h2 className="text-xl font-bold">Trecho com acesso restrito para motos</h2>
+      <p role="alert" className="text-ink">{rota.restricaoMoto.motivo}</p>
+      <p className="text-ink-muted">{rota.descricao}</p>
+      <p className="text-ink-muted">Um desvio sugerido pelo navegador até a cidade final não representa este passeio.</p>
+      <LinkExterno href={rota.restricaoMoto.fonte}>Consultar acesso no site oficial</LinkExterno>
+      <LinkExterno href={linksNavegacaoRota(rota).googleInicio}>Ir somente ao início cadastrado · Google Maps</LinkExterno>
+    </div>;
     const custo = estimarCustoRota(rota, lerNumeroRota(consumo), lerNumeroRota(preco), idaVolta, lerNumeroRota(orcamento), lerNumeroRota(autonomia));
     const links = linksNavegacaoRota(rota);
     return <div className="space-y-6">
@@ -117,7 +126,7 @@ export function RoutesView({ motorcycle, origem: origemInicial }: { motorcycle: 
       <p className="text-sm text-ink-muted border-l-2 border-line-strong pl-3">{AVISO_CATALOGO_ROTAS}</p>
       {rota.descricao && <p className="text-ink-muted leading-relaxed">{rota.descricao}</p>}
       <section className={cartao} aria-label="Planejamento de gastos">
-        <h2 className="text-xl font-bold">Planejar gastos</h2>
+        <h2 className="text-xl font-bold">Gastos do trecho cadastrado</h2>
         <div className="grid sm:grid-cols-2 gap-4">
           <Numero rotulo="Consumo da moto (km/l)" valor={consumo} mudar={setConsumo} placeholder="Informe sua média" />
           <Numero rotulo="Preço do combustível (R$/l)" valor={preco} mudar={setPreco} placeholder="Informe o preço local" />
@@ -155,8 +164,10 @@ export function RoutesView({ motorcycle, origem: origemInicial }: { motorcycle: 
             {rota.pontosApoio.length === 0 && <p className="text-sm text-ink-muted">Nenhum ponto cadastrado.</p>}
           </section>
           {rota.observacoes.length > 0 && <section className="space-y-2"><h2 className="font-bold text-ink">Observações da origem · não verificadas</h2><ul className="list-disc pl-5 space-y-2 text-sm text-ink-muted">{rota.observacoes.map((o, i) => <li key={i}>{o}</li>)}</ul></section>}
-          <section className="space-y-2"><h2 className="font-bold text-ink">Navegação</h2><p className="text-sm text-ink-muted">{AVISO_NAVEGACAO_ROTAS}</p>
-            <div className="flex flex-wrap gap-3"><LinkExterno href={links.googleInicio}>Ir ao início · Google Maps</LinkExterno><LinkExterno href={links.wazeInicio}>Ir ao início · Waze</LinkExterno><LinkExterno href={links.googleTrecho}>Ver início → fim · Google Maps</LinkExterno></div>
+          <section className="space-y-2"><h2 className="font-bold text-ink">Navegação</h2>
+            <p className="text-sm text-ink-muted">Monte uma única viagem: sua localização → {rota.inicio.cidade} (início) → {rota.fim.cidade} (final). O Google Maps usa sua posição atual ou solicita o ponto de partida.</p>
+            <p className="text-sm text-ink-muted">{AVISO_NAVEGACAO_ROTAS}</p>
+            <div className="flex flex-wrap gap-3">{links.googleViagem && <LinkExterno href={links.googleViagem}>Montar viagem · Google Maps</LinkExterno>}<LinkExterno href={links.googleInicio}>Somente até o início · Google Maps</LinkExterno><LinkExterno href={links.wazeInicio}>Somente até o início · Waze</LinkExterno>{links.googleTrecho && <LinkExterno href={links.googleTrecho}>Ver início → fim · Google Maps</LinkExterno>}</div>
           </section>
           {rota.fontes.filter(fonteRotaSegura).length > 0 && <section className="space-y-2"><h2 className="font-bold text-ink">Fontes e referências</h2><div className="flex flex-wrap gap-2">{rota.fontes.filter(fonteRotaSegura).map((fonte, i) => <LinkExterno key={fonte} href={fonte}>Fonte {i + 1}</LinkExterno>)}</div></section>}
         </div>
@@ -184,6 +195,7 @@ export function RoutesView({ motorcycle, origem: origemInicial }: { motorcycle: 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">{resultados.slice(0, limite).map(({ rota, distanciaInicioKm }) => <article key={rota.id} className="group rounded-2xl border border-line bg-surface p-5 flex flex-col gap-3 hover:border-line-strong transition-colors">
         <div className="flex items-center gap-3"><span className="rounded-xl p-3 bg-elevated text-brand"><Route size={22} aria-hidden="true" /></span><span className="flex-1 text-xs font-bold uppercase tracking-wide text-ink-muted">{rota.regiao}</span><button disabled={!salvas.pronto} className="min-h-12 min-w-12 inline-flex items-center justify-center rounded-xl hover:bg-elevated" aria-pressed={idsSalvos.has(rota.id)} aria-label={`${idsSalvos.has(rota.id) ? 'Remover das salvas' : 'Salvar rota'}: ${rota.nome}`} onClick={() => salvas.alternar(rota.id)}><Bookmark size={22} fill={idsSalvos.has(rota.id) ? 'currentColor' : 'none'} aria-hidden="true" /></button></div>
         <h3 className="text-xl font-bold leading-snug">{rota.nome}</h3><p className="text-sm text-ink-muted">{rota.inicio.cidade} → {rota.fim.cidade}</p>
+        {rota.restricaoMoto && <p className="text-sm text-danger">Trecho com acesso restrito para motos</p>}
         <div className="flex flex-wrap gap-x-3 gap-y-2 text-sm"><span className="font-bold text-ink">{rota.distanciaKm} km</span><span className="text-ink-muted">{ROTULOS_PAVIMENTO[rota.pavimento]}</span><span className="text-ink-muted">{ROTULOS_CURVAS[rota.curvas]}</span></div>
         {distanciaInicioKm !== null && <p className="text-xs text-ink-muted">Início a {distanciaInicioKm.toFixed(1)} km em linha reta</p>}
         <button className="mt-auto pt-4 min-h-12 flex items-center justify-between gap-3 border-t border-line font-bold text-sm text-ink" aria-label={`Ver detalhes de ${rota.nome}`} onClick={() => setAberta(rota.id)}>Conhecer rota<ArrowUpRight size={18} aria-hidden="true" /></button>

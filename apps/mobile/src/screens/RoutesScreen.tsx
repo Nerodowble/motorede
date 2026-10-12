@@ -103,6 +103,15 @@ export function RoutesScreen({ motorcycle }: { motorcycle: Motorcycle | null }) 
   const renderDetalhe = () => {
     const rota = rotaSelecionada;
     if (!rota) return null;
+    if (rota.restricaoMoto) return <Cartao>
+      <Text style={TIPO.titulo}>{rota.nome}</Text>
+      <TituloCartao icone="alert-circle-outline">Trecho com acesso restrito para motos</TituloCartao>
+      <Text style={TIPO.corpo} accessibilityRole="alert">{rota.restricaoMoto.motivo}</Text>
+      <Ajuda>{rota.descricao}</Ajuda>
+      <Ajuda>Um desvio sugerido pelo navegador até a cidade final não representa este passeio.</Ajuda>
+      <Botao rotulo="Consultar acesso no site oficial" icone="open-outline" onPress={() => void abrir(rota.restricaoMoto!.fonte)} />
+      <Botao rotulo="Ir somente ao início cadastrado · Google Maps" onPress={() => void abrir(linksNavegacaoRota(rota).googleInicio)} />
+    </Cartao>;
     const custo = estimarCustoRota(rota, lerNumeroRota(consumo), lerNumeroRota(preco), idaVolta, lerNumeroRota(orcamento), lerNumeroRota(autonomia));
     const links = linksNavegacaoRota(rota);
     const distanciaInicioKm = resultados.find(r => r.rota.id === rota.id)?.distanciaInicioKm ?? null;
@@ -113,7 +122,7 @@ export function RoutesScreen({ motorcycle }: { motorcycle: Motorcycle | null }) 
         <Ajuda>{rota.distanciaKm} km de ida · {ROTULOS_PAVIMENTO[rota.pavimento]} · {ROTULOS_CURVAS[rota.curvas]}</Ajuda>
         {distanciaInicioKm !== null && <Ajuda>Início a {distanciaInicioKm.toFixed(1)} km em linha reta</Ajuda>}
         {rota.descricao && <Ajuda>{rota.descricao}</Ajuda>}
-        <TituloCartao icone="calculator-outline">Planejar gastos</TituloCartao>
+        <TituloCartao icone="calculator-outline">Gastos do trecho cadastrado</TituloCartao>
         <Numero rotulo="Consumo da moto (km/l)" valor={consumo} mudar={setConsumo} placeholder="Informe sua média" />
         <Numero rotulo="Preço do combustível (R$/l)" valor={preco} mudar={setPreco} placeholder="Informe o preço local" />
         <View style={styles.linha}>
@@ -151,10 +160,12 @@ export function RoutesScreen({ motorcycle }: { motorcycle: Motorcycle | null }) 
           {rota.pontosApoio.length === 0 && <Ajuda>Nenhum ponto cadastrado.</Ajuda>}
           {rota.observacoes.length > 0 && <><TituloCartao>Observações da origem · não verificadas</TituloCartao>{rota.observacoes.map((o, i) => <Ajuda key={i}>• {o}</Ajuda>)}</>}
           <TituloCartao icone="navigate-outline">Navegação</TituloCartao>
+          <Ajuda>Monte uma única viagem: sua localização → {rota.inicio.cidade} (início) → {rota.fim.cidade} (final). O Google Maps usa sua posição atual ou solicita o ponto de partida.</Ajuda>
           <Ajuda>{AVISO_NAVEGACAO_ROTAS}</Ajuda>
-          <Botao rotulo="Ir ao início · Google Maps" icone="navigate-outline" variante="action" onPress={() => void abrir(links.googleInicio)} />
-          <Botao rotulo="Ir ao início · Waze" icone="open-outline" onPress={() => void abrir(links.wazeInicio)} />
-          <Botao rotulo="Ver início → fim · Google Maps" icone="open-outline" onPress={() => void abrir(links.googleTrecho)} />
+          {links.googleViagem && <Botao rotulo="Montar viagem · Google Maps" icone="navigate-outline" variante="action" onPress={() => void abrir(links.googleViagem!)} />}
+          <Botao rotulo="Somente até o início · Google Maps" icone="open-outline" onPress={() => void abrir(links.googleInicio)} />
+          <Botao rotulo="Somente até o início · Waze" icone="open-outline" onPress={() => void abrir(links.wazeInicio)} />
+          {links.googleTrecho && <Botao rotulo="Ver início → fim · Google Maps" icone="open-outline" onPress={() => void abrir(links.googleTrecho!)} />}
           {rota.fontes.filter(fonteRotaSegura).length > 0 && <><TituloCartao>Fontes e referências</TituloCartao>{rota.fontes.filter(fonteRotaSegura).map((fonte, i) => <Botao key={fonte} rotulo={`Consultar fonte ${i + 1}`} icone="open-outline" onPress={() => void abrir(fonte)} />)}</>}
 
     </Cartao>;
@@ -200,6 +211,7 @@ export function RoutesScreen({ motorcycle }: { motorcycle: Motorcycle | null }) 
         </View>
         <Pressable accessibilityRole="button" accessibilityLabel={`Ver detalhes de ${rota.nome}`} onPress={() => setAberta(rota.id)} style={styles.campo}>
           <Text style={TIPO.tituloCard}>{rota.nome}</Text><Ajuda>{rota.inicio.cidade} → {rota.fim.cidade}</Ajuda>
+          {rota.restricaoMoto && <Ajuda cor={COLORS.dangerText}>Trecho com acesso restrito para motos</Ajuda>}
           <View style={styles.metricas}><Text style={TIPO.corpo}>{rota.distanciaKm} km</Text><Text style={TIPO.apoio}>{ROTULOS_PAVIMENTO[rota.pavimento]}</Text><Text style={TIPO.apoio}>{ROTULOS_CURVAS[rota.curvas]}</Text></View>
           {distanciaInicioKm !== null && <Ajuda>Início a {distanciaInicioKm.toFixed(1)} km em linha reta</Ajuda>}
           <View style={styles.detalhes}><Text style={[TIPO.corpo, { flex: 1, fontWeight: '700' }]}>Conhecer rota</Text><Ionicons name="arrow-forward" size={20} color={COLORS.ink} /></View>
