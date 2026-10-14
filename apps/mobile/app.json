@@ -2,7 +2,7 @@
   "expo": {
     "name": "MotoRede",
     "slug": "motorede",
-    "version": "0.3.1",
+    "version": "0.4.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "motorede",
@@ -88,6 +88,14 @@
         "expo-notifications",
         {
           "color": "#FC0D0A"
+        }
+      ],
+      "expo-sharing",
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": false,
+          "photosPermission": "O MotoRede usa a foto que você escolher para criar a capa da sua moto."
         }
       ]
     ],

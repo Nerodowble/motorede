@@ -1194,3 +1194,49 @@ O usuário pediu todos os pontos no app, em cards separados das rotas.
   local no Google Maps, que acha o estabelecimento.
 - O MotoRede não carimba nem registra passaporte: só aponta onde ir.
   Ideia em aberto: marcar no app quais carimbos o piloto já tem.
+
+## 36. Capa da moto feita pela IA do próprio piloto
+
+**Status:** `implementado` — testado no aparelho com o APK 0.4.0
+**Data:** 2026-10-13
+
+O piloto sobe uma foto da moto e recebe uma "capa" estilo tela de seleção de
+jogo de corrida (garagem americana, câmera baixa), que vira o topo do painel
+da moto. Prompt de origem: documento "Prompt Universal Garagem Cinematográfica".
+
+**Caminhos descartados (e por quê):**
+
+- **Plugin de IA gerando imagem** (Gemini pelo navegador automatizado): o
+  Gemini anônimo não gera imagem; exigiria a conta do operador, com cota
+  diária, selo e zona cinzenta nos termos.
+- **API paga** (~US$ 0,04 por imagem): viável, mas o usuário preferiu custo zero.
+- **Usar a conta Google do piloto por automação**: o login com Google do app
+  só dá identidade, não acesso ao Gemini. Exigiria senha ou sessão do piloto —
+  o Google bloqueia, arrisca a conta dele e é dado que não se deve guardar.
+- **raphael.app sem login**: funcionou uma vez (~1 min, 544×736, marca d'água,
+  só uso não comercial) e na segunda já pediu login — limite por IP. Contornar
+  o limite violaria os termos.
+
+**Decisão:** assistente guiado. O MotoRede monta o prompt, copia para a área
+de transferência e entrega a foto **direto** ao app escolhido (Gemini, ChatGPT
+ou Meta AI) por um módulo nativo pequeno (`apps/mobile/modules/compartilhar-ia`;
+o expo-intent-launcher não serve). O piloto cola, envia, salva a imagem e
+escolhe ela de volta. Conta e cota são dele; o MotoRede não guarda chave de IA.
+
+- A IA gera **sem texto**; o painel "GARAGE / BIKE SELECT" com marca, modelo,
+  ano e apelido é desenhado pelo app, para sair exato. Sem barras de
+  "Agility/Style": seriam números inventados (ver ideia 31).
+- Capa guardada só no aparelho (app: `Paths.document/capas`; web: data URL
+  reduzida no localStorage). Compartilhar a moto com outros vai exigir subir
+  a imagem para um armazenamento de arquivos.
+- O progresso do assistente fica salvo: Android barato fecha o app enquanto o
+  piloto está na IA, e ele volta direto ao passo de escolher a imagem.
+
+- Marca d'água (pino + "MOTOREDE") no canto de cima à direita, desenhada pelo
+  app como o painel. Ao compartilhar a moto, gerar a imagem final já com os dois.
+- O prompt deixa a IA mudar posição e ângulo da moto, nunca os atributos.
+
+**Teste no aparelho (2026-10-13):** Gemini e Meta AI recebem a foto direto.
+O ChatGPT abria sem a foto quando recebia foto e texto juntos; passou a
+receber só a foto (`enviaTexto: false`), com a dica de anexar pelo "+" se
+ela não aparecer.

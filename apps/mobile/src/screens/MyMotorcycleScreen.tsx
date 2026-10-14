@@ -1,25 +1,27 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import {
   MAINTENANCE_LABELS,
-  describeMeasuredHint,
-  describeRemaining,
   parseAnoMoto,
   parseIntervalKm,
-  sortByUrgency,
   type ConsumableCategory,
   type MaintenanceItemStatus,
   type MaintenanceRecord,
   type Motorcycle,
 } from '@motorede/shared';
-import { Botao, BotaoIcone, type NomeIcone } from '../components/ui/Botao';
-import { Ajuda, Campo, Cartao, Rotulo, TituloCartao, TituloTela, estilosBase } from '../components/ui/Cartao';
+import { Botao, BotaoIcone } from '../components/ui/Botao';
+import { Campo, Cartao, Rotulo, estilosBase } from '../components/ui/Cartao';
 import { Folha } from '../components/ui/Folha';
 import { InfoAjuda } from '../components/InfoAjuda';
 import { CampoIntervalo, FolhaIntervalo } from '../components/CampoIntervalo';
 import { FichaIA } from '../components/FichaIA';
-import { ALVO, COLORS, ESPACO, FONTE_CONDENSADA, RAIO, TIPO } from '../theme';
+import { PlanoManutencao } from '../components/moto/PlanoManutencao';
+import { CapaMoto } from '../components/capa/CapaMoto';
+import { AssistenteCapa } from '../components/capa/AssistenteCapa';
+import { FolhaOpcoesCapa } from '../components/capa/FolhaOpcoesCapa';
+import { apagarImagem, escolherDaGaleria, guardarImagem, lerProgresso, type ProgressoCapa } from '../services/capaMoto';
+import { COLORS, ESPACO, FONTE_CONDENSADA, TIPO } from '../theme';
 
 /**
  * Minha moto — a mesma tela da web, adaptada ao app.
@@ -43,40 +45,6 @@ interface MyMotorcycleScreenProps {
   onSetInterval: (category: ConsumableCategory, km: number | null) => void;
 }
 
-/*
- * Status sem âmbar e sem verde: essas duas cores já querem dizer "falando" e
- * "microfone aberto". O que distingue o status é ícone + palavra + cor da
- * barra, em escala de atenção: vencido (vermelho claro), se aproximando
- * (branco, cheio), em dia (cinza, calmo).
- */
-const emKm = (n: number) => `${n.toLocaleString('pt-BR')} km`;
-
-const CORES_STATUS: Record<MaintenanceItemStatus['status'], string> = {
-  vencido: COLORS.dangerText,
-  'hora-de-trocar': COLORS.dangerText,
-  proximo: COLORS.ink,
-  ok: COLORS.inkFaint,
-  'sem-intervalo': COLORS.inkMuted,
-  'sem-registro': COLORS.inkFaint,
-};
-
-const ICONES_STATUS: Record<MaintenanceItemStatus['status'], NomeIcone> = {
-  vencido: 'alert-circle',
-  'hora-de-trocar': 'alert-circle',
-  proximo: 'time',
-  ok: 'checkmark-circle',
-  'sem-intervalo': 'help-circle-outline',
-  'sem-registro': 'ellipse-outline',
-};
-
-const ROTULOS_STATUS: Record<MaintenanceItemStatus['status'], string> = {
-  vencido: 'vencido',
-  'hora-de-trocar': 'hora de trocar',
-  proximo: 'se aproximando',
-  ok: 'em dia',
-  'sem-intervalo': 'falta o intervalo',
-  'sem-registro': '',
-};
 
 export const MyMotorcycleScreen: React.FC<MyMotorcycleScreenProps> = ({
   motorcycle,
@@ -101,6 +69,19 @@ export const MyMotorcycleScreen: React.FC<MyMotorcycleScreenProps> = ({
   const [erroAno, setErroAno] = useState(false);
   const [editandoKm, setEditandoKm] = useState(false);
   const [kmMoto, setKmMoto] = useState('');
+  const [assistente, setAssistente] = useState<ProgressoCapa | null>(null);
+  const [opcoesCapa, setOpcoesCapa] = useState<'todas' | 'apelido' | null>(null);
+  const motoId = motorcycle?.id;
+
+  // O Android pode ter fechado o app enquanto o piloto estava na IA: retoma o assistente.
+  useEffect(() => {
+    if (!motoId) return;
+    void lerProgresso(motoId).then((p) => {
+      if (p && (p.passo === 'naIa' || p.passo === 'gerada' || p.passo === 'pronto')) {
+        setAssistente(p.passo === 'naIa' ? { ...p, passo: 'gerada' } : p);
+      }
+    });
+  }, [motoId]);
 
   const salvarCadastro = () => {
     if (!marca.trim() || !modelo.trim()) return;
@@ -239,18 +220,26 @@ export const MyMotorcycleScreen: React.FC<MyMotorcycleScreenProps> = ({
     setRegistrando(null);
   };
 
+  const trocarCapa = async () => {
+    setOpcoesCapa(null);
+    const uri = await escolherDaGaleria();
+    if (!uri) return;
+    const nova = await guardarImagem(uri, 'capa');
+    if (motorcycle.coverImageUrl !== nova) apagarImagem(motorcycle.coverImageUrl);
+    onSaveMotorcycle({ ...motorcycle, coverImageUrl: nova, coverUpdatedAt: new Date().toISOString() });
+  };
+
   return (
     <ScrollView contentContainerStyle={estilosBase.conteudo} keyboardShouldPersistTaps="handled">
-      <TituloTela
-        sobrelinha="GARAGEM DO PILOTO"
-        titulo="Sua moto"
-        descricao="Quilometragem e manutenção em um só lugar."
+      {/* A capa substitui o título: o nome da moto já está nela. */}
+      <CapaMoto
+        motorcycle={motorcycle}
+        aoCriar={() => setAssistente({ passo: 'convite' })}
+        aoOpcoes={() => setOpcoesCapa('todas')}
+        aoDarApelido={() => setOpcoesCapa('apelido')}
       />
-      {/* Painel da moto: nome em cima, o odômetro como número grande. */}
+      {/* Odômetro como número grande, logo abaixo da capa. */}
       <Cartao>
-        <TituloCartao icone="speedometer">
-          {motorcycle.brand} {motorcycle.model}
-        </TituloCartao>
         {editandoKm ? (
           <View style={styles.linha}>
             <Campo
@@ -297,105 +286,7 @@ export const MyMotorcycleScreen: React.FC<MyMotorcycleScreenProps> = ({
         )}
       </Cartao>
 
-      <Cartao>
-        <TituloCartao icone="construct-outline">Plano de manutenção</TituloCartao>
-        {sortByUrgency(maintenance).map((item, indice) => {
-          const cor = CORES_STATUS[item.status];
-          const semRegistro = item.status === 'sem-registro';
-          const dica = describeMeasuredHint(item);
-          const progresso =
-            item.intervalKm && item.kmSinceLast !== undefined
-              ? Math.min(100, Math.round((item.kmSinceLast / item.intervalKm) * 100))
-              : 0;
-
-          return (
-            <View key={item.category} style={styles.itemManutencao}>
-              {indice > 0 && <View style={estilosBase.divisoria} />}
-              <View style={styles.topoManutencao}>
-                <View style={{ flex: 1, gap: ESPACO.xs }}>
-                  <Text style={styles.nomeManutencao}>{item.label}</Text>
-                  <View style={[styles.status, (item.status === 'vencido' || item.status === 'hora-de-trocar') && styles.statusVencido]}>
-                    <Ionicons name={ICONES_STATUS[item.status]} size={16} color={cor} />
-                    <Text style={[styles.statusTexto, { color: cor }]}>
-                      {ROTULOS_STATUS[item.status] || 'sem registro'}
-                    </Text>
-                    {!semRegistro && <InfoAjuda chave="situacao" />}
-                  </View>
-                </View>
-                <Botao
-                  rotulo={semRegistro ? 'Registrar' : 'Registrar troca'}
-                  icone="add"
-                  compacto
-                  altura={ALVO.min}
-                  onPress={() => abrirRegistro(item.category)}
-                  accessibilityLabel={
-                    semRegistro
-                      ? `Registrar primeira troca: ${item.label}`
-                      : `Registrar troca: ${item.label}`
-                  }
-                />
-              </View>
-
-              {semRegistro ? (
-                <Ajuda>
-                  Adicione a primeira troca para acompanhar.
-                  {item.intervalKm !== undefined && ` Você troca a cada ${emKm(item.intervalKm)}.`}
-                </Ajuda>
-              ) : item.nextChangeKm !== undefined ? (
-                <>
-                  <View style={styles.linhaInfo}>
-                    <Text style={[styles.frase, { flexShrink: 1 }]}>
-                      Próxima troca: {emKm(item.nextChangeKm)}
-                    </Text>
-                    <InfoAjuda chave="rodouFaltam" />
-                  </View>
-                  <Text style={[styles.fraseResto, { color: item.status === 'ok' ? COLORS.inkMuted : cor }]}>
-                    {describeRemaining(item.kmRemaining!)}
-                  </Text>
-                  <View style={styles.trilha}>
-                    <View style={[styles.barra, { width: `${progresso}%`, backgroundColor: cor }]} />
-                  </View>
-                  <Text style={styles.detalhe}>
-                    Trocado com {emKm(item.last!.km)} em {new Date(item.last!.date).toLocaleDateString('pt-BR')}
-                    {item.last!.product ? ` · ${item.last!.product}` : ''}
-                  </Text>
-                  <Text style={styles.origem}>
-                    Você troca a cada {emKm(item.intervalKm!)} · rodou {emKm(item.kmSinceLast!)} desde a troca
-                  </Text>
-                  {dica && <Text style={styles.origem}>{dica}</Text>}
-                </>
-              ) : (
-                <>
-                  <View style={styles.linhaInfo}>
-                    <Text style={[styles.frase, { flexShrink: 1 }]}>
-                      Rodou {emKm(item.kmSinceLast!)} desde a troca
-                    </Text>
-                    <InfoAjuda chave="rodouFaltam" />
-                  </View>
-                  <Ajuda>
-                    Trocado com {emKm(item.last!.km)} em {new Date(item.last!.date).toLocaleDateString('pt-BR')}.
-                    Para saber a próxima troca, diga de quantos em quantos km você troca.
-                  </Ajuda>
-                  {dica && <Text style={styles.origem}>{dica}</Text>}
-                </>
-              )}
-
-              <Botao
-                rotulo={
-                  item.intervalKm !== undefined
-                    ? 'Mudar a cada quantos km troco'
-                    : 'Informar a cada quantos km troco'
-                }
-                icone="pencil"
-                variante="fantasma"
-                compacto
-                style={styles.botaoIntervalo}
-                onPress={() => abrirIntervalo(item.category)}
-              />
-            </View>
-          );
-        })}
-      </Cartao>
+      <PlanoManutencao maintenance={maintenance} abrirRegistro={abrirRegistro} abrirIntervalo={abrirIntervalo} />
 
       <FichaIA motorcycle={motorcycle} onSetInterval={onSetInterval} onSaveMotorcycle={onSaveMotorcycle} />
 
@@ -420,6 +311,42 @@ export const MyMotorcycleScreen: React.FC<MyMotorcycleScreenProps> = ({
             ))}
         </Cartao>
       )}
+
+      {assistente && (
+        <AssistenteCapa
+          visivel
+          motorcycle={motorcycle}
+          inicial={assistente}
+          aoFechar={() => setAssistente(null)}
+          aoSalvar={({ uri, ia, nickname }) => {
+            if (motorcycle.coverImageUrl !== uri) apagarImagem(motorcycle.coverImageUrl);
+            onSaveMotorcycle({
+              ...motorcycle,
+              coverImageUrl: uri,
+              coverAi: ia,
+              coverUpdatedAt: new Date().toISOString(),
+              nickname: nickname ?? undefined,
+            });
+            setAssistente(null);
+          }}
+        />
+      )}
+
+      <FolhaOpcoesCapa
+        visivel={opcoesCapa !== null}
+        soApelido={opcoesCapa === 'apelido'}
+        apelidoAtual={motorcycle.nickname}
+        temCapa={!!motorcycle.coverImageUrl}
+        aoFechar={() => setOpcoesCapa(null)}
+        aoRefazer={() => { setOpcoesCapa(null); setAssistente({ passo: 'foto' }); }}
+        aoTrocar={() => void trocarCapa()}
+        aoApelido={(nickname) => { onSaveMotorcycle({ ...motorcycle, nickname: nickname ?? undefined }); setOpcoesCapa(null); }}
+        aoRemover={() => {
+          apagarImagem(motorcycle.coverImageUrl);
+          onSaveMotorcycle({ ...motorcycle, coverImageUrl: undefined, coverAi: undefined, coverUpdatedAt: undefined });
+          setOpcoesCapa(null);
+        }}
+      />
 
       <Folha
         visivel={registrando !== null}
@@ -456,11 +383,7 @@ export const MyMotorcycleScreen: React.FC<MyMotorcycleScreenProps> = ({
 
 const styles = StyleSheet.create({
   linhaInfo: { flexDirection: 'row', alignItems: 'center', gap: ESPACO.sm },
-  botaoIntervalo: { alignSelf: 'flex-start', paddingHorizontal: 0 },
   convite: { alignItems: 'center', paddingVertical: ESPACO.xl, gap: ESPACO.lg },
-  itemManutencao: { gap: ESPACO.md, paddingTop: ESPACO.md },
-  topoManutencao: { flexDirection: 'row', alignItems: 'center', gap: ESPACO.md },
-  nomeManutencao: { color: COLORS.ink, fontSize: 17, fontWeight: '800' },
   conviteIcone: {
     width: 72,
     height: 72,
@@ -483,24 +406,6 @@ const styles = StyleSheet.create({
   },
   kmUnidade: { color: COLORS.inkMuted, fontSize: 18, fontWeight: '700' },
   campoKm: { fontSize: 20, fontWeight: '700' },
-  status: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: ESPACO.xs },
-  statusVencido: {
-    paddingHorizontal: ESPACO.sm,
-    paddingVertical: ESPACO.xs,
-    borderRadius: RAIO.pill,
-    backgroundColor: COLORS.sosTint,
-  },
-  statusTexto: { fontSize: 13, fontWeight: '800' },
-  trilha: {
-    height: 8,
-    borderRadius: RAIO.pill,
-    backgroundColor: COLORS.elevated,
-    overflow: 'hidden',
-  },
-  barra: { height: '100%', borderRadius: RAIO.pill },
-  frase: { color: COLORS.ink, fontSize: 18, fontWeight: '800' },
-  fraseResto: { fontWeight: '600' },
-  detalhe: { color: COLORS.inkMuted, fontSize: 13 },
   origem: { color: COLORS.inkMuted, fontSize: 13 },
   linhaHistorico: {
     flexDirection: 'row',

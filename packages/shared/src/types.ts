@@ -52,6 +52,12 @@ export interface Motorcycle {
   avgKmPerMonth: number;
   lastKmUpdate: string; // ISO date
   photoUrl?: string;
+  /** Apelido dado pelo piloto, até 24 caracteres. */
+  nickname?: string;
+  /** Capa feita pela IA do próprio piloto (file:// no app, data: na web). */
+  coverImageUrl?: string;
+  coverAi?: 'gemini' | 'chatgpt' | 'metaai';
+  coverUpdatedAt?: string; // ISO date
   notes?: string;
   // Custom consumable intervals set by the user or manual:
   customIntervals?: Partial<Record<ConsumableCategory, number>>;

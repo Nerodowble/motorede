@@ -15,6 +15,7 @@ import { CampoIntervalo } from '../components/CampoIntervalo';
 import { FolhaFormulario } from '../components/FolhaFormulario';
 import { CartaoManutencao } from '../components/CartaoManutencao';
 import { FichaIA } from '../components/FichaIA';
+import { PainelCapa } from '../components/capa/PainelCapa';
 
 /**
  * Minha moto — uma aba só.
@@ -164,67 +165,54 @@ export const MyMotorcycleView: React.FC<MyMotorcycleViewProps> = ({
 
   return (
     <div className="space-y-3 pb-28 sm:pb-24 max-w-2xl mx-auto px-3 sm:px-4 py-4">
-      {/* Identidade da moto */}
-      <div className="rounded-2xl bg-gradient-to-b from-surface to-canvas border border-line p-4">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <h2 className="text-base font-extrabold text-ink truncate">
-              {motorcycle.brand} {motorcycle.model}
-              {motorcycle.licensePlate && (
-                <span className="text-ink-faint font-mono text-xs ml-2">
-                  {motorcycle.licensePlate}
-                </span>
-              )}
-            </h2>
-            {editandoKm ? (
-              <form onSubmit={salvarKm} className="flex items-center gap-2 mt-2">
-                <input
-                  type="number"
-                  value={kmMoto}
-                  onChange={(e) => setKmMoto(e.target.value)}
-                  autoFocus
-                  className="w-28 px-2.5 py-1.5 rounded-lg bg-canvas border border-line-strong text-ink text-sm font-mono focus:outline-none focus:border-brand/60"
-                />
-                <button
-                  type="submit"
-                  className="px-3 py-1.5 rounded-lg bg-action text-on-action text-xs font-bold"
-                >
-                  Salvar
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setEditandoKm(false)}
-                  className="text-xs text-ink-muted px-2"
-                >
-                  Cancelar
-                </button>
-              </form>
-            ) : (
-              <div className="mt-1 flex items-center gap-1.5">
-                <button
-                  onClick={() => {
-                    setKmMoto(motorcycle.currentKm.toString());
-                    setEditandoKm(true);
-                  }}
-                  className="text-sm font-mono text-brand-soft flex items-center gap-1.5 hover:text-brand-soft transition"
-                >
-                  {motorcycle.currentKm.toLocaleString('pt-BR')} km
-                  <Pencil className="w-3 h-3 opacity-60" />
-                </button>
-                <InfoAjuda chave="odometro" />
-              </div>
-            )}
-          </div>
+      {/* Capa da moto (ou o convite para criar uma) */}
+      {onSaveMotorcycle && <PainelCapa motorcycle={motorcycle} onSaveMotorcycle={onSaveMotorcycle} />}
 
-          {onOpenEditMotorcycle && (
-            <button
-              onClick={onOpenEditMotorcycle}
-              className="px-3 py-2 rounded-xl bg-elevated hover:bg-line-strong text-ink-muted text-xs font-semibold border border-line-strong transition active:scale-95 shrink-0"
-            >
-              Editar
+      {/* Odômetro e edição, logo abaixo da capa. A placa não vai na capa:
+          é a "imagem de vitrine" da moto, e placa é dado sensível. */}
+      <div className="rounded-2xl bg-surface border border-line px-4 py-2 flex items-center justify-between gap-3 min-h-14">
+        {editandoKm ? (
+          <form onSubmit={salvarKm} className="flex items-center gap-2">
+            <input
+              type="number"
+              value={kmMoto}
+              onChange={(e) => setKmMoto(e.target.value)}
+              autoFocus
+              aria-label="Quilometragem atual"
+              className="w-28 min-h-12 px-2.5 rounded-lg bg-canvas border border-line-strong text-ink text-sm font-mono focus:outline-none focus:border-brand/60"
+            />
+            <button type="submit" className="min-h-12 px-3 rounded-lg bg-action text-on-action text-xs font-bold">
+              Salvar
             </button>
-          )}
-        </div>
+            <button type="button" onClick={() => setEditandoKm(false)} className="min-h-12 text-xs text-ink-muted px-2">
+              Cancelar
+            </button>
+          </form>
+        ) : (
+          <div className="flex items-center gap-1.5 min-w-0">
+            <button
+              onClick={() => {
+                setKmMoto(motorcycle.currentKm.toString());
+                setEditandoKm(true);
+              }}
+              aria-label={`Odômetro: ${motorcycle.currentKm.toLocaleString('pt-BR')} km. Editar`}
+              className="min-h-12 text-base font-mono font-bold text-ink flex items-center gap-1.5"
+            >
+              {motorcycle.currentKm.toLocaleString('pt-BR')} km
+              <Pencil className="w-3.5 h-3.5 opacity-60" aria-hidden="true" />
+            </button>
+            <InfoAjuda chave="odometro" />
+          </div>
+        )}
+
+        {onOpenEditMotorcycle && !editandoKm && (
+          <button
+            onClick={onOpenEditMotorcycle}
+            className="min-h-12 px-4 rounded-xl bg-elevated hover:bg-line-strong text-ink text-sm font-semibold border border-line-strong transition active:scale-95 shrink-0"
+          >
+            Editar moto
+          </button>
+        )}
       </div>
 
       {/* Itens de manutenção, do mais urgente ao sem registro */}

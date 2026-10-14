@@ -113,6 +113,45 @@
   color-scheme: light;
 }
 
+/**
+ * Fundo da página, guardado antes de qualquer escopo fixo: a base da capa da
+ * moto se funde com ele mesmo no tema claro. Resolvido no :root, herda pronto.
+ */
+:root {
+  --mr-canvas-pagina: var(--mr-canvas);
+}
+
+/**
+ * Capa da moto: sempre escura, em qualquer tema — o HUD fica sobre uma garagem
+ * escura e o texto do tema claro sumiria. As `--color-*` são redeclaradas
+ * porque, declaradas no :root, chegam aqui já resolvidas.
+ */
+[data-tema-fixo='escuro'] {
+  --mr-canvas: #0a0a0b;
+  --mr-surface: #141417;
+  --mr-elevated: #1f1f23;
+  --mr-line: #26262b;
+  --mr-line-strong: #6b6b74;
+  --mr-ink: #f4f4f5;
+  --mr-ink-muted: #a1a1aa;
+  --mr-ink-faint: #8b8b94;
+  --mr-brand: #fc0d0a;
+  --mr-action: #f4f4f5;
+  --mr-on-action: #0a0a0b;
+  --color-canvas: var(--mr-canvas);
+  --color-surface: var(--mr-surface);
+  --color-elevated: var(--mr-elevated);
+  --color-line: var(--mr-line);
+  --color-line-strong: var(--mr-line-strong);
+  --color-ink: var(--mr-ink);
+  --color-ink-muted: var(--mr-ink-muted);
+  --color-ink-faint: var(--mr-ink-faint);
+  --color-brand: var(--mr-brand);
+  --color-action: var(--mr-action);
+  --color-on-action: var(--mr-on-action);
+  color-scheme: dark;
+}
+
 @layer base {
   html, body {
     /* `clip` em vez de `hidden`: os dois cortam o transbordo horizontal, mas

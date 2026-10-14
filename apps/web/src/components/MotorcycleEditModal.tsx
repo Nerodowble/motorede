@@ -12,7 +12,7 @@ import {
   Clock,
   ShieldCheck,
 } from 'lucide-react';
-import { Motorcycle } from '@motorede/shared';
+import { Motorcycle, APELIDO_MAX, validarApelido } from '@motorede/shared';
 import { InfoAjuda } from './InfoAjuda';
 
 interface MotorcycleEditModalProps {
@@ -33,6 +33,7 @@ export const MotorcycleEditModal: React.FC<MotorcycleEditModalProps> = ({
   const [model, setModel] = useState(motorcycle?.model ?? '');
   const [year, setYear] = useState(motorcycle?.year.toString() ?? String(new Date().getFullYear()));
   const [licensePlate, setLicensePlate] = useState(motorcycle?.licensePlate ?? '');
+  const [nickname, setNickname] = useState(motorcycle?.nickname ?? '');
   const [currentKm, setCurrentKm] = useState(motorcycle?.currentKm.toString() ?? '');
   // Campos técnicos nascem vazios: valores de exemplo pré-preenchidos eram
   // salvos como se fossem da moto do piloto (500 cc, 26,5 km/l, 17,7 L) e
@@ -77,6 +78,7 @@ export const MotorcycleEditModal: React.FC<MotorcycleEditModalProps> = ({
       model: model.trim(),
       year: parsedYear || new Date().getFullYear(),
       licensePlate: licensePlate.trim().toUpperCase(),
+      nickname: validarApelido(nickname) ?? undefined,
       currentKm: parsedKm,
       avgKmPerMonth: motorcycle?.avgKmPerMonth ?? 0,
       displacementCc: positivo(parseInt(displacementCc, 10)),
@@ -178,6 +180,18 @@ export const MotorcycleEditModal: React.FC<MotorcycleEditModalProps> = ({
                   placeholder="Ex: 2023"
                   min="1980"
                   max="2030"
+                  className="w-full bg-surface border border-line-strong rounded-lg px-3 py-2 text-ink placeholder-ink-faint focus:outline-none focus:border-brand"
+                />
+              </div>
+
+              <div>
+                <label className="block text-ink-muted font-medium mb-1">Apelido da moto (opcional)</label>
+                <input
+                  type="text"
+                  value={nickname}
+                  onChange={(e) => setNickname(e.target.value)}
+                  placeholder="Ex: Pretinha"
+                  maxLength={APELIDO_MAX}
                   className="w-full bg-surface border border-line-strong rounded-lg px-3 py-2 text-ink placeholder-ink-faint focus:outline-none focus:border-brand"
                 />
               </div>
