@@ -58,6 +58,24 @@ Os links do Google Maps não devolvem quilômetros, tempo ou tarifas ao MotoRede
 Para estimar o total dentro do app é necessária uma integração de roteamento
 rodoviário; não se deve somar a distância em linha reta aos quilômetros do catálogo.
 
+## Pontos de carimbo da Rota Biker
+
+A aba **Rota Biker** lista os Monumentos ao Cumprimento Biker, onde se carimba
+o passaporte da [Rota Biker](https://monumentobikers.com.br/), em cards próprios
+(número, local, cidade, situação, "Como chegar" e Instagram). Nos detalhes de
+cada rota, a seção **Carimbo da Rota Biker por perto** mostra monumentos em
+cidades a até 20 km, em linha reta, do início, do fim ou de um ponto de apoio.
+
+- Dados: `packages/shared/src/data/monumentosRotaBiker.ts`; regras:
+  `packages/shared/src/domain/rotaBiker.ts`; testes em
+  `tests/rotas/rotaBiker.test.mts` (rodam com `npm run test:rotas`).
+- Fonte: site oficial, consultado em 2026-10-13 (nº 1 a 44; o nº 2 está "em
+  atualização" e ficou fora; 40 a 44 estão em construção; o nº 30 fica no Paraguai).
+- Coordenadas são do centro da cidade (OpenStreetMap), não do estabelecimento.
+  "Como chegar" pesquisa o nome do local no Google Maps.
+- Para atualizar, edite o arquivo de dados à mão conferindo o site oficial; o
+  importador de rotas não se aplica a monumentos.
+
 ## Origem e como adicionar rotas
 
 As 15 rotas iniciais vieram de um projeto usado só como referência e foram

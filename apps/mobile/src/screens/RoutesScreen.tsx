@@ -2,12 +2,13 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, Linking, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRotasSalvas } from '../hooks/useRotasSalvas';
+import { CartaoMonumento, RotaBikerLista } from '../components/RotaBikerLista';
 import * as Location from 'expo-location';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import {
   CATALOGO_ROTAS, AVISO_CATALOGO_ROTAS, AVISO_CUSTO_ROTAS, AVISO_NAVEGACAO_ROTAS,
   ROTULOS_EXTENSAO, TAMANHO_LOTE_ROTAS, ROTULOS_PAVIMENTO, ROTULOS_CURVAS, buscarRotas, estimarCustoRota,
-  lerNumeroRota, formatarReaisRota, linksNavegacaoRota, fonteRotaSegura,
+  lerNumeroRota, formatarReaisRota, linksNavegacaoRota, fonteRotaSegura, MONUMENTOS_ROTA_BIKER, monumentosPertoDaRota,
   type FiltrosRotas, type Motorcycle, type GeoPoint, type PavimentoRota, type CurvasRota,
 } from '@motorede/shared';
 import { Ajuda, Campo, Cartao, TituloCartao, TituloTela, estilosBase } from '../components/ui/Cartao';
@@ -40,6 +41,7 @@ function Opcoes({ rotulo, valor, mudar, opcoes }: {
 
 type Escolhas = Pick<FiltrosRotas, 'regiao' | 'extensao' | 'pavimento' | 'curvas'>;
 type ItemRota = ReturnType<typeof buscarRotas>[number];
+const ABAS = ['explorar', 'salvas', 'rotabiker'] as const;
 const SEM_FILTROS: Escolhas = { regiao: '', extensao: '', pavimento: '', curvas: '' };
 const REGIOES = Object.fromEntries([...new Set(CATALOGO_ROTAS.map(r => r.regiao))].sort().map(r => [r, r]));
 
@@ -48,7 +50,7 @@ export function RoutesScreen({ motorcycle }: { motorcycle: Motorcycle | null }) 
   const [filtros, setFiltros] = useState<Escolhas>(SEM_FILTROS);
   const [rascunho, setRascunho] = useState<Escolhas>(SEM_FILTROS);
   const [filtrando, setFiltrando] = useState(false);
-  const [modo, setModo] = useState<'explorar' | 'salvas'>('explorar');
+  const [modo, setModo] = useState<typeof ABAS[number]>('explorar');
   const [ordem, setOrdem] = useState<NonNullable<FiltrosRotas['ordem']>>('nome');
   const [limite, setLimite] = useState(TAMANHO_LOTE_ROTAS);
   const [aberta, setAberta] = useState<string | null>(null);
@@ -158,6 +160,7 @@ export function RoutesScreen({ motorcycle }: { motorcycle: Motorcycle | null }) 
             <Text style={[TIPO.corpo, { fontWeight: '700' }]}>{p.nome}</Text><Ajuda>{p.descricao}</Ajuda>
           </View>)}
           {rota.pontosApoio.length === 0 && <Ajuda>Nenhum ponto cadastrado.</Ajuda>}
+          {monumentosPertoDaRota(rota, MONUMENTOS_ROTA_BIKER).length > 0 && <><TituloCartao icone="ribbon-outline">Carimbo da Rota Biker por perto</TituloCartao><Ajuda>Monumentos em cidades até 20 km, em linha reta, do início, do fim ou de um ponto de apoio.</Ajuda>{monumentosPertoDaRota(rota, MONUMENTOS_ROTA_BIKER).map(m => <CartaoMonumento key={m.numero} monumento={m} abrir={url => void abrir(url)} />)}</>}
           {rota.observacoes.length > 0 && <><TituloCartao>Observações da origem · não verificadas</TituloCartao>{rota.observacoes.map((o, i) => <Ajuda key={i}>• {o}</Ajuda>)}</>}
           <TituloCartao icone="navigate-outline">Navegação</TituloCartao>
           <Ajuda>Monte uma única viagem: sua localização → {rota.inicio.cidade} (início) → {rota.fim.cidade} (final). O Google Maps usa sua posição atual ou solicita o ponto de partida.</Ajuda>
@@ -170,14 +173,17 @@ export function RoutesScreen({ motorcycle }: { motorcycle: Motorcycle | null }) 
 
     </Cartao>;
   };
-  const cabecalho = <View style={styles.cabecalho}>
+  const topo = <>
     <TituloTela sobrelinha="A ESTRADA COMEÇA AQUI" titulo="Encontre sua próxima rota" descricao="Descubra estradas, guarde seus passeios e planeje a saída." />
     <View style={styles.abas}>
-      {(['explorar', 'salvas'] as const).map(tab => <Pressable key={tab} accessibilityRole="tab" accessibilityState={{ selected: modo === tab }} onPress={() => setModo(tab)} style={[styles.aba, modo === tab && styles.abaAtiva]}>
-        <Ionicons name={tab === 'explorar' ? 'compass-outline' : 'bookmark-outline'} size={20} color={modo === tab ? COLORS.ink : COLORS.inkMuted} />
-        <Text style={TIPO.corpo}>{tab === 'explorar' ? 'Explorar' : `Salvas · ${totalSalvas}`}</Text>
+      {ABAS.map(tab => <Pressable key={tab} accessibilityRole="tab" accessibilityState={{ selected: modo === tab }} onPress={() => setModo(tab)} style={[styles.aba, modo === tab && styles.abaAtiva]}>
+        <Ionicons name={tab === 'explorar' ? 'compass-outline' : tab === 'salvas' ? 'bookmark-outline' : 'ribbon-outline'} size={20} color={modo === tab ? COLORS.ink : COLORS.inkMuted} />
+        <Text style={TIPO.corpo}>{tab === 'explorar' ? 'Explorar' : tab === 'salvas' ? `Salvas · ${totalSalvas}` : 'Rota Biker'}</Text>
       </Pressable>)}
     </View>
+  </>;
+  const cabecalho = <View style={styles.cabecalho}>
+    {topo}
     <Campo accessibilityLabel="Buscar rota por nome, cidade ou estado" value={busca} onChangeText={setBusca} placeholder="Busque uma rota ou cidade" returnKeyType="search" />
     <View style={styles.opcoes}>
       <Botao compacto rotulo="Perto de mim" icone="locate-outline" carregando={localizando} variante={ordem === 'proximidade' ? 'action' : 'secundario'} onPress={() => void localizar()} />
@@ -199,6 +205,8 @@ export function RoutesScreen({ motorcycle }: { motorcycle: Motorcycle | null }) 
   </View>;
 
   return <View style={{ flex: 1 }}>
+    {modo === 'rotabiker' ? <RotaBikerLista cabecalho={<View style={styles.cabecalho}>{topo}{erro !== '' && <Text style={estilosBase.erro} accessibilityRole="alert">{erro}</Text>}</View>}
+      origem={origem} localizando={localizando} localizar={() => void localizar()} abrir={url => void abrir(url)} /> :
     <FlatList<ItemRota> ref={lista} data={visiveis} keyExtractor={({ rota }) => rota.id} keyboardShouldPersistTaps="handled"
       contentContainerStyle={styles.lista} initialNumToRender={6} maxToRenderPerBatch={8} windowSize={5}
       ListHeaderComponent={cabecalho} ItemSeparatorComponent={<View style={{ height: ESPACO.md }} />}
@@ -218,7 +226,7 @@ export function RoutesScreen({ motorcycle }: { motorcycle: Motorcycle | null }) 
         </Pressable>
       </Cartao>}
       ListFooterComponent={resultados.length > 0 ? <View style={styles.rodape}><Ajuda>{visiveis.length} de {resultados.length} rotas</Ajuda>{limite < resultados.length && <Botao rotulo={`Carregar mais ${Math.min(TAMANHO_LOTE_ROTAS, resultados.length - limite)}`} onPress={() => setLimite(l => l + TAMANHO_LOTE_ROTAS)} />}</View> : null}
-    />
+    />}
     <Modal visible={filtrando} transparent animationType="slide" onRequestClose={() => setFiltrando(false)}>
       <View style={styles.veu}><SafeAreaView edges={['bottom']} style={styles.folha}>
         <View style={styles.barra}><Text accessibilityRole="header" style={[TIPO.tituloCard, { flex: 1 }]}>Refinar sua busca</Text><Botao compacto variante="fantasma" rotulo="Cancelar" onPress={() => setFiltrando(false)} /></View>

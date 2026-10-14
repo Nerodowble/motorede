@@ -14,7 +14,7 @@
     "lint": "npm run lint --workspaces --if-present",
     "test:socorro": "tsx tests/socorro/socorro.test.mts && tsx tests/socorro/prefixo.test.mts && tsx tests/socorro/webpush.test.mts && tsx tests/socorro/abertos.test.mts && tsx tests/socorro/aceitar.test.mts",
     "test:plugins": "tsx tests/plugins/plugins.test.mts && tsx tests/plugins/ficha-moto.test.mts",
-    "test:rotas": "tsx --test tests/rotas/rotas.test.mts tests/rotas/importacao.test.mts",
+    "test:rotas": "tsx --test tests/rotas/rotas.test.mts tests/rotas/importacao.test.mts tests/rotas/rotaBiker.test.mts",
     "rotas:importar": "tsx scripts/importar-rotas.mts",
     "test:manutencao": "tsx --test tests/manutencao/manutencao.test.mts"
   },

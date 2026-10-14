@@ -1174,3 +1174,23 @@ decisão anterior, só entra com o módulo de Eventos.
   de salvas sem erro — conferir esse caso nos testes.
 - Escrita do catálogo (se houver) só por quem opera o servidor, protegida como
   `ADMIN_EMAILS`; nunca rota de escrita pública.
+
+## 35. Pontos de carimbo da Rota Biker
+
+**Status:** `implementado`
+**Data:** 2026-10-13
+
+A Rota Biker (criada em 2023 por Marcos Turbay, do Serpenteando Café) é uma rede
+de Monumentos ao Cumprimento Biker onde o motociclista carimba o passaporte.
+O usuário pediu todos os pontos no app, em cards separados das rotas.
+
+- Monumento é um **lugar**, não um trecho: tem tipo próprio (`MonumentoRotaBiker`,
+  em `domain/rotaBiker.ts`) em vez de forçar o contrato `RotaCatalogo`
+  (que exige início, fim, 20 km e posto).
+- Aba **Rota Biker** em Rotas (web e app), com busca e "Perto de mim". Nos
+  detalhes de uma rota aparecem os carimbos em cidades a até 20 km do início,
+  do fim ou de um ponto de apoio (ex.: Mirante do 12 na Serra do Rio do Rastro).
+- Coordenada é a da **cidade** (OpenStreetMap); "Como chegar" busca o nome do
+  local no Google Maps, que acha o estabelecimento.
+- O MotoRede não carimba nem registra passaporte: só aponta onde ir.
+  Ideia em aberto: marcar no app quais carimbos o piloto já tem.

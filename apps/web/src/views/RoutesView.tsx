@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Route, ArrowLeft, ArrowUpRight, Bookmark, Check, Compass, ExternalLink, Fuel, MapPin, Search, SlidersHorizontal, X } from 'lucide-react';
+import { Route, ArrowLeft, ArrowUpRight, Bookmark, Check, Compass, ExternalLink, Fuel, MapPin, Search, SlidersHorizontal, Stamp, X } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { useRotasSalvas } from '../hooks/useRotasSalvas';
+import { CartaoMonumento, RotaBikerLista } from '../components/RotaBikerLista';
 import {
   CATALOGO_ROTAS, AVISO_CATALOGO_ROTAS, AVISO_CUSTO_ROTAS, AVISO_NAVEGACAO_ROTAS,
   ROTULOS_EXTENSAO, TAMANHO_LOTE_ROTAS, ROTULOS_PAVIMENTO, ROTULOS_CURVAS, buscarRotas, estimarCustoRota,
-  lerNumeroRota, formatarReaisRota, linksNavegacaoRota, fonteRotaSegura,
+  lerNumeroRota, formatarReaisRota, linksNavegacaoRota, fonteRotaSegura, MONUMENTOS_ROTA_BIKER, monumentosPertoDaRota,
   type FiltrosRotas, type Motorcycle, type GeoPoint, type PavimentoRota, type CurvasRota,
 } from '@motorede/shared';
 
@@ -31,6 +32,8 @@ function LinkExterno({ href, children }: { href: string; children: React.ReactNo
 type Escolhas = Pick<FiltrosRotas, 'regiao' | 'extensao' | 'pavimento' | 'curvas'>;
 const SEM_FILTROS: Escolhas = { regiao: '', extensao: '', pavimento: '', curvas: '' };
 const REGIOES = Object.fromEntries([...new Set(CATALOGO_ROTAS.map(r => r.regiao))].sort().map(r => [r, r]));
+const ABAS = ['explorar', 'salvas', 'rotabiker'] as const;
+type Aba = typeof ABAS[number];
 const chip = 'min-h-12 px-4 py-2 rounded-full border inline-flex items-center justify-center gap-2 text-sm font-semibold transition-colors';
 
 function JanelaRotas({ titulo, fechar, children, detalhe = false }: { titulo: string; fechar: () => void; children: React.ReactNode; detalhe?: boolean }) {
@@ -63,7 +66,7 @@ export function RoutesView({ motorcycle, origem: origemInicial }: { motorcycle: 
   const [filtros, setFiltros] = useState<Escolhas>(SEM_FILTROS);
   const [rascunho, setRascunho] = useState<Escolhas>(SEM_FILTROS);
   const [filtrando, setFiltrando] = useState(false);
-  const [modo, setModo] = useState<'explorar' | 'salvas'>('explorar');
+  const [modo, setModo] = useState<Aba>('explorar');
   const [ordem, setOrdem] = useState<NonNullable<FiltrosRotas['ordem']>>('nome');
   const [limite, setLimite] = useState(TAMANHO_LOTE_ROTAS);
   const [aberta, setAberta] = useState<string | null>(null);
@@ -163,6 +166,7 @@ export function RoutesView({ motorcycle, origem: origemInicial }: { motorcycle: 
             {rota.pontosApoio.map((p, i) => <div key={`${p.nome}-${i}`} className="text-sm text-ink-muted border-l border-line-strong pl-3"><p className="font-bold text-ink">{p.nome}</p><p>{p.descricao}</p></div>)}
             {rota.pontosApoio.length === 0 && <p className="text-sm text-ink-muted">Nenhum ponto cadastrado.</p>}
           </section>
+          {(() => { const perto = monumentosPertoDaRota(rota, MONUMENTOS_ROTA_BIKER); return perto.length > 0 && <section className="space-y-3"><h2 className="font-bold text-ink">Carimbo da Rota Biker por perto</h2><p className="text-sm text-ink-muted">Monumentos em cidades até 20 km, em linha reta, do início, do fim ou de um ponto de apoio.</p><div className="grid sm:grid-cols-2 gap-4">{perto.map(m => <CartaoMonumento key={m.numero} monumento={m} />)}</div></section>; })()}
           {rota.observacoes.length > 0 && <section className="space-y-2"><h2 className="font-bold text-ink">Observações da origem · não verificadas</h2><ul className="list-disc pl-5 space-y-2 text-sm text-ink-muted">{rota.observacoes.map((o, i) => <li key={i}>{o}</li>)}</ul></section>}
           <section className="space-y-2"><h2 className="font-bold text-ink">Navegação</h2>
             <p className="text-sm text-ink-muted">Monte uma única viagem: sua localização → {rota.inicio.cidade} (início) → {rota.fim.cidade} (final). O Google Maps usa sua posição atual ou solicita o ponto de partida.</p>
@@ -176,8 +180,9 @@ export function RoutesView({ motorcycle, origem: origemInicial }: { motorcycle: 
   return <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
     <header className="space-y-3"><p className="text-xs font-bold uppercase tracking-[0.2em] text-ink-muted">A estrada começa aqui</p><h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">Encontre sua próxima rota</h1><p className="text-ink-muted">Descubra estradas, guarde seus passeios e planeje a saída.</p></header>
     <div role="tablist" aria-label="Coleção de rotas" className="flex border-b border-line gap-6">
-      {(['explorar', 'salvas'] as const).map(tab => <button key={tab} id={`aba-rotas-${tab}`} role="tab" tabIndex={modo === tab ? 0 : -1} onKeyDown={e => { if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) { e.preventDefault(); const proxima = e.key === 'Home' ? 'explorar' : e.key === 'End' ? 'salvas' : tab === 'explorar' ? 'salvas' : 'explorar'; setModo(proxima); document.getElementById(`aba-rotas-${proxima}`)?.focus(); } }} aria-selected={modo === tab} aria-controls="resultados-rotas" className={`min-h-14 inline-flex items-center gap-2 border-b-2 font-bold ${modo === tab ? 'border-brand text-ink' : 'border-transparent text-ink-muted'}`} onClick={() => setModo(tab)}>{tab === 'explorar' ? <Compass size={20} aria-hidden="true" /> : <Bookmark size={20} aria-hidden="true" />}{tab === 'explorar' ? 'Explorar' : `Salvas · ${totalSalvas}`}</button>)}
+      {ABAS.map(tab => <button key={tab} id={`aba-rotas-${tab}`} role="tab" tabIndex={modo === tab ? 0 : -1} onKeyDown={e => { if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) { e.preventDefault(); const i = ABAS.indexOf(tab); const proxima = ABAS[e.key === 'Home' ? 0 : e.key === 'End' ? ABAS.length - 1 : (i + (e.key === 'ArrowRight' ? 1 : ABAS.length - 1)) % ABAS.length]; setModo(proxima); document.getElementById(`aba-rotas-${proxima}`)?.focus(); } }} aria-selected={modo === tab} aria-controls="resultados-rotas" className={`min-h-14 inline-flex items-center gap-2 border-b-2 font-bold ${modo === tab ? 'border-brand text-ink' : 'border-transparent text-ink-muted'}`} onClick={() => setModo(tab)}>{tab === 'explorar' ? <Compass size={20} aria-hidden="true" /> : tab === 'salvas' ? <Bookmark size={20} aria-hidden="true" /> : <Stamp size={20} aria-hidden="true" />}{tab === 'explorar' ? 'Explorar' : tab === 'salvas' ? `Salvas · ${totalSalvas}` : 'Rota Biker'}</button>)}
     </div>
+    {modo === 'rotabiker' ? <section id="resultados-rotas" role="tabpanel" aria-labelledby="aba-rotas-rotabiker"><RotaBikerLista origem={origem} localizando={localizando} localizar={localizar} />{erro && <p role="alert" className="text-sm text-danger mt-4">{erro}</p>}</section> : <>
     <section className="space-y-4" aria-label="Encontrar rotas">
       <div className="flex flex-wrap sm:flex-nowrap gap-3"><label className="flex-1 min-w-52 relative"><span className="sr-only">Buscar rota por nome, cidade ou estado</span><Search aria-hidden="true" size={20} className="absolute left-4 top-4 text-ink-muted" /><input className={`${campo} pl-12`} value={busca} onChange={e => setBusca(e.target.value)} placeholder="Busque uma rota ou cidade" type="search" /></label><button className={link} onClick={() => { setRascunho({ ...filtros }); setFiltrando(true); }}><SlidersHorizontal size={18} aria-hidden="true" />Filtros{ativos.length ? ` · ${ativos.length}` : ''}</button></div>
       <div className="flex flex-wrap gap-2">
@@ -202,6 +207,7 @@ export function RoutesView({ motorcycle, origem: origemInicial }: { motorcycle: 
       </article>)}</div>
       {resultados.length > 0 && <div className="py-6 flex flex-col items-center gap-3"><p className="text-sm text-ink-muted" role="status">{Math.min(limite, resultados.length)} de {resultados.length} rotas</p>{limite < resultados.length && <button className={link} onClick={() => setLimite(l => l + TAMANHO_LOTE_ROTAS)}>Carregar mais {Math.min(TAMANHO_LOTE_ROTAS, resultados.length - limite)}</button>}{(busca || ativos.length > 0) && <button className={link} onClick={limpar}>Limpar busca e filtros</button>}</div>}
     </section>
+    </>}
     {filtrando && <JanelaRotas titulo="Refinar sua busca" fechar={() => setFiltrando(false)}><Escolha titulo="Região" valor={rascunho.regiao ?? ''} opcoes={REGIOES} mudar={v => setRascunho({ ...rascunho, regiao: v })} /><Escolha titulo="Extensão do percurso" valor={rascunho.extensao ?? ''} opcoes={ROTULOS_EXTENSAO} mudar={v => setRascunho({ ...rascunho, extensao: v as Escolhas['extensao'] })} /><Escolha titulo="Pavimento" valor={rascunho.pavimento ?? ''} opcoes={ROTULOS_PAVIMENTO} mudar={v => setRascunho({ ...rascunho, pavimento: v as PavimentoRota | '' })} /><Escolha titulo="Curvas" valor={rascunho.curvas ?? ''} opcoes={ROTULOS_CURVAS} mudar={v => setRascunho({ ...rascunho, curvas: v as CurvasRota | '' })} /><div className="flex flex-wrap justify-between gap-3"><button className={link} onClick={() => setRascunho(SEM_FILTROS)}>Limpar filtros</button><button className="min-h-12 rounded-xl px-5 py-3 inline-flex items-center justify-center gap-2 text-sm font-bold bg-action text-on-action hover:opacity-90" onClick={() => { setFiltros(rascunho); setFiltrando(false); }}><Check size={18} aria-hidden="true" />Ver {quantidadeRascunho} rotas</button></div></JanelaRotas>}
     {rotaSelecionada && <JanelaRotas titulo="Detalhes da rota" detalhe fechar={() => setAberta(null)}>{renderDetalhe()}</JanelaRotas>}
   </div>;
