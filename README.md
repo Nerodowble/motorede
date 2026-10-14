@@ -64,6 +64,7 @@ estão em **[docs/desenvolvimento.md](docs/desenvolvimento.md)**.
 | [docs/api.md](docs/api.md) | Referência de todos os endpoints `/api/*` |
 | [docs/desenvolvimento.md](docs/desenvolvimento.md) | Ambiente local (web e app), variáveis de ambiente, testes, deploy e OTA |
 | [docs/plugins.md](docs/plugins.md) | Protocolo público dos plugins de áudio |
+| [docs/contas-e-servicos.md](docs/contas-e-servicos.md) | Para o dono: cada serviço externo, se tem conta, limite gratuito e o que acontece ao estourar |
 | [docs/ideias.md](docs/ideias.md) | Caderno de decisões: o que foi decidido, adiado ou descartado, e por quê |
 | [docs/checklist-marca-e-interface.md](docs/checklist-marca-e-interface.md) | Paleta da marca e andamento do redesenho de web e app |
 
@@ -75,5 +76,6 @@ estão em **[docs/desenvolvimento.md](docs/desenvolvimento.md)**.
 | Vercel | web + API (`motorede-web.vercel.app`) |
 | LiveKit Cloud | servidor de voz (SFU) em produção |
 | Upstash Redis (pela Vercel) | estado temporário de socorro e plugins — tudo com prazo de validade |
+| ntfy.sh (sem conta) | acorda os plugins quando alguém os chama |
 | Expo / EAS | builds do app e atualizações OTA (projeto `motorede`) |
 | Google Cloud | credenciais OAuth do login |

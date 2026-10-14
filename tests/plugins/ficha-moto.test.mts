@@ -13,6 +13,7 @@ process.env.UPSTASH_REDIS_REST_TOKEN = 'faz-de-conta';
 process.env.LIVEKIT_API_KEY = 'chave-de-teste';
 process.env.LIVEKIT_API_SECRET = 'segredo-de-teste-com-tamanho-suficiente-para-hs256';
 process.env.LIVEKIT_URL = 'wss://exemplo.livekit.cloud';
+process.env.MOTOREDE_ACORDAR_URL = 'desligado';
 const CHAVE_IA = 'chave-da-ia-bem-comprida-0123456';
 const CHAVE_RADIO = 'chave-do-radio-bem-comprida-98765';
 process.env.MOTOREDE_PLUGINS = JSON.stringify([

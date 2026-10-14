@@ -68,7 +68,9 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     }
     return responder(200, r);
   } catch (erro) {
-    const mensagem = erro instanceof Error ? erro.message : String(erro);
-    return responder(500, { error: `falha na ficha da moto: ${mensagem}` });
+    // O detalhe (ex.: cota do Redis estourada) fica no log da Vercel; o piloto
+    // não tem o que fazer com ele.
+    console.error('ficha da moto:', erro);
+    return responder(503, { error: 'A pesquisa por IA está fora do ar no momento. Tente mais tarde.' });
   }
 }

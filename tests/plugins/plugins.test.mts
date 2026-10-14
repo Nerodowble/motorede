@@ -1,3 +1,4 @@
+import { createServer } from 'node:http';
 import { AccessToken, TokenVerifier } from 'livekit-server-sdk';
 import { subir, limpar } from '../socorro/fake-redis.mjs';
 
@@ -23,10 +24,17 @@ process.env.MOTOREDE_PLUGINS = JSON.stringify([
 ]);
 await subir(PORTA);
 
+// ntfy de mentira: guarda em qual canal o MotoRede mandou "acorda".
+const acordados: string[] = [];
+const PORTA_NTFY = 7383;
+await new Promise<void>((r) => createServer((req, res) => { acordados.push(req.url!.slice(1)); res.end('{}'); }).listen(PORTA_NTFY, r));
+process.env.MOTOREDE_ACORDAR_URL = `http://127.0.0.1:${PORTA_NTFY}`;
+
 // Relativo a este arquivo, para os testes rodarem em qualquer máquina.
 const RAIZ = new URL('../..', import.meta.url).href.replace(/\/$/, '');
 const plugins = (await import(`${RAIZ}/apps/web/api/plugins.ts`)).default;
 const { countParticipants } = await import(`${RAIZ}/apps/web/api/_livekit.ts`);
+const { canalAcordar } = await import(`${RAIZ}/apps/web/api/_acordar.ts`);
 const shared = await import(`${RAIZ}/packages/shared/src/index.ts`);
 
 function chamar(h: any, body: unknown) {
@@ -76,6 +84,8 @@ ok(convidaFora.status === 404, 'não dá para chamar o plugin para um comboio fo
 const convite = await chamar(plugins, { acao: 'convidar', plugin: 'radio', token: await tokenDePiloto('WILL') });
 ok(convite.status === 202, 'piloto do comboio chama o plugin', String(convite.status));
 await chamar(plugins, { acao: 'convidar', plugin: 'radio', token: await tokenDePiloto('WILL', 'piloto-bia', 'Bia') });
+ok(acordados.length === 2 && acordados[0] === canalAcordar('radio', CHAVE), 'chamar acorda o plugin no canal dele', JSON.stringify(acordados));
+ok(!acordados[0].includes(CHAVE) && canalAcordar('dj', CHAVE_DJ) !== acordados[0], 'o canal não revela a chave e é um por plugin');
 
 const espera = await chamar(plugins, { acao: 'aguardar', plugin: 'radio', chave: CHAVE });
 ok(espera.status === 200 && espera.json.convites.length === 1, 'dois toques em "chamar" viram um convite só', JSON.stringify(espera.json.convites));
@@ -86,6 +96,9 @@ ok(vazio.json.convites.length === 0, 'convite recolhido não volta na próxima p
 
 const online = await chamar(plugins, { acao: 'listar', token: await tokenDePiloto('WILL') });
 ok(online.json.plugins[0].online === true, 'depois de perguntar, o plugin aparece ligado');
+
+const desligaErrado = await chamar(plugins, { acao: 'desligar', plugin: 'radio', chave: 'errada' });
+ok(desligaErrado.status === 401, 'só quem tem a chave desliga o plugin');
 
 const entrada = await chamar(plugins, { acao: 'entrar', plugin: 'radio', chave: CHAVE, sala: 'WILL' });
 ok(entrada.status === 200 && typeof entrada.json.token === 'string', 'com convite, recebe token', String(entrada.status));
@@ -173,6 +186,12 @@ const novo = await chamar(plugins, { acao: 'parear', token: await tokenDePiloto(
 ok(novo.status === 200, 'o novo vale');
 const aindaPareado = await chamar(plugins, { acao: 'listar', token: tokX });
 ok(aindaPareado.json.plugins.some((p: any) => p.id === 'dj'), 'trocar o código não desfaz pareamentos já feitos');
+
+await chamar(plugins, { acao: 'desligar', plugin: 'dj', chave: CHAVE_DJ });
+const apagado = await chamar(plugins, { acao: 'listar', token: tokX });
+ok(apagado.json.plugins.find((p: any) => p.id === 'dj')?.online === false, 'plugin que avisou "desligar" aparece desligado na hora');
+const codigoMorto = await chamar(plugins, { acao: 'parear', token: await tokenDePiloto('OUTRO-3'), codigo: 'NEW-4ABC' });
+ok(codigoMorto.status === 404, 'e o código dele para de valer');
 
 await chamar(plugins, { acao: 'desparear', token: tokX, plugin: 'dj' });
 const depois = await chamar(plugins, { acao: 'listar', token: tokX });

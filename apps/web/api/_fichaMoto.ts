@@ -10,14 +10,15 @@ import {
 } from '@motorede/shared';
 import { redis } from './_redis.js';
 import { iaPlugin, type PluginEntry } from './_plugins.js';
+import { acordarPlugin } from './_acordar.js';
 
 /**
  * Ficha da moto pesquisada pelo plugin de IA. O prefixo `_` impede a Vercel
  * de expor isto como endpoint.
  *
  * O computador com a IA está atrás de roteador: o servidor não o chama. O app
- * pede a ficha, o pedido vira uma TAREFA na fila, o plugin a recolhe no
- * `aguardar` (o mesmo dos convites) e devolve o texto com `concluir`. A
+ * pede a ficha, o pedido vira uma TAREFA na fila, o plugin é acordado
+ * (`_acordar.ts`), a recolhe no `aguardar` (o mesmo dos convites) e devolve o texto com `concluir`. A
  * resposta é validada aqui e guardada por modelo — a segunda pessoa com a
  * mesma moto não chega a acionar a IA.
  *
@@ -111,6 +112,7 @@ export async function consultarFicha(moto: MotoConsulta, ip: string): Promise<Re
     ['RPUSH', `mr:iaq:${plugin.id}`, JSON.stringify(tarefa)],
     ['EXPIRE', `mr:iaq:${plugin.id}`, TAREFA_FILA_SEGUNDOS],
   ]);
+  await acordarPlugin(plugin);
   return { estado: 'pendente' };
 }
 

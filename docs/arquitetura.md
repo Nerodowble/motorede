@@ -226,7 +226,8 @@ Protocolo completo em [plugins.md](plugins.md). Resumo da arquitetura:
   o estado do plugin volta nos atributos do participante
   (`encodePluginState` / `decodePluginState`).
 - Como o plugin roda atrás de roteador doméstico, ele faz *polling*
-  (`aguardar` a cada ~5 s) em vez de receber chamadas.
+  (`aguardar`) quando o MotoRede o acorda por push (ntfy.sh), em vez de
+  receber chamadas — parado, não gasta Redis.
 - Estado no Redis com prefixo `mr:plg*` (ver `apps/web/api/_plugins.ts`).
 - Nos clientes, plugin é tratado como mais um participante: volume e mudo são
   locais a cada pessoa; não há abaixamento automático.

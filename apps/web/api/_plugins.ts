@@ -27,19 +27,22 @@ import { redis } from './_redis.js';
  * CONVITES
  *
  * O plugin roda num computador qualquer, atrás de roteador doméstico — não dá
- * para o servidor chamá-lo. Então é ele quem pergunta, de tempos em tempos,
- * "alguém me chamou?". O que fica no Redis, tudo com prazo:
+ * para o servidor chamá-lo. Ele fica parado numa conexão ociosa de push
+ * (`_acordar.ts`) e só pergunta "alguém me chamou?" quando é acordado, quando
+ * o código de pareamento muda e numa conferência a cada 10 min (que também o
+ * mantém "vivo"). Parado, não gasta Redis. O que fica no Redis, tudo com prazo:
  *
- *   mr:plgv:<id>          plugin está perguntando (vivo)          20 s
+ *   mr:plgv:<id>          plugin ligado (vivo)                    15 min
  *   mr:plgc:<id>          fila de convites pendentes              60 s
  *   mr:plgok:<id>:<sala>  convite aceito, pode pedir token        120 s
- *   mr:plgcod:<código>    código de pareamento → plugin            90 s
- *   mr:plgcodde:<id>      código atual do plugin (para trocar)     90 s
+ *   mr:plgcod:<código>    código de pareamento → plugin           15 min
+ *   mr:plgcodde:<id>      código atual do plugin (para trocar)    15 min
  *   mr:plgsala:<sala>     plugins pareados com o comboio           12 h
  *   mr:plgtent:<sala>     tentativas de código erradas            10 min
  *
- * O código só vale enquanto o plugin está ligado: ele é renovado a cada
- * pergunta e expira 90 s depois que o computador desliga.
+ * O código só vale enquanto o plugin está ligado: ao desligar, o plugin avisa
+ * (`desligar`) e ele some na hora; se o computador cair sem avisar, some em
+ * até 15 min.
  *
  * PLUGIN DE IA (`"tipo": "ia"` no registro)
  *
@@ -63,10 +66,11 @@ export interface PluginInvite {
   em: number;
 }
 
-export const VIVO_SEGUNDOS = 20;
+/** O plugin confere a cada 10 min; a folga cobre um atraso de rede. */
+export const VIVO_SEGUNDOS = 15 * 60;
 export const CONVITE_SEGUNDOS = 60;
 export const ACEITE_SEGUNDOS = 120;
-export const CODIGO_SEGUNDOS = 90;
+export const CODIGO_SEGUNDOS = 15 * 60;
 export const PAREAMENTO_SEGUNDOS = 12 * 60 * 60;
 export const TENTATIVAS_JANELA_SEGUNDOS = 10 * 60;
 export const TENTATIVAS_MAXIMAS = 8;
@@ -204,6 +208,22 @@ export async function invitePlugin(id: string, convite: PluginInvite): Promise<v
     ['RPUSH', `mr:plgc:${id}`, JSON.stringify(convite)],
     ['EXPIRE', `mr:plgc:${id}`, CONVITE_SEGUNDOS],
   ]);
+}
+
+/** O plugin de IA só precisa dizer que está no ar; convite não é com ele. */
+export async function markAlive(plugin: PluginEntry): Promise<void> {
+  await redis([['SET', `mr:plgv:${plugin.id}`, '1', 'EX', VIVO_SEGUNDOS]]);
+}
+
+/** O plugin avisou que vai desligar: some da lista e o código para de valer na hora. */
+export async function markOffline(plugin: PluginEntry): Promise<void> {
+  const [codigo] = await redis<string | null>([['GET', `mr:plgcodde:${plugin.id}`]]);
+  const comandos: (string | number)[][] = [
+    ['DEL', `mr:plgv:${plugin.id}`],
+    ['DEL', `mr:plgcodde:${plugin.id}`],
+  ];
+  if (codigo) comandos.push(['DEL', `mr:plgcod:${codigo}`]);
+  await redis(comandos);
 }
 
 /**

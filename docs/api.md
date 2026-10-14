@@ -140,10 +140,10 @@ que são limpos durante as buscas.
 |---|---|---|
 | `mr:geo`, `mr:tok:<deviceId>` | presença | — / 45 min |
 | `mr:pedidos`, `mr:ped:<id>`, `mr:req:<id>`, `mr:of:<id>` | socorro | — / 2 h |
-| `mr:plgv:<id>` | plugin ligado | 20 s |
+| `mr:plgv:<id>` | plugin ligado | 15 min |
 | `mr:plgc:<id>` | convites pendentes | 60 s |
 | `mr:plgok:<id>:<sala>` | convite aceito | 120 s |
-| `mr:plgcod:<código>`, `mr:plgcodde:<id>` | código de pareamento | 90 s |
+| `mr:plgcod:<código>`, `mr:plgcodde:<id>` | código de pareamento | 15 min |
 | `mr:plgsala:<sala>` | plugins pareados com o comboio | 12 h |
 | `mr:plgtent:<sala>` | tentativas erradas de código | 10 min |
 | `mr:ficha:<moto>` | ficha do modelo pesquisada por IA | 180 dias (1 dia se "sem dados") |

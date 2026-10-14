@@ -64,8 +64,10 @@ Registrado, o plugin **não aparece em comboio nenhum** até ser pareado:
 
 Trocar de comboio é digitar o código de novo — nada muda na Vercel.
 
-- O código só vale enquanto o plugin está ligado: ele o anuncia a cada
-  `aguardar`, e o MotoRede o esquece 90 s depois que o plugin para.
+- O código só vale enquanto o plugin está ligado: ele o anuncia no
+  `aguardar` (ao ligar, quando muda e a cada 10 min). Ao desligar, o plugin
+  avisa (`desligar`) e o código morre na hora; se o computador cair sem
+  avisar, o MotoRede o esquece em até 15 min.
 - Quem opera pode gerar um código novo a qualquer momento; o antigo morre na
   hora, e comboios já pareados continuam.
 - Cada comboio tem 8 tentativas erradas a cada 10 minutos.
@@ -89,10 +91,31 @@ Tudo passa por `POST /api/plugins`, com `{ "acao": ... }` no corpo.
 |---|---|---|
 | `aguardar` | `{ plugin, chave, codigo? }` | `{ convites: [{ sala, por, em }] }` — e anuncia o código de pareamento |
 | `entrar` | `{ plugin, chave, sala }` | `{ token, url }` — só com convite, um por entrada |
+| `desligar` | `{ plugin, chave }` | `200` — some da lista e o código para de valer na hora |
 
-O plugin roda atrás de roteador doméstico, então é ele quem pergunta
-(`aguardar`) a cada ~5 s. Perguntar também o marca como **ligado** por 20 s,
-que é o que o app mostra antes de chamar.
+### Acordar: o plugin não fica perguntando
+
+O plugin roda atrás de roteador doméstico, então o MotoRede não consegue
+chamá-lo. Em vez de perguntar em intervalo curto — cada pergunta gasta a cota
+gratuita do Redis, mesmo sem ninguém usando —, o plugin:
+
+1. Assina um canal no **ntfy.sh** (push gratuito, sem conta):
+   `GET https://ntfy.sh/<canal>/json`, uma conexão aberta e ociosa.
+2. Quando há convite ou tarefa, o MotoRede publica `acorda` nesse canal. O
+   aviso não leva dado nenhum.
+3. Acordado, o plugin faz **um** `aguardar` e recolhe tudo.
+
+O canal é `mr-` + os 40 primeiros hex de
+`sha256("motorede-acordar:<id>:<chave>")` — os dois lados o calculam sem
+configuração extra, e quem não sabe a chave não o acha. Ao reconectar, peça
+os avisos perdidos com `?since=<id do último aviso>`.
+
+Além disso, o plugin faz um `aguardar` ao ligar, quando o código de pareamento
+muda e **a cada 10 min**: é o que o mantém **ligado** no app (vale 15 min).
+Ao fechar, mande `desligar`.
+
+`MOTOREDE_ACORDAR_URL` na Vercel troca o servidor de push (um ntfy próprio,
+por exemplo).
 
 ### Na sala
 
@@ -129,9 +152,11 @@ Ele roda atrás de roteador como qualquer plugin, então usa o mesmo
 
 | Ação | Corpo | Resposta |
 |---|---|---|
-| `aguardar` | `{ plugin, chave }` | `{ convites: [], tarefas: [{ id, prompt, em }] }` — e marca a IA como no ar por 20 s |
+| `aguardar` | `{ plugin, chave }` | `{ convites: [], tarefas: [{ id, prompt, em }] }` — e marca a IA como no ar por 15 min |
+| `desligar` | `{ plugin, chave }` | `200` — o app passa a mostrar "fora do ar" na hora |
 | `concluir` | `{ plugin, chave, id, resposta? }` | `{ resultado }`: `guardada`, `sem-dados`, `invalida` ou `falhou`. Sem `resposta` = a IA falhou. `404` tarefa expirada |
 
+- É acordado do mesmo jeito que os plugins de áudio (ver "Acordar" acima).
 - O plugin recebe **só o prompt pronto** e devolve o texto da IA como veio.
   Montar o prompt e validar a resposta é trabalho do MotoRede: o que o plugin
   manda não é confiável até passar pela validação.

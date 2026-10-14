@@ -1240,3 +1240,38 @@ escolhe ela de volta. Conta e cota são dele; o MotoRede não guarda chave de IA
 O ChatGPT abria sem a foto quando recebia foto e texto juntos; passou a
 receber só a foto (`enviaTexto: false`), com a dica de anexar pelo "+" se
 ela não aparecer.
+
+## 37. Plugins acordados por push, não por pergunta a cada 5 s
+
+**Status:** `implementado` — falta publicar o servidor e atualizar o plugin
+**Data:** 2026-10-14
+
+Em 14/10 a ficha da moto mostrou "Redis: ERR max requests limit exceeded": a
+cota gratuita do Upstash (500 mil comandos/mês) tinha acabado. A causa eram
+os dois plugins de casa perguntando "alguém me chamou?" a cada 5 s, dia e
+noite: ~190 mil comandos por dia, e a cota do mês acabava em 3 dias. O Upstash
+conta cada comando, mesmo os que vão juntos num pipeline. Com a cota
+estourada caem também o SOS e os plugins, não só a ficha.
+
+**Princípio do usuário:** o plugin roda em casa para custar praticamente
+nada. Se ficasse gastando parado, seria melhor subir num servidor.
+
+**Decisão:** o plugin fica numa conexão ociosa do **ntfy.sh** (push gratuito,
+sem conta). Quando há convite ou tarefa, o MotoRede publica `acorda` no canal,
+e só então o plugin faz um `aguardar`. Canal = hash de id + chave; os dois
+lados calculam, sem configuração nova. "Vivo" passou de 20 s para 15 min,
+mantido por uma conferência a cada 10 min; ao fechar, o plugin manda
+`desligar` e sai da lista na hora. Parado, os dois plugins gastam ~40 mil
+comandos/mês.
+
+**Descartados:** Supabase Realtime (o plano gratuito pausa após 7 dias sem
+uso); Ably/Pusher (mais uma conta e mais um SDK); só aumentar o intervalo
+(continua gastando parado); plano pago do Upstash (o projeto é gratuito por
+regra).
+
+**Risco:** o ntfy.sh público tem limite por endereço, e a Vercel publica de
+IPs compartilhados. Se recusar, o aviso se perde e o convite espera a
+conferência de 10 min. O plano B é um ntfy próprio, apontado em
+`MOTOREDE_ACORDAR_URL`.
+
+Contas e limites de todos os serviços: [contas-e-servicos.md](contas-e-servicos.md).

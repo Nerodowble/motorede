@@ -4,6 +4,7 @@ import { normalizePairCode, PLUGIN_IDENTITY_PREFIX } from '@motorede/shared';
 import { encodeMetadata } from './_livekit.js';
 import { storeConfigured } from './_redis.js';
 import { coletarTarefas, concluirTarefa } from './_fichaMoto.js';
+import { acordarPlugin } from './_acordar.js';
 import {
   announceCode,
   checkPluginKey,
@@ -11,6 +12,8 @@ import {
   consumeInvite,
   findPlugin,
   invitePlugin,
+  markAlive,
+  markOffline,
   pairRoom,
   pluginAllowedIn,
   pluginsForRoom,
@@ -34,8 +37,12 @@ import {
  * O PLUGIN, com a chave do registro (`MOTOREDE_PLUGINS`).
  *
  *   aguardar   { plugin, chave, codigo? } "alguém me chamou?" (e anuncia o código)
+ *   desligar   { plugin, chave }          vai desligar: sai da lista na hora
  *   entrar     { plugin, chave, sala }    token de uma sala para a qual foi chamado
  *   concluir   { plugin, chave, id, resposta? }  só o plugin de IA: devolve uma tarefa
+ *
+ * O plugin não pergunta em intervalo curto: fica parado até ser acordado
+ * (`_acordar.ts`) ao receber convite ou tarefa. Ver `_plugins.ts`.
  *
  * O plugin de IA (`"tipo": "ia"`) recebe `tarefas` no `aguardar`, em vez de
  * convites, e nunca entra em sala. Ver `_fichaMoto.ts` e docs/plugins.md.
@@ -145,6 +152,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
         }
 
         await invitePlugin(plugin.id, { sala: quem.sala, por: quem.identidade, em: Date.now() });
+        await acordarPlugin(plugin);
         return responder(202, { ok: true });
       }
 
@@ -186,10 +194,9 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
         }
         if (!storeConfigured()) return responder(503, { error: 'convites não configurados' });
 
-        // A IA não pareia nem entra em comboio: só recolhe tarefas. O "vivo"
-        // vem do collectInvites, igual ao dos plugins de áudio.
+        // A IA não pareia nem entra em comboio: só recolhe tarefas.
         if (plugin.tipo === 'ia') {
-          await collectInvites(plugin);
+          await markAlive(plugin);
           return responder(200, { convites: [], tarefas: await coletarTarefas(plugin) });
         }
 
@@ -200,6 +207,15 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
 
         const convites = await collectInvites(plugin);
         return responder(200, { convites });
+      }
+
+      case 'desligar': {
+        const plugin = findPlugin(corpo.plugin);
+        if (!plugin || !checkPluginKey(plugin, corpo.chave)) {
+          return responder(401, { error: 'plugin ou chave inválidos' });
+        }
+        if (storeConfigured()) await markOffline(plugin);
+        return responder(200, { ok: true });
       }
 
       case 'entrar': {
