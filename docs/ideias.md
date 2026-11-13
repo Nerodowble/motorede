@@ -1316,3 +1316,33 @@ não houver ficha, oferece "pesquisar com a sua IA". A ficha validada fica na
 moto do piloto; para ir ao cache, exigir duas respostas de pilotos
 diferentes batendo, ou guardar como "não verificada". Nesse formato, o
 plugin de IA de casa vira um reforço opcional, não uma peça obrigatória.
+
+## 39. Garagem: várias motos por piloto
+
+**Status (2026-11-13):** feito no app e na web.
+
+O app guardava uma moto só, sem jeito de trocá-la ou apagá-la. Quem vendia a
+PCX e comprava outra ficava preso à PCX. Agora a tela Moto tem o cartão
+**Garagem**, logo abaixo do odômetro: tocar numa moto passa a usá-la, o lápis
+corrige marca, modelo, ano, km e placa, a lixeira apaga a moto (com
+confirmação) e "Adicionar outra moto" cadastra uma nova, que passa a ser a
+usada.
+
+- Cada moto tem o próprio histórico (`MaintenanceRecord.motorcycleId`); a
+  tela mostra só o da moto em uso. Apagar a moto apaga o histórico e a capa
+  dela.
+- Regras em `packages/shared/src/domain/garagem.ts` (puras, testadas em
+  `tests/garagem`), prontas para a web reaproveitar.
+- Migração: no app, a chave antiga `motorede_motorcycle` vira a garagem com
+  aquela moto. Registros antigos com outro id de moto ficam com ela, mas só
+  quando há uma moto só.
+- Na web, o lápis da moto em uso abre a ficha completa (`MotorcycleEditModal`)
+  e "Adicionar outra moto" abre a mesma ficha em branco. O perfil do piloto
+  (`currentUser.motorcycle`) acompanha a moto em uso, e a chave antiga
+  `motorede_motorcycle` também.
+- A web gravava um histórico de exemplo da CB 500X fictícia
+  (`moto-cb500x-01`) na primeira visita. Esses registros são descartados
+  quando essa moto não está na garagem, para não virarem histórico da moto
+  real.
+- Como a moto fica no aparelho, app e web têm garagens separadas até haver
+  sincronização.

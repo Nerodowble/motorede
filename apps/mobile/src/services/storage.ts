@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { MaintenanceRecord, Motorcycle, RiderProfile } from '@motorede/shared';
+import { garagemDeLegado, type Garagem, type MaintenanceRecord, type Motorcycle, type RiderProfile } from '@motorede/shared';
 
 /**
  * Persistência local do app.
@@ -15,7 +15,9 @@ import type { MaintenanceRecord, Motorcycle, RiderProfile } from '@motorede/shar
 
 const CHAVES = {
   PROFILE: 'motorede_profile',
+  /** Formato antigo, de uma moto só. Lido uma vez para montar a garagem. */
   MOTORCYCLE: 'motorede_motorcycle',
+  GARAGEM: 'motorede_garagem',
   RECORDS: 'motorede_maintenance_records',
   LAST_ROOM: 'motorede_last_room_code',
   PHONE: 'motorede_phone',
@@ -90,9 +92,13 @@ export const storage = {
     }
   },
 
-  /** A moto do piloto, ou null se ainda não cadastrou. */
-  getMotorcycle: () => ler<Motorcycle>(CHAVES.MOTORCYCLE),
-  saveMotorcycle: (moto: Motorcycle) => gravar(CHAVES.MOTORCYCLE, moto),
+  /**
+   * As motos do piloto. Quem ainda tem só a chave antiga (uma moto) recebe a
+   * garagem montada a partir dela; a chave antiga fica onde está, intocada.
+   */
+  getGaragem: async (): Promise<Garagem> =>
+    (await ler<Garagem>(CHAVES.GARAGEM)) ?? garagemDeLegado(await ler<Motorcycle>(CHAVES.MOTORCYCLE)),
+  saveGaragem: (garagem: Garagem) => gravar(CHAVES.GARAGEM, garagem),
 
   /**
    * Pedidos de socorro que VOCÊ abriu e ainda estão de pé.

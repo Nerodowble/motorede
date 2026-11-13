@@ -11,6 +11,8 @@ import {
   ConsumableCategory,
   SOSVolunteer,
   DiagnosticNode,
+  garagemDeLegado,
+  type Garagem,
 } from '@motorede/shared';
 import { calculateDistanceKm } from './geolocation';
 
@@ -23,7 +25,9 @@ const STORAGE_KEYS = {
   USER_ROLE: 'motorede_user_role',
   USERS: 'motorede_registered_users',
   CURRENT_USER: 'motorede_current_user',
+  /** Moto em uso. Antes da garagem, era a única. */
   MOTORCYCLE: 'motorede_motorcycle',
+  GARAGEM: 'motorede_garagem',
   MAINTENANCE_RECORDS: 'motorede_maintenance_records',
   SOS_ALERTS: 'motorede_sos_alerts',
   VOICE_ROOM: 'motorede_voice_room',
@@ -1110,6 +1114,32 @@ export const storageService = {
       window.dispatchEvent(new CustomEvent('motorede:symptoms_updated', { detail: symptoms }));
     }
     return true;
+  },
+
+  /**
+   * As motos do piloto. Sem garagem gravada, monta a partir da moto antiga
+   * (a do perfil vence, como na abertura do App).
+   */
+  getGaragem(motoDoPerfil?: Motorcycle | null): Garagem {
+    if (typeof window === 'undefined') return garagemDeLegado(null);
+    const raw = localStorage.getItem(STORAGE_KEYS.GARAGEM);
+    if (raw) {
+      try {
+        return JSON.parse(raw) as Garagem;
+      } catch {
+        // ilegível: refaz a partir da moto antiga
+      }
+    }
+    return garagemDeLegado(motoDoPerfil ?? this.getMotorcycle());
+  },
+
+  /** Grava a garagem e mantém a chave antiga com a moto em uso. */
+  saveGaragem(garagem: Garagem): void {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(STORAGE_KEYS.GARAGEM, JSON.stringify(garagem));
+    const ativa = garagem.motos.find((m) => m.id === garagem.ativaId);
+    if (ativa) localStorage.setItem(STORAGE_KEYS.MOTORCYCLE, JSON.stringify(ativa));
+    else localStorage.removeItem(STORAGE_KEYS.MOTORCYCLE);
   },
 
   saveMotorcycle(bike: Motorcycle): void {

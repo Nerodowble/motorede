@@ -3,7 +3,6 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import {
   MAINTENANCE_LABELS,
-  parseAnoMoto,
   parseIntervalKm,
   type ConsumableCategory,
   type MaintenanceItemStatus,
@@ -17,6 +16,8 @@ import { InfoAjuda } from '../components/InfoAjuda';
 import { CampoIntervalo, FolhaIntervalo } from '../components/CampoIntervalo';
 import { FichaIA } from '../components/FichaIA';
 import { PlanoManutencao } from '../components/moto/PlanoManutencao';
+import { FormMoto } from '../components/moto/FormMoto';
+import { GaragemMotos } from '../components/moto/GaragemMotos';
 import { CapaMoto } from '../components/capa/CapaMoto';
 import { AssistenteCapa } from '../components/capa/AssistenteCapa';
 import { FolhaOpcoesCapa } from '../components/capa/FolhaOpcoesCapa';
@@ -35,12 +36,19 @@ import { COLORS, ESPACO, FONTE_CONDENSADA, TIPO } from '../theme';
  */
 
 interface MyMotorcycleScreenProps {
+  /** A moto em uso. */
   motorcycle: Motorcycle | null;
+  /** Todas as motos da garagem, inclusive a em uso. */
+  motos: Motorcycle[];
   maintenance: MaintenanceItemStatus[];
   records: MaintenanceRecord[];
   onAddRecord: (record: Omit<MaintenanceRecord, 'id'>) => void;
   onUpdateKm: (km: number) => void;
+  /** Atualiza uma moto; uma moto nova entra na garagem e passa a ser a usada. */
   onSaveMotorcycle: (moto: Motorcycle) => void;
+  onChooseMotorcycle: (id: string) => void;
+  /** Apaga a moto com o histórico e a capa dela. */
+  onDeleteMotorcycle: (id: string) => void;
   /** null volta ao padrão (ou a nenhum intervalo, no óleo). */
   onSetInterval: (category: ConsumableCategory, km: number | null) => void;
 }
@@ -48,11 +56,14 @@ interface MyMotorcycleScreenProps {
 
 export const MyMotorcycleScreen: React.FC<MyMotorcycleScreenProps> = ({
   motorcycle,
+  motos,
   maintenance,
   records,
   onAddRecord,
   onUpdateKm,
   onSaveMotorcycle,
+  onChooseMotorcycle,
+  onDeleteMotorcycle,
   onSetInterval,
 }) => {
   const [registrando, setRegistrando] = useState<ConsumableCategory | null>(null);
@@ -62,11 +73,6 @@ export const MyMotorcycleScreen: React.FC<MyMotorcycleScreenProps> = ({
   const [erroIntervalo, setErroIntervalo] = useState(false);
   const [editandoIntervalo, setEditandoIntervalo] = useState<ConsumableCategory | null>(null);
   const [cadastrando, setCadastrando] = useState(false);
-  const [marca, setMarca] = useState('');
-  const [modelo, setModelo] = useState('');
-  const [kmInicial, setKmInicial] = useState('');
-  const [anoCadastro, setAnoCadastro] = useState('');
-  const [erroAno, setErroAno] = useState(false);
   const [editandoKm, setEditandoKm] = useState(false);
   const [kmMoto, setKmMoto] = useState('');
   const [assistente, setAssistente] = useState<ProgressoCapa | null>(null);
@@ -83,28 +89,6 @@ export const MyMotorcycleScreen: React.FC<MyMotorcycleScreenProps> = ({
     });
   }, [motoId]);
 
-  const salvarCadastro = () => {
-    if (!marca.trim() || !modelo.trim()) return;
-    // Antes gravava o ano corrente para toda moto: a ficha pesquisada por IA
-    // saía da versão errada (uma 2015 virava 2026).
-    const ano = parseAnoMoto(anoCadastro);
-    if (ano === null) {
-      setErroAno(true);
-      return;
-    }
-    onSaveMotorcycle({
-      id: `moto-${Date.now()}`,
-      brand: marca.trim(),
-      model: modelo.trim(),
-      year: ano,
-      licensePlate: '',
-      currentKm: parseInt(kmInicial, 10) || 0,
-      avgKmPerMonth: 0,
-      lastKmUpdate: new Date().toISOString(),
-    });
-    setCadastrando(false);
-  };
-
   // Sem moto, a tela inteira vira o convite — inventar uma foi exatamente o
   // problema que esta tela tinha antes.
   if (!motorcycle) {
@@ -120,31 +104,13 @@ export const MyMotorcycleScreen: React.FC<MyMotorcycleScreenProps> = ({
           </Text>
 
           {cadastrando ? (
-            <View style={styles.formulario}>
-              <Campo value={marca} onChangeText={setMarca} placeholder="Marca (ex: Honda)" accessibilityLabel="Marca" />
-              <Campo value={modelo} onChangeText={setModelo} placeholder="Modelo (ex: CB 500X)" accessibilityLabel="Modelo" />
-              <Campo
-                value={anoCadastro}
-                onChangeText={(t) => {
-                  setAnoCadastro(t);
-                  setErroAno(false);
-                }}
-                placeholder="Ano/modelo (ex: 2022)"
-                keyboardType="number-pad"
-                maxLength={4}
-                erro={erroAno}
-                accessibilityLabel="Ano/modelo"
-              />
-              {erroAno && <Text style={estilosBase.erro}>Informe o ano da moto, como está no documento (ex: 2022).</Text>}
-              <Campo
-                value={kmInicial}
-                onChangeText={setKmInicial}
-                placeholder="Quilometragem atual"
-                keyboardType="number-pad"
-                accessibilityLabel="Quilometragem atual"
-              />
-              <Botao rotulo="Salvar" variante="action" onPress={salvarCadastro} />
-            </View>
+            <FormMoto
+              aoSalvar={(m) => {
+                onSaveMotorcycle(m);
+                setCadastrando(false);
+              }}
+              aoCancelar={() => setCadastrando(false)}
+            />
           ) : (
             <Botao
               rotulo="Cadastrar minha moto"
@@ -286,6 +252,14 @@ export const MyMotorcycleScreen: React.FC<MyMotorcycleScreenProps> = ({
         )}
       </Cartao>
 
+      <GaragemMotos
+        motos={motos}
+        ativaId={motorcycle.id}
+        aoEscolher={onChooseMotorcycle}
+        aoSalvar={onSaveMotorcycle}
+        aoApagar={onDeleteMotorcycle}
+      />
+
       <PlanoManutencao maintenance={maintenance} abrirRegistro={abrirRegistro} abrirIntervalo={abrirIntervalo} />
 
       <FichaIA motorcycle={motorcycle} onSetInterval={onSetInterval} onSaveMotorcycle={onSaveMotorcycle} />
@@ -393,7 +367,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   centro: { textAlign: 'center' },
-  formulario: { gap: ESPACO.md, alignSelf: 'stretch' },
   largura: { alignSelf: 'stretch' },
   linha: { flexDirection: 'row', gap: ESPACO.sm, alignItems: 'center' },
   km: {

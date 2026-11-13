@@ -16,7 +16,8 @@
     "test:plugins": "tsx tests/plugins/plugins.test.mts && tsx tests/plugins/ficha-moto.test.mts && tsx --test tests/plugins/capa-moto.test.mts",
     "test:rotas": "tsx --test tests/rotas/rotas.test.mts tests/rotas/importacao.test.mts tests/rotas/rotaBiker.test.mts",
     "rotas:importar": "tsx scripts/importar-rotas.mts",
-    "test:manutencao": "tsx --test tests/manutencao/manutencao.test.mts"
+    "test:manutencao": "tsx --test tests/manutencao/manutencao.test.mts",
+    "test:garagem": "tsx --test tests/garagem/garagem.test.mts"
   },
   "overrides": {
     "react": "19.2.3",

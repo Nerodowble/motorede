@@ -16,6 +16,7 @@ import { FolhaFormulario } from '../components/FolhaFormulario';
 import { CartaoManutencao } from '../components/CartaoManutencao';
 import { FichaIA } from '../components/FichaIA';
 import { PainelCapa } from '../components/capa/PainelCapa';
+import { GaragemMotos } from '../components/GaragemMotos';
 
 /**
  * Minha moto — uma aba só.
@@ -46,6 +47,12 @@ interface MyMotorcycleViewProps {
   onOpenEditMotorcycle?: () => void;
   /** Para o "usar" da ficha pesquisada por IA. Sem ela, a ficha não aparece. */
   onSaveMotorcycle?: (moto: Motorcycle) => void;
+  /** Garagem: todas as motos, inclusive a em uso. Sem ela, o cartão não aparece. */
+  motos?: Motorcycle[];
+  onChooseMotorcycle?: (id: string) => void;
+  /** Apaga a moto com o histórico dela. */
+  onDeleteMotorcycle?: (id: string) => void;
+  onAddMotorcycle?: () => void;
 }
 
 export const MyMotorcycleView: React.FC<MyMotorcycleViewProps> = ({
@@ -57,6 +64,10 @@ export const MyMotorcycleView: React.FC<MyMotorcycleViewProps> = ({
   onSetInterval,
   onOpenEditMotorcycle,
   onSaveMotorcycle,
+  motos,
+  onChooseMotorcycle,
+  onDeleteMotorcycle,
+  onAddMotorcycle,
 }) => {
   const [registrando, setRegistrando] = useState<ConsumableCategory | null>(null);
   const [km, setKm] = useState('');
@@ -214,6 +225,17 @@ export const MyMotorcycleView: React.FC<MyMotorcycleViewProps> = ({
           </button>
         )}
       </div>
+
+      {motos && onChooseMotorcycle && onDeleteMotorcycle && onAddMotorcycle && onOpenEditMotorcycle && (
+        <GaragemMotos
+          motos={motos}
+          ativaId={motorcycle.id}
+          aoEscolher={onChooseMotorcycle}
+          aoEditar={onOpenEditMotorcycle}
+          aoAdicionar={onAddMotorcycle}
+          aoApagar={onDeleteMotorcycle}
+        />
+      )}
 
       {/* Itens de manutenção, do mais urgente ao sem registro */}
       {ordenados.map((item) => (

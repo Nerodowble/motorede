@@ -14,3 +14,4 @@ export * from './data/catalogoRotas.js';
 export * from './domain/rotaBiker.js';
 export * from './data/monumentosRotaBiker.js';
 export * from './domain/capaMoto.js';
+export * from './domain/garagem.js';

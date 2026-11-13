@@ -18,7 +18,16 @@ import {
   normalizeRoomCode,
   profileFromGoogle,
   summarizeMaintenance,
+  GARAGEM_VAZIA,
+  adotarRegistrosOrfaos,
+  atualizarAtiva,
+  escolherMoto,
+  motoAtiva,
+  registrosDaMoto,
+  removerDaGaragem,
+  salvarNaGaragem,
   type ConsumableCategory,
+  type Garagem,
   type MaintenanceRecord,
   type Motorcycle,
   type RiderProfile,
@@ -32,6 +41,7 @@ import { SocorroScreen } from './src/screens/SocorroScreen';
 import { RoutesScreen } from './src/screens/RoutesScreen';
 import { useSocorro } from './src/hooks/useSocorro';
 import { storage } from './src/services/storage';
+import { apagarImagem, limparProgresso } from './src/services/capaMoto';
 import { DEV_ROOM_CODE } from './src/config';
 import { COLORS } from './src/theme';
 import { BarraAbas, Cabecalho, type Aba } from './src/components/BarraAbas';
@@ -82,14 +92,21 @@ function Aplicativo() {
   const [estadoVoz, setEstadoVoz] = useState({ conectada: false, mudo: true });
   const [roomCode, setRoomCode] = useState(DEV_ROOM_CODE);
   const [profile, setProfile] = useState<RiderProfile | null>(null);
-  const [motorcycle, setMotorcycle] = useState<Motorcycle | null>(null);
+  const [garagem, setGaragem] = useState<Garagem>(GARAGEM_VAZIA);
   const [records, setRecords] = useState<MaintenanceRecord[]>([]);
   const [carregando, setCarregando] = useState(true);
 
+  // Tudo o que não é a tela Moto continua vendo "a moto": a que está em uso.
+  const motorcycle = useMemo(() => motoAtiva(garagem), [garagem]);
+  const registrosDaAtiva = useMemo(
+    () => (motorcycle ? registrosDaMoto(records, motorcycle.id) : []),
+    [records, motorcycle]
+  );
+
   // A manutenção é DERIVADA do histórico, nunca guardada em paralelo.
   const maintenance = useMemo(
-    () => (motorcycle ? summarizeMaintenance(records, motorcycle) : []),
-    [records, motorcycle]
+    () => (motorcycle ? summarizeMaintenance(registrosDaAtiva, motorcycle) : []),
+    [registrosDaAtiva, motorcycle]
   );
 
   const trocarSala = useCallback((codigo: string) => {
@@ -99,15 +116,18 @@ function Aplicativo() {
 
   useEffect(() => {
     void (async () => {
-      const [perfil, moto, regs, sala] = await Promise.all([
+      const [perfil, gar, regs, sala] = await Promise.all([
         storage.getProfile(),
-        storage.getMotorcycle(),
+        storage.getGaragem(),
         storage.getRecords(),
         storage.getLastRoom(),
       ]);
       setProfile(perfil);
-      setMotorcycle(moto);
-      setRecords(regs);
+      setGaragem(gar);
+      // Histórico gravado antes da garagem pode ter outro id de moto.
+      const adotados = adotarRegistrosOrfaos(regs, gar);
+      setRecords(adotados);
+      if (adotados !== regs) void storage.saveRecords(adotados);
       if (sala) setRoomCode(sala);
       setCarregando(false);
     })();
@@ -159,33 +179,60 @@ function Aplicativo() {
     setProfile(null);
   }, [auth]);
 
-  const salvarMoto = useCallback((moto: Motorcycle) => {
-    setMotorcycle(moto);
-    void storage.saveMotorcycle(moto);
-  }, []);
-
   // Atualização funcional: registrar troca pode mudar intervalo e km no mesmo
   // toque, e cada um precisa partir do que o outro já gravou.
-  const atualizarKm = useCallback((km: number) => {
-    setMotorcycle((atual) => {
-      if (!atual) return atual;
-      const atualizada = { ...atual, currentKm: km, lastKmUpdate: new Date().toISOString() };
-      void storage.saveMotorcycle(atualizada);
-      return atualizada;
+  const mudarGaragem = useCallback((mudar: (g: Garagem) => Garagem) => {
+    setGaragem((atual) => {
+      const nova = mudar(atual);
+      if (nova !== atual) void storage.saveGaragem(nova);
+      return nova;
     });
   }, []);
 
-  const definirIntervalo = useCallback((categoria: ConsumableCategory, km: number | null) => {
-    setMotorcycle((atual) => {
-      if (!atual) return atual;
-      const customIntervals = { ...atual.customIntervals };
-      if (km === null) delete customIntervals[categoria];
-      else customIntervals[categoria] = km;
-      const atualizada = { ...atual, customIntervals };
-      void storage.saveMotorcycle(atualizada);
-      return atualizada;
-    });
-  }, []);
+  /** Atualiza uma moto da garagem; uma moto nova entra e passa a ser a usada. */
+  const salvarMoto = useCallback(
+    (moto: Motorcycle) => mudarGaragem((g) => salvarNaGaragem(g, moto)),
+    [mudarGaragem]
+  );
+
+  const usarMoto = useCallback((id: string) => mudarGaragem((g) => escolherMoto(g, id)), [mudarGaragem]);
+
+  /** Apaga a moto com o histórico e a capa dela. */
+  const apagarMoto = useCallback(
+    (id: string) => {
+      const moto = garagem.motos.find((m) => m.id === id);
+      apagarImagem(moto?.coverImageUrl);
+      void limparProgresso(id);
+      mudarGaragem((g) => removerDaGaragem(g, id));
+      setRecords((atuais) => {
+        const restantes = atuais.filter((r) => r.motorcycleId !== id);
+        void storage.saveRecords(restantes);
+        return restantes;
+      });
+    },
+    [garagem, mudarGaragem]
+  );
+
+  const atualizarKm = useCallback(
+    (km: number) =>
+      mudarGaragem((g) =>
+        atualizarAtiva(g, (m) => ({ ...m, currentKm: km, lastKmUpdate: new Date().toISOString() }))
+      ),
+    [mudarGaragem]
+  );
+
+  const definirIntervalo = useCallback(
+    (categoria: ConsumableCategory, km: number | null) =>
+      mudarGaragem((g) =>
+        atualizarAtiva(g, (m) => {
+          const customIntervals = { ...m.customIntervals };
+          if (km === null) delete customIntervals[categoria];
+          else customIntervals[categoria] = km;
+          return { ...m, customIntervals };
+        })
+      ),
+    [mudarGaragem]
+  );
 
   const adicionarRegistro = useCallback(
     (dados: Omit<MaintenanceRecord, 'id'>) => {
@@ -277,11 +324,14 @@ function Aplicativo() {
         {aba === 'moto' && (
           <MyMotorcycleScreen
             motorcycle={motorcycle}
+            motos={garagem.motos}
             maintenance={maintenance}
-            records={records}
+            records={registrosDaAtiva}
             onAddRecord={adicionarRegistro}
             onUpdateKm={atualizarKm}
             onSaveMotorcycle={salvarMoto}
+            onChooseMotorcycle={usarMoto}
+            onDeleteMotorcycle={apagarMoto}
             onSetInterval={definirIntervalo}
           />
         )}

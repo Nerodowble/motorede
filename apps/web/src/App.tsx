@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react';
-import { UserRole, UserProfile, Motorcycle, SOSAlert, SOSVolunteer, VoiceRoom, Coupon, MaintenanceRecord, EmergencyType, ConsumableCategory, summarizeMaintenance } from '@motorede/shared';
+import { UserRole, UserProfile, Motorcycle, SOSAlert, SOSVolunteer, VoiceRoom, Coupon, MaintenanceRecord, EmergencyType, ConsumableCategory, summarizeMaintenance, type Garagem, motoAtiva, salvarNaGaragem, atualizarAtiva, escolherMoto, removerDaGaragem, registrosDaMoto, adotarRegistrosOrfaos } from '@motorede/shared';
 import { storageService } from './services/storage';
 import { useSocorroRede } from './hooks/useSocorroRede';
 import { GeoPoint, geolocationService, calculateDistanceKm } from './services/geolocation';
@@ -26,6 +26,9 @@ import { DashboardView } from './views/DashboardView';
 // Code-split secondary views to reduce initial bundle size and speed up boot
 const ConvoyVoiceView = lazy(() => import('./views/ConvoyVoiceView').then((m) => ({ default: m.ConvoyVoiceView })));
 const SOSRescueView = lazy(() => import('./views/SOSRescueView').then((m) => ({ default: m.SOSRescueView })));
+/** Id da moto de exemplo que versões antigas gravavam (ver services/storage.ts). */
+const ID_MOTO_EXEMPLO = 'moto-cb500x-01';
+
 const MyMotorcycleView = lazy(() => import('./views/MyMotorcycleView').then((m) => ({ default: m.MyMotorcycleView })));
 const RoutesView = lazy(() => import('./views/RoutesView').then((m) => ({ default: m.RoutesView })));
 const DiagnosticView = lazy(() => import('./views/DiagnosticView').then((m) => ({ default: m.DiagnosticView })));
@@ -43,7 +46,9 @@ export default function App() {
   // Authentication & Session State
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => storageService.getCurrentUser());
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [isMotorcycleEditOpen, setIsMotorcycleEditOpen] = useState(false);
+  // 'ativa' edita a moto em uso; 'nova' cadastra outra na garagem.
+  const [fichaMoto, setFichaMoto] = useState<{ modo: 'ativa' | 'nova'; vez: number } | null>(null);
+  const abrirFicha = (modo: 'ativa' | 'nova') => setFichaMoto({ modo, vez: Date.now() });
   // Folha "Mais": aberta pela barra de baixo e pelo avatar do cabeçalho.
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   // "Entrar no comboio" do painel usa a mesma conexão da tela de comboio.
@@ -66,24 +71,37 @@ export default function App() {
   // null enquanto o piloto não cadastrar. Antes o app entregava uma moto de
   // exemplo de presente, e não havia como distinguir "não tenho moto" de
   // "tenho a CB 500X fictícia".
-  const [motorcycle, setMotorcycle] = useState<Motorcycle | null>(() => {
-    if (currentUser?.motorcycle) return currentUser.motorcycle;
-    return storageService.getMotorcycle();
-  });
+  //
+  // A garagem guarda todas as motos; o resto do app vê só a que está em uso.
+  const [garagem, setGaragem] = useState<Garagem>(() => storageService.getGaragem(currentUser?.motorcycle));
+  const motorcycle = useMemo(() => motoAtiva(garagem), [garagem]);
   const [sosAlerts, setSosAlerts] = useState<SOSAlert[]>(() => storageService.getSOSAlerts());
   const [voiceRoom, setVoiceRoom] = useState<VoiceRoom>(() => storageService.getVoiceRoom());
   const [coupons, setCoupons] = useState<Coupon[]>(() => storageService.getCoupons());
-  const [maintenanceRecords, setMaintenanceRecords] = useState<MaintenanceRecord[]>(() =>
-    storageService.getMaintenanceRecords()
+  const [maintenanceRecords, setMaintenanceRecords] = useState<MaintenanceRecord[]>(() => {
+    const lidos = storageService.getMaintenanceRecords();
+    // O histórico de exemplo da CB 500X fictícia não é do piloto: sem aquela
+    // moto na garagem, sai — senão a garagem o entregaria à moto real.
+    const reais = lidos.filter(
+      (r) => r.motorcycleId !== ID_MOTO_EXEMPLO || garagem.motos.some((m) => m.id === ID_MOTO_EXEMPLO)
+    );
+    // Histórico gravado antes da garagem pode ter outro id de moto.
+    const adotados = adotarRegistrosOrfaos(reais, garagem);
+    if (adotados !== lidos) storageService.saveMaintenanceRecords(adotados);
+    return adotados;
+  });
+  const registrosDaAtiva = useMemo(
+    () => (motorcycle ? registrosDaMoto(maintenanceRecords, motorcycle.id) : []),
+    [maintenanceRecords, motorcycle]
   );
 
   // Na abertura, a moto do perfil vence a do armazenamento. Sem manter as duas
   // iguais, km e intervalos alterados voltavam ao valor antigo ao recarregar.
+  // O perfil acompanha a moto em uso, inclusive quando a garagem esvazia.
   useEffect(() => {
-    if (!motorcycle) return;
     setCurrentUser((u) => {
-      if (!u || u.role !== 'rider' || u.motorcycle === motorcycle) return u;
-      const atualizado: UserProfile = { ...u, motorcycle };
+      if (!u || u.role !== 'rider' || u.motorcycle === (motorcycle ?? undefined)) return u;
+      const atualizado: UserProfile = { ...u, motorcycle: motorcycle ?? undefined };
       storageService.setCurrentUser(atualizado);
       return atualizado;
     });
@@ -93,8 +111,8 @@ export default function App() {
   // um estado de consumíveis com valores próprios, que podia divergir do que o
   // passaporte registrava — duas verdades sobre a mesma moto.
   const maintenance = useMemo(
-    () => (motorcycle ? summarizeMaintenance(maintenanceRecords, motorcycle) : []),
-    [maintenanceRecords, motorcycle]
+    () => (motorcycle ? summarizeMaintenance(registrosDaAtiva, motorcycle) : []),
+    [registrosDaAtiva, motorcycle]
   );
 
   // Background Audio & Lockscreen State (inactive on cold boot to prevent browser autoplay blocks)
@@ -147,39 +165,43 @@ export default function App() {
   // Recalculate wear when motorcycle KM changes
   // Atualização funcional: registrar troca pode mudar intervalo e km no mesmo
   // clique, e cada um precisa partir do que o outro já gravou.
-  const handleUpdateKm = (newKm: number) => {
-    setMotorcycle((atual) => {
-      if (!atual) return atual;
-      const updatedBike = { ...atual, currentKm: newKm, lastKmUpdate: new Date().toISOString() };
-      storageService.saveMotorcycle(updatedBike);
-      return updatedBike;
+  const mudarGaragem = (mudar: (g: Garagem) => Garagem) => {
+    setGaragem((atual) => {
+      const nova = mudar(atual);
+      if (nova !== atual) storageService.saveGaragem(nova);
+      return nova;
     });
   };
 
-  const handleSetInterval = (category: ConsumableCategory, km: number | null) => {
-    setMotorcycle((atual) => {
-      if (!atual) return atual;
-      const customIntervals = { ...atual.customIntervals };
-      if (km === null) delete customIntervals[category];
-      else customIntervals[category] = km;
-      const updatedBike = { ...atual, customIntervals };
-      storageService.saveMotorcycle(updatedBike);
-      return updatedBike;
+  const handleUpdateKm = (newKm: number) =>
+    mudarGaragem((g) =>
+      atualizarAtiva(g, (m) => ({ ...m, currentKm: newKm, lastKmUpdate: new Date().toISOString() }))
+    );
+
+  const handleSetInterval = (category: ConsumableCategory, km: number | null) =>
+    mudarGaragem((g) =>
+      atualizarAtiva(g, (m) => {
+        const customIntervals = { ...m.customIntervals };
+        if (km === null) delete customIntervals[category];
+        else customIntervals[category] = km;
+        return { ...m, customIntervals };
+      })
+    );
+
+  // Ficha completa. Moto nova entra na garagem e passa a ser a usada; o
+  // perfil acompanha pelo efeito acima.
+  const handleSaveMotorcycle = (updatedBike: Motorcycle) => mudarGaragem((g) => salvarNaGaragem(g, updatedBike));
+
+  const handleChooseMotorcycle = (id: string) => mudarGaragem((g) => escolherMoto(g, id));
+
+  /** Apaga a moto com o histórico dela. A capa mora dentro da moto e vai junto. */
+  const handleDeleteMotorcycle = (id: string) => {
+    mudarGaragem((g) => removerDaGaragem(g, id));
+    setMaintenanceRecords((atuais) => {
+      const restantes = atuais.filter((r) => r.motorcycleId !== id);
+      storageService.saveMaintenanceRecords(restantes);
+      return restantes;
     });
-  };
-
-  // Full motorcycle data & technical sheet update
-  const handleSaveMotorcycle = (updatedBike: Motorcycle) => {
-    setMotorcycle(updatedBike);
-    storageService.saveMotorcycle(updatedBike);
-
-    // If user is logged in as rider, persist bike in their profile
-    if (currentUser && currentUser.role === 'rider') {
-      const updatedUser: UserProfile = { ...currentUser, motorcycle: updatedBike };
-      setCurrentUser(updatedUser);
-      storageService.setCurrentUser(updatedUser);
-    }
-
   };
 
   // Trigger SOS alert
@@ -251,9 +273,11 @@ export default function App() {
       ...recordData,
       id: `rec-${Date.now()}`,
     };
-    const updated = [newRecord, ...maintenanceRecords];
-    setMaintenanceRecords(updated);
-    storageService.saveMaintenanceRecords(updated);
+    setMaintenanceRecords((atuais) => {
+      const updated = [newRecord, ...atuais];
+      storageService.saveMaintenanceRecords(updated);
+      return updated;
+    });
   };
 
   // Validate coupon at workshop
@@ -292,7 +316,8 @@ export default function App() {
     }
 
     if (user.motorcycle) {
-      setMotorcycle(user.motorcycle);
+      const moto = user.motorcycle;
+      mudarGaragem((g) => escolherMoto(salvarNaGaragem(g, moto), moto.id));
     }
     setIsAuthModalOpen(false);
   };
@@ -360,7 +385,7 @@ export default function App() {
               setActiveTab('convoy');
             }}
             onUpdateKm={handleUpdateKm}
-            onOpenEditMotorcycle={() => setIsMotorcycleEditOpen(true)}
+            onOpenEditMotorcycle={() => abrirFicha('ativa')}
           />
         )}
 
@@ -422,11 +447,15 @@ export default function App() {
             <MyMotorcycleView
               motorcycle={motorcycle}
               maintenance={maintenance}
-              records={maintenanceRecords}
+              records={registrosDaAtiva}
+              motos={garagem.motos}
+              onChooseMotorcycle={handleChooseMotorcycle}
+              onDeleteMotorcycle={handleDeleteMotorcycle}
+              onAddMotorcycle={() => abrirFicha('nova')}
               onAddRecord={handleAddMaintenanceRecord}
               onUpdateKm={handleUpdateKm}
               onSetInterval={handleSetInterval}
-              onOpenEditMotorcycle={() => setIsMotorcycleEditOpen(true)}
+              onOpenEditMotorcycle={() => abrirFicha('ativa')}
               onSaveMotorcycle={handleSaveMotorcycle}
             />
           )}
@@ -477,10 +506,12 @@ export default function App() {
       />
 
       {/* Motorcycle & Technical Sheet Editor Modal */}
+      {/* key: o formulário lê a moto só ao montar; cada abertura parte do zero. */}
       <MotorcycleEditModal
-        isOpen={isMotorcycleEditOpen}
-        onClose={() => setIsMotorcycleEditOpen(false)}
-        motorcycle={motorcycle}
+        key={fichaMoto ? `${fichaMoto.modo}-${fichaMoto.vez}` : 'fechada'}
+        isOpen={fichaMoto !== null}
+        onClose={() => setFichaMoto(null)}
+        motorcycle={fichaMoto?.modo === 'nova' ? null : motorcycle}
         onSaveMotorcycle={handleSaveMotorcycle}
       />
 
