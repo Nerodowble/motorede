@@ -1275,3 +1275,44 @@ conferência de 10 min. O plano B é um ntfy próprio, apontado em
 `MOTOREDE_ACORDAR_URL`.
 
 Contas e limites de todos os serviços: [contas-e-servicos.md](contas-e-servicos.md).
+
+## 38. Ficha do modelo pela IA do próprio piloto (como a capa)
+
+**Status:** `em aberto` — reflexão, nada decidido
+**Data:** 2026-10-14
+
+Ideia: fazer a ficha (ideia 32) do mesmo jeito que a capa (ideia 36). O
+MotoRede monta o prompt e abre a IA do piloto (Gemini, ChatGPT ou Meta AI);
+o piloto envia e a resposta volta para o app, que a valida com o mesmo
+`lerRespostaFichaMoto`.
+
+**A favor:** não depende do computador de casa, não usa Redis e não tem
+CAPTCHA nem página do Gemini mudando. Conta e cota ficam com o piloto, e com
+a conta logada a IA dele costuma pesquisar na web, o que dá dados melhores.
+
+**Contra:** some o cache por modelo, porque cada um pesquisa a sua. Se a
+resposta do piloto subir para o cache, vira dado vindo do aparelho, que
+qualquer um pode forjar.
+
+**Como a resposta volta, do mais simples ao mais trabalhoso:**
+
+1. **Copiar e o app perceber sozinho (preferido).** O piloto toca no botão
+   "copiar" da resposta e volta ao MotoRede. Ao reabrir, o app lê a área de
+   transferência ("Encontrei a ficha da sua PCX 2020. Usar?"). São dois
+   toques, sem selecionar texto. O prompt já pede JSON, e o
+   `lerRespostaFichaMoto` já o encontra no meio do texto. No Android, ler a
+   área de transferência só é permitido em primeiro plano, que é o caso. Na
+   web, o navegador exige um botão "Colar ficha".
+2. **Compartilhar direto para o MotoRede (atalho).** O app se registra como
+   destino de compartilhamento de texto no Android, um módulo nativo pequeno
+   como o da capa. Risco: algumas IAs compartilham um link da conversa, não a
+   resposta. Testar no aparelho em cada uma.
+3. **Arquivo JSON para baixar e subir (descartado).** Exige baixar, achar o
+   arquivo e escolher no app. E nem toda IA gera arquivo: o Meta AI não gera,
+   e o Gemini gratuito não é confiável nisso.
+
+**Caminho híbrido (a avaliar):** primeiro consulta o cache por modelo. Se
+não houver ficha, oferece "pesquisar com a sua IA". A ficha validada fica na
+moto do piloto; para ir ao cache, exigir duas respostas de pilotos
+diferentes batendo, ou guardar como "não verificada". Nesse formato, o
+plugin de IA de casa vira um reforço opcional, não uma peça obrigatória.
