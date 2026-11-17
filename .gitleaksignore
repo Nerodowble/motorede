@@ -1,0 +1,11 @@
+# Falsos positivos do gitleaks, conferidos em 2026-11-17. Nada aqui é segredo.
+
+# Configuração pública do Firebase para o app Android (usada só como transporte
+# FCM do push). A chave "current_key" do google-services.json é uma chave de API
+# de cliente, embutida em todo APK; a chave privada da conta de serviço fica no
+# EAS, nunca no git. Ver AGENTS.md, "O que NÃO existe aqui".
+e50d199a6b016becbcb684fadc5f9644266f4cef:apps/mobile/google-services.json:gcp-api-key:18
+
+# Inscrição de Web Push inventada para o teste (endpoint que não existe). p256dh
+# e auth são chaves públicas do navegador por natureza, e estas nem são reais.
+15c44380f6e9b4ee62e1dad23df87cb2e5ac3275:tests/socorro/webpush.test.mts:generic-api-key:45
