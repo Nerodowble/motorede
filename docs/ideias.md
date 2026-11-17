@@ -1408,7 +1408,20 @@ Como fazer sem pagar nada (contas e limites em [contas-e-servicos.md](contas-e-s
 
 ## 41. Carimbo próprio na Rota Biker (check-in com foto e local)
 
-**Status (2026-11-17):** em aberto, regra principal decidida.
+**Status (2026-11-17):** feito no app e na web. Regras em
+`packages/shared/src/domain/carimboPessoal.ts` (raio de 2 km, GPS com
+precisão de até 1 km, foto da galeria só se tirada nas últimas 12 h), testes
+em `tests/rotas/carimboPessoal.test.mts`. Card de cada monumento: "Carimbar
+(pessoal)", miniatura "Você esteve aqui em…", foto em tela cheia com
+"Apagar"; filtro "Onde já fui". A posição é conferida antes da foto.
+- **App:** câmera do sistema quando a permissão `CAMERA` existir — liberada
+  no `app.json` em 2026-11-17, chega no próximo APK. Nos APKs anteriores a
+  permissão está bloqueada e o app cai na galeria, aceitando só foto com data
+  (EXIF) das últimas 12 h. Fotos em `Paths.document/carimbos`.
+- **Web:** dois toques (conferir local, depois "Tirar a foto"), porque o
+  Safari do iPhone só abre a câmera com toque direto no campo de foto. Fotos
+  reduzidas a 1280 px no IndexedDB (no localStorage estourariam os ~5 MB).
+- Tudo no aparelho: app e web têm carimbos separados, como a garagem.
 
 Muita gente tem o passaporte da Rota Biker e esquece de levar. O piloto
 "carimba" pelo app o monumento em que está: localização atual, data e foto,

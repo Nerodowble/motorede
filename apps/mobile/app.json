@@ -48,7 +48,6 @@
         "android.permission.BLUETOOTH"
       ],
       "blockedPermissions": [
-        "android.permission.CAMERA",
         "android.permission.SYSTEM_ALERT_WINDOW",
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE"
@@ -94,7 +93,7 @@
       [
         "expo-image-picker",
         {
-          "cameraPermission": false,
+          "cameraPermission": "O MotoRede usa a câmera para a foto do seu carimbo pessoal nos monumentos da Rota Biker.",
           "photosPermission": "O MotoRede usa a foto que você escolher para criar a capa da sua moto."
         }
       ]

@@ -72,6 +72,8 @@ cidades a até 20 km, em linha reta, do início, do fim ou de um ponto de apoio.
 - Fonte: site oficial, consultado em 2026-11-17 (nº 1 a 46; o nº 2 está "em
   atualização" e ficou fora; 40 a 42, 45 e 46 estão em construção; o nº 30 fica
   no Paraguai).
+- Carimbo pessoal (ideia 41): `domain/carimboPessoal.ts`; telas em
+  `components/CarimboPessoal.tsx` (app e web) e `services/carimbos.ts`.
 - Coordenadas do local (desde 2026-11-17): pinos do mapa oficial do site (Google
   My Maps "ROTA BIKERS", exportável em KML), conferidos no OpenStreetMap.
   "Como chegar" pesquisa o nome do local no Google Maps.

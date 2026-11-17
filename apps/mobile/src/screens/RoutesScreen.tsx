@@ -160,7 +160,7 @@ export function RoutesScreen({ motorcycle }: { motorcycle: Motorcycle | null }) 
             <Text style={[TIPO.corpo, { fontWeight: '700' }]}>{p.nome}</Text><Ajuda>{p.descricao}</Ajuda>
           </View>)}
           {rota.pontosApoio.length === 0 && <Ajuda>Nenhum ponto cadastrado.</Ajuda>}
-          {monumentosPertoDaRota(rota, MONUMENTOS_ROTA_BIKER).length > 0 && <><TituloCartao icone="ribbon-outline">Carimbo da Rota Biker por perto</TituloCartao><Ajuda>Monumentos em cidades até 20 km, em linha reta, do início, do fim ou de um ponto de apoio.</Ajuda>{monumentosPertoDaRota(rota, MONUMENTOS_ROTA_BIKER).map(m => <CartaoMonumento key={m.numero} monumento={m} abrir={url => void abrir(url)} />)}</>}
+          {monumentosPertoDaRota(rota, MONUMENTOS_ROTA_BIKER).length > 0 && <><TituloCartao icone="ribbon-outline">Carimbo da Rota Biker por perto</TituloCartao><Ajuda>Monumentos até 20 km, em linha reta, do início, do fim ou de um ponto de apoio.</Ajuda>{monumentosPertoDaRota(rota, MONUMENTOS_ROTA_BIKER).map(m => <CartaoMonumento key={m.numero} monumento={m} abrir={url => void abrir(url)} />)}</>}
           {rota.observacoes.length > 0 && <><TituloCartao>Observações da origem · não verificadas</TituloCartao>{rota.observacoes.map((o, i) => <Ajuda key={i}>• {o}</Ajuda>)}</>}
           <TituloCartao icone="navigate-outline">Navegação</TituloCartao>
           <Ajuda>Monte uma única viagem: sua localização → {rota.inicio.cidade} (início) → {rota.fim.cidade} (final). O Google Maps usa sua posição atual ou solicita o ponto de partida.</Ajuda>
