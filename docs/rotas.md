@@ -71,7 +71,8 @@ cidades a até 20 km, em linha reta, do início, do fim ou de um ponto de apoio.
   `tests/rotas/rotaBiker.test.mts` (rodam com `npm run test:rotas`).
 - Fonte: site oficial, consultado em 2026-10-13 (nº 1 a 44; o nº 2 está "em
   atualização" e ficou fora; 40 a 44 estão em construção; o nº 30 fica no Paraguai).
-- Coordenadas são do centro da cidade (OpenStreetMap), não do estabelecimento.
+- Coordenadas do local (desde 2026-11-17): pinos do mapa oficial do site (Google
+  My Maps "ROTA BIKERS", exportável em KML), conferidos no OpenStreetMap.
   "Como chegar" pesquisa o nome do local no Google Maps.
 - Para atualizar, edite o arquivo de dados à mão conferindo o site oficial; o
   importador de rotas não se aplica a monumentos.

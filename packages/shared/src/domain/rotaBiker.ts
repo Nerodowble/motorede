@@ -4,7 +4,8 @@ import type { RotaCatalogo } from './rotas.js';
 /**
  * Monumento ao Cumprimento Biker: ponto de carimbo do passaporte da Rota Biker.
  * É um lugar, não um trecho; por isso não usa o contrato `RotaCatalogo`.
- * A coordenada é a da cidade, não a do estabelecimento.
+ * A coordenada é a do local (pino do mapa oficial), não a da cidade: o carimbo
+ * pelo app (ideia 41) só libera perto dele.
  */
 export interface MonumentoRotaBiker extends GeoPoint {
   numero: number;

@@ -1420,9 +1420,13 @@ cada lugar em que esteve, um substituto para ao menos registrar que foi. Não
   pega na hora pelo GPS. Não dá para escolher o lugar no mapa nem carimbar
   depois — é isso que impede alguém de marcar que foi estando em outro lugar.
   Só libera o carimbo de um monumento quando a posição atual está perto dele.
-- **Falta antes de construir:** hoje a coordenada de cada monumento é a da
-  cidade (OpenStreetMap). Para validar "estou no monumento", e não "estou na
-  cidade", é preciso levantar a coordenada exata de cada um dos 43 pontos e
-  definir o raio aceito.
+- **Coordenadas exatas levantadas (2026-11-17):** os 43 pontos vêm dos pinos
+  do mapa oficial do site (Google My Maps "ROTA BIKERS"), conferidos no
+  OpenStreetMap; 5 só com o pino oficial (37, 40, 41, 42, 43). O nº 10
+  (Jaguarão) usa a loja onde se carimba, não o pino do Free Shop a ~1,6 km.
+  Falta definir o raio aceito.
+- O mapa oficial já tem os nº 45 (Empório Caconde, em construção) e 46
+  (Cervejaria Dolomitas), e marca o 44 como "pronto e carimbando": a lista do
+  app ainda é a do site de 2026-10-13.
 - Foto tirada na hora (câmera, não galeria, pelo mesmo motivo do GPS).
 - Tudo no aparelho, como a garagem: sem banco de dados.
