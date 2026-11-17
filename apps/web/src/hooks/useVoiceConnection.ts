@@ -52,7 +52,7 @@ export type VoiceConnectionStatus =
   | 'error';
 
 interface ConnectOptions {
-  /** Código da sala do comboio, ex.: "SERRA-88". */
+  /** Código da sala do comboio, ex.: "SERRA88". */
   roomCode: string;
   /** Identificador único deste piloto. */
   identity: string;

@@ -4,6 +4,7 @@ import {
   canJoinConvoy,
   CONVOY_MAX,
   normalizePhone,
+  normalizeRoomCode,
   PLUGIN_IDENTITY_PREFIX,
 } from '@motorede/shared';
 import {
@@ -36,7 +37,7 @@ interface TokenRequest {
   phone?: string;
 }
 
-const ROOM_CODE_PATTERN = /^[A-Z0-9-]{3,32}$/i;
+const ROOM_CODE_PATTERN = /^[A-Z0-9]{3,32}$/;
 const IDENTITY_PATTERN = /^[a-zA-Z0-9_-]{3,64}$/;
 
 export default async function handler(
@@ -78,7 +79,9 @@ export default async function handler(
     return;
   }
 
-  const room = body.room;
+  // A sala é normalizada aqui também: um app ainda sem a atualização que
+  // pede "K7M-3PQ" cai na mesma sala de quem digitou "K7M3PQ".
+  const room = typeof body.room === 'string' ? normalizeRoomCode(body.room) : '';
 
   if (!room) {
     res.status(400).json({ error: 'room é obrigatório' });

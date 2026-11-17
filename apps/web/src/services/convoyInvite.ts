@@ -21,7 +21,10 @@ export function codigoInicialDoComboio(reserva: string): string {
     const normalizado = normalizeRoomCode(doLink);
     if (isJoinableRoomCode(normalizado)) return normalizado;
   }
-  return storageService.getLastRoomCode() || reserva;
+  // Salvo antes de 2026-11 vinha com hífen ("K7M-3PQ"): normaliza para não
+  // cair numa sala diferente da dos amigos.
+  const salvo = normalizeRoomCode(storageService.getLastRoomCode() ?? '');
+  return isJoinableRoomCode(salvo) ? salvo : reserva;
 }
 
 export function linkDoConvite(codigo: string): string {

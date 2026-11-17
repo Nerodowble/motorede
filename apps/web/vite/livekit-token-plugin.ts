@@ -25,7 +25,7 @@ const DEV_API_KEY = 'devkey';
 const DEV_API_SECRET = 'devsecret_local_somente_desenvolvimento';
 
 export interface TokenRequest {
-  /** Código da sala do comboio, ex.: "SERRA-88". */
+  /** Código da sala do comboio, ex.: "SERRA88". */
   room: string;
   /** Identificador único do participante. */
   identity: string;

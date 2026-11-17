@@ -406,7 +406,7 @@ export const ConvoyVoiceView: React.FC<ConvoyVoiceViewProps> = ({
                   setCodeInput(e.target.value);
                   setCodeError(null);
                 }}
-                placeholder="Entrar com código (ex: K7M-3PQ)"
+                placeholder="Entrar com código (ex: K7M3PQ)"
                 inputMode="text"
                 autoCapitalize="characters"
                 autoCorrect="off"

@@ -119,7 +119,7 @@ desenvolvimento, opcionalmente o binário local (`npm run livekit`).
 **Entrar num comboio:**
 
 1. O cliente gera ou recebe um código (`generateRoomCode`, alfabeto sem
-   caracteres ambíguos, pensado para ser dito em voz alta; ex.: `SERRA-88`).
+   caracteres ambíguos, pensado para ser dito em voz alta; ex.: `K7M3PQ`; hífen e espaço digitados são ignorados).
    Convite pela web: `https://motorede-web.vercel.app/?sala=CODIGO`.
 2. Pede um token em `POST /api/livekit-token` com `{ room, identity, name,
    idToken?, phone? }`.

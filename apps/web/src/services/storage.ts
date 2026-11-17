@@ -182,7 +182,7 @@ const DESTINO_SEMEADO_ANTIGO = 'Parque Estadual da Serra do Mar - Núcleo Curucu
 // Seed Voice Room (Comboio)
 const DEFAULT_VOICE_ROOM: VoiceRoom = {
   id: 'room-graciosa-2026',
-  code: 'SERRA-88',
+  code: 'SERRA88',
   name: 'Comboio Rota da Serra • MotoClube Brasil',
   creatorId: 'user-marcos-leader',
   creatorName: 'Marcos Viana (Líder)',

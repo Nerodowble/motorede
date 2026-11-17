@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Alert, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
-import { generateRoomCode, isJoinableRoomCode } from '@motorede/shared';
+import { generateRoomCode, isJoinableRoomCode, normalizeRoomCode } from '@motorede/shared';
 import { useVoiceConnection } from '../hooks/useVoiceConnection';
 import { useConvoyBrowser } from '../hooks/useConvoyBrowser';
 import { usePluginAudio } from '../hooks/usePluginAudio';
@@ -97,7 +97,9 @@ export const ConvoyScreen: React.FC<ConvoyScreenProps> = ({
     });
 
   const entrarPorCodigo = () => {
-    const normalizado = codigoDigitado.toUpperCase().replace(/[^A-Z0-9-]/g, '');
+    // A mesma regra da web e do servidor: "k7m 3pq", "K7M-3PQ" e "K7M3PQ" são
+    // a mesma sala. Uma limpeza própria aqui já separou o piloto do comboio.
+    const normalizado = normalizeRoomCode(codigoDigitado);
     if (!isJoinableRoomCode(normalizado)) {
       setErroCodigo('Código inválido. Confira com quem te passou.');
       return;
@@ -185,7 +187,7 @@ export const ConvoyScreen: React.FC<ConvoyScreenProps> = ({
               setCodigoDigitado(t);
               setErroCodigo(null);
             }}
-            placeholder="Código (ex: K7M-3PQ)"
+            placeholder="Código (ex: K7M3PQ)"
             autoCapitalize="characters"
             autoCorrect={false}
             erro={!!erroCodigo}

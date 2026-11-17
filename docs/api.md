@@ -50,8 +50,8 @@ Arquivo: `api/comboios.ts`.
 
 ```json
 {
-  "convoys": [{ "code": "SERRA-88", "riders": 3, "total": 3, "isFull": false, "createdAt": "..." }],
-  "found": { "code": "SERRA-88", "riders": 3, "total": 3, "isFull": false },
+  "convoys": [{ "code": "SERRA88", "riders": 3, "total": 3, "isFull": false, "createdAt": "..." }],
+  "found": { "code": "SERRA88", "riders": 3, "total": 3, "isFull": false },
   "searched": true,
   "capacity": 8
 }
