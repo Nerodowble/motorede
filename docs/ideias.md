@@ -1448,3 +1448,30 @@ cada lugar em que esteve, um substituto para ao menos registrar que foi. Não
   entraram em construção.
 - Foto tirada na hora (câmera, não galeria, pelo mesmo motivo do GPS).
 - Tudo no aparelho, como a garagem: sem banco de dados.
+
+## 42. Comboio no Android Auto (como chamada)
+
+**Status (2026-11-17):** em aberto. Só Android Auto; CarPlay fica fora.
+
+O piloto quer o MotoRede na tela do carro ou da moto (central com Android
+Auto, inclusive as telas de guidão sem fio, tipo Carpuride). Espelhar o app
+inteiro não é permitido: Google e Apple só aceitam categorias fixas (mídia,
+mensagens, navegação, chamadas…), com telas no padrão deles.
+
+- **Encaixe:** o comboio se apresenta ao sistema como uma **chamada de voz**
+  (ConnectionService/Telecom do Android, chamada "self-managed"). O Android
+  Auto já mostra chamadas: "Comboio K7M3PQ · 4 pilotos", com mutar e sair, e
+  o áudio vai para os alto-falantes e o microfone da central.
+- **Custo:** mudança nativa, exige APK novo (o aviso de APK novo dentro do app,
+  `hooks/useApkNovo.ts`, ajuda). Testar é grátis: com APK fora da Play Store, ligar
+  "fontes desconhecidas" nas opções de desenvolvedor do Android Auto.
+  Distribuir para todos exige Play Store (US$ 25, taxa única, e revisão).
+- **Depois, se valer:** telas próprias (SOS, rotas) pelo Android for Cars App
+  Library — só modelos prontos e categoria aprovada pelo Google.
+- **Atenção ao áudio:** nas telas de guidão, o som costuma seguir para o fone
+  Bluetooth do capacete; vale testar junto com o modo "Somente música", que
+  foi o que funcionou melhor para a música do plugin (2026-11-17).
+- **CarPlay, descartado por ora:** não existe app nativo de iPhone (iPhone usa
+  a web, e PWA não chega ao CarPlay), e exigiria conta de desenvolvedor da
+  Apple (US$ 99/ano) mais a permissão de CarPlay aprovada pela Apple — contra
+  a regra de tudo gratuito.
