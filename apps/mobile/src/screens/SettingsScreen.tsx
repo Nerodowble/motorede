@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Updates from 'expo-updates';
-import type { RiderProfile } from '@motorede/shared';
+import { mensagemConviteApp, type RiderProfile } from '@motorede/shared';
+import { WEB_APP_URL } from '../config';
 import { ALVO, COLORS, ESPACO, TIPO } from '../theme';
 import { Botao, type NomeIcone } from '../components/ui/Botao';
 import { Ajuda, Cartao, TituloCartao, TituloTela, estilosBase } from '../components/ui/Cartao';
@@ -136,6 +137,20 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ profile, onSair 
             eventos.
           </Ajuda>
         )}
+      </Cartao>
+
+      <Cartao>
+        <TituloCartao icone="people-outline">Chamar a turma</TituloCartao>
+        <Ajuda>
+          Manda o link de download pelo WhatsApp. No Android baixa o app; no iPhone ensina a usar pelo
+          navegador.
+        </Ajuda>
+        <Botao
+          rotulo="Convidar para o MotoRede"
+          icone="share-social-outline"
+          variante="action"
+          onPress={() => void Share.share({ message: mensagemConviteApp(WEB_APP_URL) })}
+        />
       </Cartao>
 
       <Cartao>

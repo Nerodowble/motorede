@@ -9,8 +9,9 @@ import {
   UserRound,
   Palette,
   Route,
+  Share2,
 } from 'lucide-react';
-import type { UserProfile, UserRole } from '@motorede/shared';
+import { linkDeDownload, mensagemConviteApp, type UserProfile, type UserRole } from '@motorede/shared';
 import type { ThemeChoice } from '../hooks/useTheme';
 import { usePWAInstall } from '../hooks/usePWAInstall';
 import { ThemeToggle } from './ThemeToggle';
@@ -67,6 +68,29 @@ export const MoreSheet: React.FC<MoreSheetProps> = ({
 }) => {
   const pwa = usePWAInstall();
   const [mostrarPassos, setMostrarPassos] = useState(false);
+  const [conviteCopiado, setConviteCopiado] = useState(false);
+
+  // Convite para o app, não para um comboio: leva à página /baixar.
+  // Só `text` vai para a folha de compartilhamento — passar `url` junto faz o
+  // iPhone mandar o link duas vezes no WhatsApp. Cancelar a folha (AbortError)
+  // não é motivo para copiar nem para dizer "copiado".
+  const convidarParaOApp = async () => {
+    const texto = mensagemConviteApp(window.location.origin);
+    if (navigator.share) {
+      try {
+        await navigator.share({ text: texto });
+        return;
+      } catch (erro) {
+        if ((erro as Error)?.name === 'AbortError') return;
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(texto);
+      setConviteCopiado(true);
+    } catch {
+      window.prompt('Copie o link do MotoRede:', linkDeDownload(window.location.origin));
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -97,6 +121,22 @@ export const MoreSheet: React.FC<MoreSheetProps> = ({
             <X className="w-5 h-5" />
           </button>
         </div>
+
+        <section>
+          <h3 className={tituloSecao}>Chamar a turma</h3>
+          <button onClick={() => void convidarParaOApp()} className={linha}>
+            <span className="flex items-center gap-3 min-w-0">
+              <Share2 className="w-5 h-5 shrink-0" />
+              <span>
+                <span className="block text-sm font-bold">Convidar para o MotoRede</span>
+                <span className="block text-xs text-ink-muted">
+                  {conviteCopiado ? 'Link copiado. É só colar no WhatsApp.' : 'Manda o link de download'}
+                </span>
+              </span>
+            </span>
+            <ChevronRight className="w-4 h-4 text-ink-faint shrink-0" />
+          </button>
+        </section>
 
         <section>
           <h3 className={tituloSecao}>Planejar uma saída</h3>
