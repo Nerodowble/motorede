@@ -204,6 +204,15 @@ export default function App() {
     });
   };
 
+  /** Apaga trocas do histórico (as que ficaram acima do odômetro, de outra moto). */
+  const handleDeleteRecords = (ids: string[]) => {
+    setMaintenanceRecords((atuais) => {
+      const restantes = atuais.filter((r) => !ids.includes(r.id));
+      storageService.saveMaintenanceRecords(restantes);
+      return restantes;
+    });
+  };
+
   // Trigger SOS alert
   const handleTriggerSOS = (
     type: EmergencyType,
@@ -451,6 +460,7 @@ export default function App() {
               motos={garagem.motos}
               onChooseMotorcycle={handleChooseMotorcycle}
               onDeleteMotorcycle={handleDeleteMotorcycle}
+              onDeleteRecords={handleDeleteRecords}
               onAddMotorcycle={() => abrirFicha('nova')}
               onAddRecord={handleAddMaintenanceRecord}
               onUpdateKm={handleUpdateKm}

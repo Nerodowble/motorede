@@ -1,16 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import {
   MAINTENANCE_LABELS,
   parseIntervalKm,
+  registrosAcimaDoOdometro,
   type ConsumableCategory,
   type MaintenanceItemStatus,
   type MaintenanceRecord,
   type Motorcycle,
 } from '@motorede/shared';
 import { Botao, BotaoIcone } from '../components/ui/Botao';
-import { Campo, Cartao, Rotulo, estilosBase } from '../components/ui/Cartao';
+import { Ajuda, Campo, Cartao, Rotulo, estilosBase } from '../components/ui/Cartao';
 import { Folha } from '../components/ui/Folha';
 import { InfoAjuda } from '../components/InfoAjuda';
 import { CampoIntervalo, FolhaIntervalo } from '../components/CampoIntervalo';
@@ -49,6 +50,8 @@ interface MyMotorcycleScreenProps {
   onChooseMotorcycle: (id: string) => void;
   /** Apaga a moto com o histórico e a capa dela. */
   onDeleteMotorcycle: (id: string) => void;
+  /** Apaga trocas do histórico pelo id. */
+  onDeleteRecords: (ids: string[]) => void;
   /** null volta ao padrão (ou a nenhum intervalo, no óleo). */
   onSetInterval: (category: ConsumableCategory, km: number | null) => void;
 }
@@ -64,6 +67,7 @@ export const MyMotorcycleScreen: React.FC<MyMotorcycleScreenProps> = ({
   onSaveMotorcycle,
   onChooseMotorcycle,
   onDeleteMotorcycle,
+  onDeleteRecords,
   onSetInterval,
 }) => {
   const [registrando, setRegistrando] = useState<ConsumableCategory | null>(null);
@@ -124,6 +128,23 @@ export const MyMotorcycleScreen: React.FC<MyMotorcycleScreenProps> = ({
       </ScrollView>
     );
   }
+
+  const acimaDoOdometro = registrosAcimaDoOdometro(records, motorcycle.currentKm);
+
+  // Quem trocou de moto editando a ficha ficou com as trocas da antiga.
+  const apagarAcimaDoOdometro = () =>
+    Alert.alert(
+      'Apagar trocas antigas?',
+      `Apaga do histórico ${acimaDoOdometro === 1 ? 'a troca registrada' : `as ${acimaDoOdometro} trocas registradas`} acima de ${motorcycle.currentKm.toLocaleString('pt-BR')} km. Não dá para desfazer.`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Apagar',
+          style: 'destructive',
+          onPress: () => onDeleteRecords(records.filter((r) => r.km > motorcycle.currentKm).map((r) => r.id)),
+        },
+      ]
+    );
 
   const abrirRegistro = (categoria: ConsumableCategory) => {
     const ultimo = [...records]
@@ -259,6 +280,18 @@ export const MyMotorcycleScreen: React.FC<MyMotorcycleScreenProps> = ({
         aoSalvar={onSaveMotorcycle}
         aoApagar={onDeleteMotorcycle}
       />
+
+      {acimaDoOdometro > 0 && (
+        <Cartao>
+          <Ajuda>
+            {acimaDoOdometro === 1 ? '1 troca registrada está' : `${acimaDoOdometro} trocas registradas estão`} acima
+            do odômetro atual ({motorcycle.currentKm.toLocaleString('pt-BR')} km) e não entram nas contas. Se são
+            da moto anterior, apague. Na próxima troca de moto, use "Adicionar outra moto" na garagem: cada moto
+            fica com o próprio histórico.
+          </Ajuda>
+          <Botao rotulo="Apagar essas trocas" icone="trash-outline" variante="perigo" onPress={apagarAcimaDoOdometro} />
+        </Cartao>
+      )}
 
       <PlanoManutencao maintenance={maintenance} abrirRegistro={abrirRegistro} abrirIntervalo={abrirIntervalo} />
 

@@ -153,11 +153,18 @@ function measureInterval(recordsDaCategoria: MaintenanceRecord[]): number | null
  * interface deve convidar a registrar, não fingir que sabe.
  */
 export function summarizeMaintenance(
-  records: MaintenanceRecord[],
+  todosOsRegistros: MaintenanceRecord[],
   motorcycle: Pick<Motorcycle, 'currentKm' | 'customIntervals'>
 ): MaintenanceItemStatus[] {
-  const kmPorMes = measureKmPerMonth(records);
   const currentKm = motorcycle.currentKm;
+  // Troca registrada ACIMA do odômetro atual não pode ser desta moto como ela
+  // está hoje: o piloto trocou de moto editando a ficha, ou corrigiu o
+  // odômetro para baixo. Registrar uma troca já sobe o odômetro, então isso
+  // não acontece no uso normal. Antes elas entravam na conta: com a moto nova
+  // em 34.000 km e uma troca antiga em 59.900, a tela mandava trocar o óleo
+  // com 60.900. Ficam fora das contas; `registrosAcimaDoOdometro` avisa.
+  const records = todosOsRegistros.filter((r) => r.km <= currentKm);
+  const kmPorMes = measureKmPerMonth(records);
 
   return MAINTENANCE_CATEGORIES.map((category) => {
     const daCategoria = records.filter((r) => r.category === category);
@@ -169,7 +176,10 @@ export function summarizeMaintenance(
       return { category, label, recordCount: 0, intervalKm, status: 'sem-registro' as const };
     }
 
-    const maisRecente = [...daCategoria].sort((a, b) => b.km - a.km)[0];
+    // A mais recente é a da data mais nova; o km só desempata no mesmo dia.
+    const maisRecente = [...daCategoria].sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime() || b.km - a.km
+    )[0];
     const kmSinceLast = Math.max(0, currentKm - maisRecente.km);
     const last = {
       km: maisRecente.km,
@@ -220,6 +230,15 @@ export function summarizeMaintenance(
       status,
     };
   });
+}
+
+/**
+ * Quantas trocas registradas estão acima do odômetro atual e por isso ficam
+ * fora das contas (ver `summarizeMaintenance`). A tela usa para avisar, em vez
+ * de esconder o histórico em silêncio.
+ */
+export function registrosAcimaDoOdometro(records: MaintenanceRecord[], currentKm: number): number {
+  return records.filter((r) => r.km > currentKm).length;
 }
 
 /**

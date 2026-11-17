@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   summarizeMaintenance, sortByUrgency, parseIntervalKm, MAINTENANCE_CATEGORIES,
-  describeRemaining, describeMeasuredHint,
+  describeRemaining, describeMeasuredHint, registrosAcimaDoOdometro,
 } from '../../packages/shared/src/domain/maintenance.ts';
 import { AJUDA_MOTO } from '../../packages/shared/src/domain/motoAjuda.ts';
 import type { MaintenanceRecord } from '../../packages/shared/src/types.ts';
@@ -85,10 +85,12 @@ test('intervalo informado aparece mesmo antes da primeira troca', () => {
   assert.equal(oleo.nextChangeKm, undefined);
 });
 
-test('odômetro atrás da troca não gera km rodado negativo', () => {
+test('odômetro atrás da troca: a troca fica fora da conta, sem km negativo', () => {
+  // Antes contava como "rodou 0, faltam 1.000" e mandava trocar com 11.000,
+  // número de outro odômetro. Ver o teste da troca de moto mais abaixo.
   const oleo = item(summarizeMaintenance([troca('engine_oil', 10000)], { currentKm: 9000, customIntervals: { engine_oil: 1000 } }), 'engine_oil');
-  assert.equal(oleo.kmSinceLast, 0);
-  assert.equal(oleo.kmRemaining, 1000);
+  assert.equal(oleo.status, 'sem-registro');
+  assert.equal(oleo.kmSinceLast, undefined);
 });
 
 test('urgência: vencido, hora de trocar, se aproximando, sem intervalo, em dia, sem registro', () => {
@@ -129,4 +131,34 @@ test('frases de quanto falta e da média', () => {
   assert.equal(describeMeasuredHint(comMedia), 'Nas suas últimas trocas, a média foi de 1.200 km.');
   const igual = item(summarizeMaintenance(registros, { currentKm: 12500, customIntervals: { engine_oil: 1200 } }), 'engine_oil');
   assert.equal(describeMeasuredHint(igual), null);
+});
+
+test('trocou de moto editando a ficha: troca antiga acima do odômetro não entra na conta', () => {
+  // Moto antiga trocou óleo com 59.900; a nova está em 34.000 e trocou hoje.
+  const registros = [
+    troca('engine_oil', 59900, '2026-06-01T12:00:00Z'),
+    troca('engine_oil', 34000, '2026-11-17T12:00:00Z'),
+  ];
+  const oleo = item(summarizeMaintenance(registros, { currentKm: 34000, customIntervals: { engine_oil: 2000 } }), 'engine_oil');
+  assert.equal(oleo.last?.km, 34000);
+  assert.equal(oleo.nextChangeKm, 36000);
+  assert.equal(oleo.kmRemaining, 2000);
+  assert.equal(oleo.recordCount, 1);
+  assert.equal(registrosAcimaDoOdometro(registros, 34000), 1);
+});
+
+test('só troca acima do odômetro: fica sem registro em vez de inventar a próxima', () => {
+  const registros = [troca('engine_oil', 59900)];
+  const oleo = item(summarizeMaintenance(registros, { currentKm: 34000, customIntervals: { engine_oil: 1000 } }), 'engine_oil');
+  assert.equal(oleo.status, 'sem-registro');
+  assert.equal(oleo.nextChangeKm, undefined);
+});
+
+test('a última troca é a de data mais nova', () => {
+  const registros = [
+    troca('engine_oil', 12000, '2026-03-01T12:00:00Z'),
+    troca('engine_oil', 11000, '2026-05-01T12:00:00Z'),
+  ];
+  const oleo = item(summarizeMaintenance(registros, { currentKm: 12500, customIntervals: { engine_oil: 1000 } }), 'engine_oil');
+  assert.equal(oleo.last?.km, 11000);
 });

@@ -128,13 +128,14 @@ function Aplicativo() {
       const adotados = adotarRegistrosOrfaos(regs, gar);
       setRecords(adotados);
       if (adotados !== regs) void storage.saveRecords(adotados);
-      if (sala) setRoomCode(sala);
+      // Salvo antes de 2026-11 vinha com hífen ("K7M-3PQ").
+      if (sala) setRoomCode(normalizeRoomCode(sala) || DEV_ROOM_CODE);
       setCarregando(false);
     })();
     void pedirPermissaoMicrofone();
   }, []);
 
-  // Convite por link: motorede://sala/K7M-3PQ
+  // Convite por link: motorede://sala/K7M3PQ
   useEffect(() => {
     const aplicar = (url: string | null) => {
       if (!url) return;
@@ -244,6 +245,15 @@ function Aplicativo() {
     [records]
   );
 
+  /** Apaga trocas do histórico (as que ficaram acima do odômetro, de outra moto). */
+  const apagarRegistros = useCallback((ids: string[]) => {
+    setRecords((atuais) => {
+      const restantes = atuais.filter((r) => !ids.includes(r.id));
+      void storage.saveRecords(restantes);
+      return restantes;
+    });
+  }, []);
+
   if (auth.isLoading || carregando) {
     return (
       <View style={[styles.screen, styles.centro]}>
@@ -332,6 +342,7 @@ function Aplicativo() {
             onSaveMotorcycle={salvarMoto}
             onChooseMotorcycle={usarMoto}
             onDeleteMotorcycle={apagarMoto}
+            onDeleteRecords={apagarRegistros}
             onSetInterval={definirIntervalo}
           />
         )}

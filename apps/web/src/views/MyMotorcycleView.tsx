@@ -7,6 +7,7 @@ import {
   MAINTENANCE_LABELS,
   parseIntervalKm,
   sortByUrgency,
+  registrosAcimaDoOdometro,
   type MaintenanceItemStatus,
 } from '@motorede/shared';
 import { MotorcycleEmptyState } from '../components/MotorcycleEmptyState';
@@ -52,6 +53,8 @@ interface MyMotorcycleViewProps {
   onChooseMotorcycle?: (id: string) => void;
   /** Apaga a moto com o histórico dela. */
   onDeleteMotorcycle?: (id: string) => void;
+  /** Apaga trocas do histórico pelo id. */
+  onDeleteRecords?: (ids: string[]) => void;
   onAddMotorcycle?: () => void;
 }
 
@@ -67,6 +70,7 @@ export const MyMotorcycleView: React.FC<MyMotorcycleViewProps> = ({
   motos,
   onChooseMotorcycle,
   onDeleteMotorcycle,
+  onDeleteRecords,
   onAddMotorcycle,
 }) => {
   const [registrando, setRegistrando] = useState<ConsumableCategory | null>(null);
@@ -173,6 +177,7 @@ export const MyMotorcycleView: React.FC<MyMotorcycleViewProps> = ({
   };
 
   const ordenados = sortByUrgency(maintenance);
+  const acimaDoOdometro = registrosAcimaDoOdometro(records, motorcycle.currentKm);
 
   return (
     <div className="space-y-3 pb-28 sm:pb-24 max-w-2xl mx-auto px-3 sm:px-4 py-4">
@@ -235,6 +240,30 @@ export const MyMotorcycleView: React.FC<MyMotorcycleViewProps> = ({
           aoAdicionar={onAddMotorcycle}
           aoApagar={onDeleteMotorcycle}
         />
+      )}
+
+      {acimaDoOdometro > 0 && (
+        <div className="rounded-2xl bg-surface/80 border border-line p-4 space-y-3">
+          <p className="text-sm text-ink-muted leading-relaxed">
+            {acimaDoOdometro === 1 ? '1 troca registrada está' : `${acimaDoOdometro} trocas registradas estão`} acima
+            do odômetro atual ({motorcycle.currentKm.toLocaleString('pt-BR')} km) e não entram nas contas. Se são
+            da moto anterior, apague. Na próxima troca de moto, use "Adicionar outra moto" na garagem: cada moto
+            fica com o próprio histórico.
+          </p>
+          {onDeleteRecords && (
+            <button
+              onClick={() => {
+                const texto = `Apagar do histórico ${acimaDoOdometro === 1 ? 'a troca registrada' : `as ${acimaDoOdometro} trocas registradas`} acima de ${motorcycle.currentKm.toLocaleString('pt-BR')} km? Não dá para desfazer.`;
+                if (window.confirm(texto)) {
+                  onDeleteRecords(records.filter((r) => r.km > motorcycle.currentKm).map((r) => r.id));
+                }
+              }}
+              className="min-h-11 px-4 rounded-xl border border-line-strong text-sm font-semibold text-ink hover:bg-elevated/60 transition"
+            >
+              Apagar essas trocas
+            </button>
+          )}
+        </div>
       )}
 
       {/* Itens de manutenção, do mais urgente ao sem registro */}
