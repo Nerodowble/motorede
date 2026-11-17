@@ -1346,3 +1346,80 @@ usada.
   real.
 - Como a moto fica no aparelho, app e web têm garagens separadas até haver
   sincronização.
+
+## 40. Custo da viagem e paradas para abastecer
+
+**Status (2026-11-17):** em aberto.
+
+Pedido do piloto: um diferencial em Rotas. Ao escolher para onde vai, o app
+calcula a distância a partir de onde ele está e o gasto da viagem com base na
+moto dele: combustível (pelo preço médio que ele informar), pedágios, quantas
+paradas para abastecer e **onde** parar. A rota abre no Google Maps já com os
+postos recomendados como paradas.
+
+Como fazer sem pagar nada (contas e limites em [contas-e-servicos.md](contas-e-servicos.md)):
+
+- **Abrir no Google Maps com paradas:** o link
+  `https://www.google.com/maps/dir/?api=1&origin=…&destination=…&waypoints=…`
+  abre a rota pronta, sem chave nem custo, com até uns 9 pontos de parada. Os
+  postos recomendados entram como paradas.
+- **Distância e trajeto:** OpenRouteService (chave grátis, cota diária) ou
+  OSRM. A API de rotas do Google é paga acima da cota grátis; não usar.
+- **Onde abastecer:** autonomia = tanque × consumo (da ficha da moto). Marca
+  uma parada quando restar ~25% do tanque e procura postos (`amenity=fuel`)
+  perto desse ponto do trajeto no OpenStreetMap.
+- **Custo:** litros estimados × preço médio informado pelo piloto + pedágios.
+- **Pedágio é a parte difícil:** não há serviço gratuito com o valor para
+  moto. Decidido (2026-11-17): tabela própria, levantada com ajuda de IA,
+  começando por São Paulo. A IA não informa valor de memória: só copia de
+  fonte oficial (agência ou concessionária), com link e data da consulta.
+  - **Onde estão as praças:** federais pela ANTT (dados abertos, com
+    coordenada e sentido); estaduais de SP pelo volume pedagiado da ARTESP
+    (dados abertos, todas as praças por lote e sentido). O site da ARTESP
+    bloqueia acesso automático, por isso as tarifas vêm das concessionárias.
+  - **Cada praça guarda:** nome, rodovia, km, sentido cobrado, coordenada,
+    valor para moto, se é cabine ou free flow, fonte e data. Valor de moto
+    vem da tabela, nunca da conta "metade do carro"; há praças em que moto
+    não paga (ex.: Anchieta-Imigrantes).
+  - **Reajustes:** os valores mudam pelo menos uma vez por ano (em SP, em
+    geral em julho). A tela mostra a data dos valores.
+  - **SP levantado em 2026-11-17:** 388 praças por sentido (federais + 23
+    lotes estaduais e concessões novas), em
+    `apps/web/public/dados/pedagios-sp.json` (servido em
+    `/dados/pedagios-sp.json`; JSON e não código, para atualizar tarifa sem
+    atualizar o app), montado por
+    `scripts/montar-pedagios-sp.mts`. Moto paga em 154, é isenta (fonte
+    oficial) em 145, isenta por inferência em 27 e sem valor em 62. Sem valor:
+    Rodovias do Tietê, Ecovias Leste Paulista e Noroeste Paulista (sites
+    bloqueiam leitura automática), pórticos free flow da Dutra (a RioSP só
+    publica tarifa de carro) e Rodoanel Norte. Conferência por amostra contra
+    a fonte: CART (9/9), Rota das Bandeiras e isenção da AutoBAn batem.
+  - **Moto não paga em boa parte de SP:** AutoBAn, SPVias, Rodoanel,
+    Anchieta-Imigrantes, Colinas, Rota Mogiana, Rota Sorocabana, Novo
+    Litoral, Dutra (cabines) e Fernão Dias. Isso já é informação útil para o
+    piloto, independentemente do cálculo.
+  - **Rever logo:** ViaPaulista (reajuste por volta de 2026-11-23), Régis
+    Bittencourt (nova concessionária com deságio de ~22%), Transbrasiliana
+    (reajuste de 2026 suspenso) e o free flow da Anchieta-Imigrantes (adiado,
+    sem data).
+
+## 41. Carimbo próprio na Rota Biker (check-in com foto e local)
+
+**Status (2026-11-17):** em aberto, regra principal decidida.
+
+Muita gente tem o passaporte da Rota Biker e esquece de levar. O piloto
+"carimba" pelo app o monumento em que está: localização atual, data e foto,
+com o check no monumento (lista da ideia 35). Fica como lembrete pessoal de
+cada lugar em que esteve, um substituto para ao menos registrar que foi. Não
+é carimbo oficial.
+
+- **Regra decidida pelo piloto:** o carimbo usa **só a localização atual**,
+  pega na hora pelo GPS. Não dá para escolher o lugar no mapa nem carimbar
+  depois — é isso que impede alguém de marcar que foi estando em outro lugar.
+  Só libera o carimbo de um monumento quando a posição atual está perto dele.
+- **Falta antes de construir:** hoje a coordenada de cada monumento é a da
+  cidade (OpenStreetMap). Para validar "estou no monumento", e não "estou na
+  cidade", é preciso levantar a coordenada exata de cada um dos 43 pontos e
+  definir o raio aceito.
+- Foto tirada na hora (câmera, não galeria, pelo mesmo motivo do GPS).
+- Tudo no aparelho, como a garagem: sem banco de dados.

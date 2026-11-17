@@ -182,3 +182,24 @@ sem nova publicação, está descrita na ideia 34 de [ideias.md](ideias.md).
 Referências dos links externos:
 [Google Maps URLs](https://developers.google.com/maps/documentation/urls/get-started)
 e [Waze Deep Links](https://developers.google.com/waze/deeplinks).
+
+## Pedágios (tabela para o custo da viagem)
+
+Tabela de praças com o valor para **moto**, por ora só de SP:
+`apps/web/public/dados/pedagios-sp.json`, servida pela Vercel em
+`/dados/pedagios-sp.json` (tipo em `packages/shared/src/domain/pedagios.ts`,
+ideia 40). O app e a web baixam quando precisam; atualizar tarifa é só
+publicar a web, sem OTA. Uma praça por linha, para o diff mostrar o que mudou. Cada praça traz fonte, data da consulta e `situacaoMoto` (`paga`,
+`isenta`, `isenta-inferida`, `desconhecida`). Valor desconhecido fica `null`:
+a tela deve dizer "a confirmar", nunca calcular metade do carro.
+
+Fica fora do cache do PWA (o `globPatterns` do Workbox não inclui `.json`):
+só baixa quem calcular uma viagem.
+
+**Atualizar:** refazer o levantamento (um JSON por grupo de concessionárias,
+formato descrito no cabeçalho de `scripts/montar-pedagios-sp.mts`) e rodar
+`npx tsx scripts/montar-pedagios-sp.mts <pasta>`. Depois, `npm run test:rotas`.
+Fontes de partida: praças federais na ANTT (dados abertos, `praca-de-pedagio`,
+com coordenadas) e praças estaduais no volume pedagiado da ARTESP (dados
+abertos). O site artesp.sp.gov.br bloqueia acesso automático; as tarifas vêm
+das concessionárias.
