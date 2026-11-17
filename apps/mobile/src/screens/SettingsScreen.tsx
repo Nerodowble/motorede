@@ -8,6 +8,7 @@ import { ALVO, COLORS, ESPACO, TIPO } from '../theme';
 import { Botao, type NomeIcone } from '../components/ui/Botao';
 import { Ajuda, Cartao, TituloCartao, TituloTela, estilosBase } from '../components/ui/Cartao';
 import { storage, type ModoAudio } from '../services/storage';
+import { baixarApk, useApkNovo } from '../hooks/useApkNovo';
 
 /**
  * Ajustes.
@@ -55,7 +56,12 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ profile, onSair 
     void storage.saveModoAudio(modo);
   };
 
+  const apk = useApkNovo();
+
   const procurarAtualizacao = useCallback(async () => {
+    // Procurar também pergunta se há APK novo, sem esperar o intervalo diário:
+    // senão "versão mais recente" seria meia verdade.
+    void apk.conferir(true);
     // Em desenvolvimento o app roda direto do Metro, não de um pacote
     // publicado: não há o que buscar, e a API responde com erro em vez de
     // "em dia". Dizer isso é mais útil que mostrar a falha crua.
@@ -95,7 +101,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ profile, onSair 
         mensagem: erro instanceof Error ? erro.message : String(erro),
       });
     }
-  }, []);
+  }, [apk.conferir]);
 
   const ocupado = estado.fase === 'procurando' || estado.fase === 'baixando';
   const verificado = profile.source === 'google';
@@ -188,6 +194,17 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ profile, onSair 
       <Cartao>
         <TituloCartao icone="cloud-download-outline">Atualização</TituloCartao>
 
+        {apk.nova && (
+          <>
+            <Ajuda>
+              Saiu a versão {apk.nova} do app (você tem a {apk.instalada}). Ela precisa ser instalada
+              de novo, uma vez só: traz mudanças que a atualização automática não consegue levar. Seus
+              dados ficam.
+            </Ajuda>
+            <Botao rotulo={`Baixar a versão ${apk.nova}`} icone="download-outline" variante="action" onPress={baixarApk} />
+          </>
+        )}
+
         <Botao
           rotulo="Procurar atualizações"
           icone="refresh"
@@ -204,7 +221,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ profile, onSair 
           <View style={styles.linhaStatus}>
             <Ionicons name="checkmark-circle" size={18} color={COLORS.ink} />
             <Text style={[styles.status, styles.statusBom]}>
-              Você já está na versão mais recente.
+              {apk.nova ? 'Atualizações automáticas em dia. Falta só instalar a versão nova acima.' : 'Você já está na versão mais recente.'}
             </Text>
           </View>
         )}

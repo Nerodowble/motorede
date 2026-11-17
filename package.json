@@ -17,7 +17,7 @@
     "test:rotas": "tsx --test tests/rotas/rotas.test.mts tests/rotas/importacao.test.mts tests/rotas/rotaBiker.test.mts tests/rotas/pedagios.test.mts tests/rotas/carimboPessoal.test.mts",
     "rotas:importar": "tsx scripts/importar-rotas.mts",
     "test:manutencao": "tsx --test tests/manutencao/manutencao.test.mts",
-    "test:garagem": "tsx --test tests/garagem/garagem.test.mts"
+    "test:garagem": "tsx --test tests/garagem/garagem.test.mts tests/garagem/versaoApk.test.mts"
   },
   "overrides": {
     "react": "19.2.3",

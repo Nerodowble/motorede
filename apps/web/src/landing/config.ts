@@ -1,7 +1,7 @@
 /**
  * Endereços e versão usados pela página de divulgação (/baixar/).
  *
- * LINK DO APK — é o ÚNICO lugar para trocar.
+ * LINK DO APK — o ÚNICO lugar para trocar é packages/shared/src/domain/versaoApk.ts.
  *
  * O APK é distribuído por download direto, não pela Play Store, e nunca vai
  * para o git (é binário, pesado e muda a cada build). Ele fica anexado a uma
@@ -11,7 +11,8 @@
  * uma versão nova: basta publicar a release nova com o mesmo nome de arquivo.
  * Passo a passo em docs/desenvolvimento.md ("Página de divulgação").
  */
-export const LINK_APK = 'https://github.com/Nerodowble/motorede/releases/latest/download/MotoRede.apk';
+// Mora em packages/shared (versaoApk.ts): o app usa o mesmo link no aviso de APK novo.
+export { LINK_APK } from '@motorede/shared';
 
 /** Repositório público, citado no rodapé. */
 export const LINK_GITHUB = 'https://github.com/Nerodowble/motorede';

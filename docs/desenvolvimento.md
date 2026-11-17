@@ -247,8 +247,9 @@ npx eas-cli build --profile preview --platform android
   `vite.config.ts` tira dela o manifest e o registro do SW, e o
   `navigateFallbackDenylist` impede o SW do app de responder `/baixar` com
   o app.
-- **Link do APK:** constante `LINK_APK` em `apps/web/src/landing/config.ts`
-  (único lugar). A versão exibida vem de `apps/mobile/app.json` no build.
+- **Link do APK:** constante `LINK_APK` em
+  `packages/shared/src/domain/versaoApk.ts` (único lugar; a landing e o
+  aviso do app usam a mesma). A versão exibida vem de `apps/mobile/app.json` no build.
 - **Publicar um APK novo** (o APK nunca vai para o git):
   1. `npx eas-cli build --profile preview --platform android` em
      `apps/mobile` e baixe o `.apk` gerado.
@@ -261,6 +262,12 @@ npx eas-cli build --profile preview --platform android
   4. O link `releases/latest/download/MotoRede.apk` passa a entregar o novo
      arquivo sem mudar nada no código. Atualização só de JS segue por OTA e
      não precisa de release.
+  5. **A tag tem de ser a `version` do `app.json` com "v" na frente** (ex.:
+     `version` 0.5.0 → tag `v0.5.0`). O app compara a tag da release mais
+     recente com a versão instalada e, se for maior, avisa o piloto uma vez
+     ao abrir e mantém "Baixar a versão X" em Ajustes
+     (`hooks/useApkNovo.ts`). Suba a `version` antes do build: é ela que
+     separa APK velho de novo (política `appVersion` do runtime).
 
 ### Marca e ícones
 

@@ -43,6 +43,7 @@ import { useSocorro } from './src/hooks/useSocorro';
 import { storage } from './src/services/storage';
 import { apagarImagem, limparProgresso } from './src/services/capaMoto';
 import { DEV_ROOM_CODE } from './src/config';
+import { useApkNovo } from './src/hooks/useApkNovo';
 import { COLORS } from './src/theme';
 import { BarraAbas, Cabecalho, type Aba } from './src/components/BarraAbas';
 import { Botao } from './src/components/ui/Botao';
@@ -95,6 +96,8 @@ function Aplicativo() {
   const [garagem, setGaragem] = useState<Garagem>(GARAGEM_VAZIA);
   const [records, setRecords] = useState<MaintenanceRecord[]>([]);
   const [carregando, setCarregando] = useState(true);
+  // APK novo é raro (só mudança nativa): avisa uma vez por versão ao abrir.
+  useApkNovo({ avisarAoAbrir: true });
 
   // Tudo o que não é a tela Moto continua vendo "a moto": a que está em uso.
   const motorcycle = useMemo(() => motoAtiva(garagem), [garagem]);
