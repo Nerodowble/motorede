@@ -1419,14 +1419,19 @@ cada lugar em que esteve, um substituto para ao menos registrar que foi. Não
 - **Regra decidida pelo piloto:** o carimbo usa **só a localização atual**,
   pega na hora pelo GPS. Não dá para escolher o lugar no mapa nem carimbar
   depois — é isso que impede alguém de marcar que foi estando em outro lugar.
-  Só libera o carimbo de um monumento quando a posição atual está perto dele.
+  Só libera o carimbo de um monumento quando a posição atual está nas
+  proximidades dele.
 - **Coordenadas exatas levantadas (2026-11-17):** os 43 pontos vêm dos pinos
   do mapa oficial do site (Google My Maps "ROTA BIKERS"), conferidos no
   OpenStreetMap; 5 só com o pino oficial (37, 40, 41, 42, 43). O nº 10
   (Jaguarão) usa a loja onde se carimba, não o pino do Free Shop a ~1,6 km.
-  Falta definir o raio aceito.
-- O mapa oficial já tem os nº 45 (Empório Caconde, em construção) e 46
-  (Cervejaria Dolomitas), e marca o 44 como "pronto e carimbando": a lista do
-  app ainda é a do site de 2026-10-13.
+- **Decidido pelo piloto (2026-11-17):** basta estar **nas proximidades**, não
+  exatamente no local; quem comprova de verdade é a **foto**. E não é nada
+  oficial: é um check pessoal, para ele ter no app o registro de onde foi.
+  Raio sugerido: uns 2 km (cobre, por exemplo, o nº 10, cuja loja fica a
+  ~1,6 km do pino do monumento).
+- Lista atualizada pelo site em 2026-11-17: 43 e 44 passaram a carimbar; 45
+  (Empório Caconde, Caconde-SP) e 46 (Cervejaria Dolomitas, Tapejara-PR)
+  entraram em construção.
 - Foto tirada na hora (câmera, não galeria, pelo mesmo motivo do GPS).
 - Tudo no aparelho, como a garagem: sem banco de dados.

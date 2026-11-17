@@ -1,4 +1,4 @@
-// Monumentos da Rota Biker conforme monumentobikers.com.br, consultado em 2026-10-13.
+// Monumentos da Rota Biker conforme monumentobikers.com.br, consultado em 2026-11-17.
 // O nº 2 está "em atualização" no site e fica fora até ter local.
 // Coordenadas do local (2026-11-17): pinos do mapa oficial do site (Google My Maps
 // "ROTA BIKERS", mid=1ZHPck3Yykbhc8M1GYPrCcKf5pajiTvk), conferidos no OpenStreetMap.
@@ -49,6 +49,8 @@ export const MONUMENTOS_ROTA_BIKER: readonly MonumentoRotaBiker[] = [
   { numero: 40, nome: 'Quiosque Romano', cidade: 'Morro Redondo', uf: 'RS', pais: 'Brasil', lat: -31.51598, lng: -52.599415, situacao: 'em_construcao' },
   { numero: 41, nome: 'Rota 15', cidade: 'Casca', uf: 'RS', pais: 'Brasil', lat: -28.640074, lng: -51.938567, situacao: 'em_construcao' },
   { numero: 42, nome: 'Tapioca do Irmão Firmino', cidade: 'Cajá', uf: 'PB', pais: 'Brasil', lat: -7.168417, lng: -35.35096, situacao: 'em_construcao' },
-  { numero: 43, nome: 'Parada Route', cidade: 'São Miguel do Passa Quatro', uf: 'GO', pais: 'Brasil', lat: -17.070895, lng: -48.657036, situacao: 'em_construcao' },
-  { numero: 44, nome: 'Laranja Doce · Pão com Linguiça', cidade: 'Martinópolis', uf: 'SP', pais: 'Brasil', lat: -22.131556, lng: -51.168964, situacao: 'em_construcao' },
+  { numero: 43, nome: 'Parada Route', cidade: 'São Miguel do Passa Quatro', uf: 'GO', pais: 'Brasil', lat: -17.070895, lng: -48.657036, situacao: 'carimbando' },
+  { numero: 44, nome: 'Laranja Doce · Pão com Linguiça', cidade: 'Martinópolis', uf: 'SP', pais: 'Brasil', lat: -22.131556, lng: -51.168964, situacao: 'carimbando' },
+  { numero: 45, nome: 'Empório Caconde', cidade: 'Caconde', uf: 'SP', pais: 'Brasil', lat: -21.599687, lng: -46.638318, situacao: 'em_construcao' },
+  { numero: 46, nome: 'Cervejaria Dolomitas', cidade: 'Tapejara', uf: 'PR', pais: 'Brasil', lat: -23.74342, lng: -52.856471, situacao: 'em_construcao' },
 ];
