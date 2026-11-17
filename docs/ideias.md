@@ -1389,7 +1389,10 @@ Como fazer sem pagar nada (contas e limites em [contas-e-servicos.md](contas-e-s
     `/dados/pedagios-sp.json`; JSON e não código, para atualizar tarifa sem
     atualizar o app), montado por
     `scripts/montar-pedagios-sp.mts`. Moto paga em 154, é isenta (fonte
-    oficial) em 145, isenta por inferência em 27 e sem valor em 62. Sem valor:
+    oficial) em 145 e fica "A confirmar" em 89. Destas, 27 são isenção
+    provável sem fonte que a declare (Intervias, Raposo Castello, cabines de
+    Itu e Sorocaba, pórticos Ponto a Ponto): decidido mostrar "A confirmar",
+    não "isenta". As outras 62 não têm valor:
     Rodovias do Tietê, Ecovias Leste Paulista e Noroeste Paulista (sites
     bloqueiam leitura automática), pórticos free flow da Dutra (a RioSP só
     publica tarifa de carro) e Rodoanel Norte. Conferência por amostra contra

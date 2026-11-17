@@ -190,8 +190,9 @@ Tabela de praças com o valor para **moto**, por ora só de SP:
 `/dados/pedagios-sp.json` (tipo em `packages/shared/src/domain/pedagios.ts`,
 ideia 40). O app e a web baixam quando precisam; atualizar tarifa é só
 publicar a web, sem OTA. Uma praça por linha, para o diff mostrar o que mudou. Cada praça traz fonte, data da consulta e `situacaoMoto` (`paga`,
-`isenta`, `isenta-inferida`, `desconhecida`). Valor desconhecido fica `null`:
-a tela deve dizer "a confirmar", nunca calcular metade do carro.
+`isenta`, `a-confirmar`). Sem valor oficial, `motoReais` fica `null` e a tela
+diz "A confirmar", nunca calcula metade do carro. Isenção sem fonte que a
+declare (só deduzida) também é "A confirmar", com o motivo em `observacao`.
 
 Fica fora do cache do PWA (o `globPatterns` do Workbox não inclui `.json`):
 só baixa quem calcular uma viagem.

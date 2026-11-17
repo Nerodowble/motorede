@@ -14,12 +14,13 @@
 /**
  * - `paga`: a fonte publica o valor para moto.
  * - `isenta`: a fonte oficial diz que moto não paga.
- * - `isenta-inferida`: nenhuma fonte diz com todas as letras, mas a tabela
- *   oficial não tem categoria moto e o volume pago da ARTESP registra zero
- *   motos. Mostrar como isenta, com ressalva.
- * - `desconhecida`: não foi possível ler a tabela oficial.
+ * - `a-confirmar`: sem valor oficial para moto. Inclui as praças em que moto
+ *   provavelmente não paga (tabela sem categoria moto, volume da ARTESP com
+ *   zero motos), mas nenhuma fonte diz com todas as letras: decidido em
+ *   2026-11-17 mostrar "A confirmar" em vez de "isenta" nesses casos. O motivo
+ *   fica em `observacao`.
  */
-export type SituacaoMotoPedagio = 'paga' | 'isenta' | 'isenta-inferida' | 'desconhecida';
+export type SituacaoMotoPedagio = 'paga' | 'isenta' | 'a-confirmar';
 
 export interface PracaPedagio {
   /** Estável entre atualizações da tabela: uf-lote-praça-sentido. */
@@ -38,7 +39,7 @@ export interface PracaPedagio {
   lng: number | null;
   cobranca: 'cabine' | 'free-flow';
   situacaoMoto: SituacaoMotoPedagio;
-  /** Valor para moto em reais. 0 quando isenta; null quando desconhecido. */
+  /** Valor para moto em reais. 0 quando isenta; null quando a confirmar. */
   motoReais: number | null;
   /** Carro de passeio (categoria 1), só para conferência. */
   carroReais: number | null;

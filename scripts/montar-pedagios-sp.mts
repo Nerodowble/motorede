@@ -12,7 +12,9 @@
  * - A lista da ARTESP de 2025 repete praças que trocaram de operador no meio
  *   do ano (TEBE → Ecovias Noroeste; ViaOeste → Raposo Castello e Rota
  *   Sorocabana). Fica uma linha por rodovia + km + sentido, a mais completa.
- * - Moto zero sem frase oficial de isenção vira `isenta-inferida`.
+ * - Moto zero sem frase oficial de isenção vira `a-confirmar` (valor null),
+ *   com o motivo na observação. Decisão de 2026-11-17: não mostrar "isenta"
+ *   sem a fonte dizer.
  */
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -91,11 +93,15 @@ const pracas = [...porLugar.values(), ...semLugar].map((b) => {
   while (vistos.has(id)) id += '-2';
   vistos.add(id);
 
+  const provavelIsenta = b.tarifa_moto === 0 && inferida(b, nome);
   const situacaoMoto =
-    b.tarifa_moto == null ? 'desconhecida'
+    b.tarifa_moto == null || provavelIsenta ? 'a-confirmar'
     : b.tarifa_moto > 0 ? 'paga'
-    : inferida(b, nome) ? 'isenta-inferida'
     : 'isenta';
+  const observacao = [
+    provavelIsenta ? 'Provável isenção de moto, sem fonte oficial que diga com todas as letras.' : '',
+    b.observacao ? consertar(b.observacao) : '',
+  ].filter(Boolean).join(' ');
 
   return {
     id,
@@ -111,12 +117,12 @@ const pracas = [...porLugar.values(), ...semLugar].map((b) => {
     lng: b.lon,
     cobranca: b.cobranca,
     situacaoMoto,
-    motoReais: b.tarifa_moto,
+    motoReais: provavelIsenta ? null : b.tarifa_moto,
     carroReais: b.tarifa_cat1 || null,
     vigenciaDesde: b.vigencia_desde,
     fonte: b.fonte_url,
     consultadoEm: b.consultado_em,
-    ...(b.observacao ? { observacao: consertar(b.observacao) } : {}),
+    ...(observacao ? { observacao } : {}),
   };
 });
 
@@ -138,5 +144,5 @@ writeFileSync('apps/web/public/dados/pedagios-sp.json', saida, 'utf-8');
 const conta = (s: string) => pracas.filter((p) => p.situacaoMoto === s).length;
 console.log(
   `${brutos.length} linhas → ${pracas.length} praças por sentido: ` +
-  `paga ${conta('paga')}, isenta ${conta('isenta')}, isenta-inferida ${conta('isenta-inferida')}, desconhecida ${conta('desconhecida')}`
+  `paga ${conta('paga')}, isenta ${conta('isenta')}, a confirmar ${conta('a-confirmar')}`
 );

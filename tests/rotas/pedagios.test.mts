@@ -24,8 +24,9 @@ test('valor de moto só existe com fonte e nunca passa o do carro', () => {
       assert.ok(p.fonte, `${p.id} sem fonte`);
       if (p.carroReais) assert.ok(p.motoReais <= p.carroReais, `${p.id}: moto acima do carro`);
     }
-    if (p.situacaoMoto === 'isenta' || p.situacaoMoto === 'isenta-inferida') assert.equal(p.motoReais, 0, p.id);
-    if (p.situacaoMoto === 'desconhecida') assert.equal(p.motoReais, null, p.id);
+    if (p.situacaoMoto === 'isenta') assert.equal(p.motoReais, 0, p.id);
+    // "A confirmar" nunca carrega número: nem o zero da isenção provável.
+    if (p.situacaoMoto === 'a-confirmar') assert.equal(p.motoReais, null, p.id);
   }
 });
 
