@@ -1,5 +1,14 @@
 # Retomada rápida — 12/10/2026
 
+## Atalho — próximos passos (2026-11-17)
+
+- Planejar viagem e pedágios: lista com caixas de marcar em
+  [ideias.md, ideia 40 → "Próximos passos"](ideias.md#40-custo-da-viagem-e-paradas-para-abastecer).
+  Começar pelos 89 "a confirmar" de SP e pelo Paraná.
+- Auditoria da web no iPhone (2026-11-17): nenhum item corrigido ainda;
+  os primeiros são os dois do socorro (placa enviada a desconhecidos e
+  pedido de ajuda bloqueado no Safari).
+
 ## Estado e orientação do usuário
 
 - O usuário pediu encerrar o trabalho para economizar o limite do Codex. Esta

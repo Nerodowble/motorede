@@ -1358,9 +1358,53 @@ Teste real São Paulo → Foz do Iguaçu: 1.044 km, 12 h, 4 paradas com posto a
 100–300 m da pista, R$ 24,20 de pedágio em SP. Regras em
 `packages/shared/src/domain/planoViagem.ts`; API em `apps/web/api/viagem.ts`
 e `lugares.ts`; teste de ponta a ponta com a chave real em
-`scripts/testar-viagem.mts`. Falta: mapa desenhado na tela, preço médio da
-ANP, pedágios de outros estados e evitar falso pedágio quando a rota passa
-por baixo de um viaduto com praça (ex.: Rodoanel sobre a Castello).
+`scripts/testar-viagem.mts`. Sem mapa desenhado no app: a decisão de
+outubro é usar navegação externa (o "Abrir no Google Maps").
+
+### Próximos passos (marcar `[x]` ao concluir)
+
+O piloto testou em 2026-11-17 e aprovou; estes são os pontos para seguir.
+"A confirmar" = praça **de SP** sem valor de moto confirmado (89 de 388).
+Pedágio de outro estado ainda nem aparece: não está na tabela.
+
+**1. Completar os "a confirmar" de SP** (abrir o site da concessionária no
+navegador resolve a maioria; os sites bloqueiam leitura automática)
+- [ ] Rodovias do Tietê — 18 praças. Moto paga (volume ARTESP 2025); a tabela
+  do site só carrega no navegador.
+- [ ] Ecovias Noroeste Paulista — 24 (inclui as 6 da ex-TEBE). Moto paga;
+  Monte Alto e Pirangi viraram pórtico em 01/11/2026, Colina vira em 01/12.
+- [ ] Ecovias Leste Paulista (ex-Ecopistas) — 8. Moto pagava R$ 2,70–2,85 até
+  jun/2026; falta a tabela de jul/2026.
+- [ ] Arteris Intervias — 18. Tabela sem categoria moto: confirmar se é isenta.
+- [ ] Via Dutra, pórticos free flow — 10. A RioSP diz que moto paga metade,
+  mas só publica a tabela de carro (o simulador do site tem o valor).
+- [ ] Isenção provável sem fonte: Raposo Castello (Osasco, Barueri, Itapevi),
+  cabines de Itu e Sorocaba, pórticos Ponto a Ponto (Rota das Bandeiras e
+  Rota Mogiana) — 9 praças.
+- [ ] Rodoanel Norte — 2 pórticos novos, sem valores publicados.
+
+**2. Reconferir valores que vão mudar**
+- [ ] ViaPaulista: reajuste por volta de 23/11/2026.
+- [ ] Régis Bittencourt: nova concessionária (EPR) com deságio de ~22%.
+- [ ] Transbrasiliana: reajuste de 2026 suspenso; ver quando sair.
+- [ ] Anchieta-Imigrantes: free flow adiado, sem data.
+- [ ] Todo ano, depois do reajuste de julho de SP: refazer o levantamento
+  (`scripts/montar-pedagios-sp.mts`, passo a passo em docs/rotas.md).
+
+**3. Outros estados** (mesmo método: praças federais pela ANTT, estaduais
+pelos dados abertos da agência; uma tabela `pedagios-<uf>.json` por estado)
+- [ ] Paraná — primeiro: rotas para Foz e vários monumentos da Rota Biker.
+- [ ] Santa Catarina, Minas Gerais, Rio de Janeiro e Rio Grande do Sul.
+- [ ] Juntar as tabelas no cálculo (hoje só lê `/dados/pedagios-sp.json`) e
+  tirar o aviso "só SP" quando o trajeto estiver coberto.
+
+**4. Planejamento**
+- [ ] Falso pedágio sob viaduto (ex.: praça do Rodoanel contada na Castello):
+  usar o nome da via de cada trecho, que o openrouteservice pode devolver.
+- [ ] Preço médio da gasolina por estado (ANP, dados abertos semanais) como
+  sugestão no campo de preço.
+- [ ] Acompanhar o desligamento de `api.openrouteservice.org` (postos e busca
+  de reserva só existem lá).
 
 Pedido do piloto: um diferencial em Rotas. Ao escolher para onde vai, o app
 calcula a distância a partir de onde ele está e o gasto da viagem com base na
