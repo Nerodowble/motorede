@@ -15,6 +15,8 @@ export * from './domain/rotas.js';
 export * from './data/catalogoRotas.js';
 export * from './domain/rotaBiker.js';
 export * from './domain/carimboPessoal.js';
+export * from './domain/planoViagem.js';
+export * from './domain/buscaLugar.js';
 export * from './data/monumentosRotaBiker.js';
 // A tabela de pedágios é JSON servido pela web (/dados/pedagios-sp.json), não
 // código: aqui ficam só o tipo e o caminho.

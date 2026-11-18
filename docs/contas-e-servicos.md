@@ -22,6 +22,7 @@ plano gratuito que aguente o uso real, e entra nesta lista no mesmo dia.
 | **Expo / EAS** | builds do app Android e atualizações OTA (projeto `motorede`) | ⚠️ **willianvidallima (conta corporativa)**, diferente do resto | Free — número de builds/mês limitado, confira no painel | build novo só no mês seguinte; o app instalado continua funcionando |
 | **Google Cloud** | credencial OAuth do "Entrar com Google" | — | gratuito | login para de funcionar |
 | **Supabase** | projeto `motorede` criado, **ainda não usado** | — | Free — **pausa após 7 dias sem uso** | nada hoje |
+| **openrouteservice (HeiGIT)** | planejar viagem: traçado e distância (`/api/viagem`), postos na beira da estrada e reserva da busca de destino (`/api/lugares`). Desde 2026-11-17 | conta em account.heigit.org (cadastro: https://account.heigit.org/signup). Chave em `ORS_API_KEY` na Vercel e em `apps/web/.env.local` | Standard (gratuito): cota diária por serviço, confira no painel | "O serviço de rotas não respondeu"; o resto do app segue. ⚠️ Postos e busca de endereço só existem no endereço antigo (`api.openrouteservice.org`), que a HeiGIT anunciou que vai desligar: se cair, os postos passam a vir do Photon e a busca fica só no Photon |
 
 ## Sem conta (só usa)
 
@@ -32,6 +33,8 @@ plano gratuito que aguente o uso real, e entra nesta lista no mesmo dia.
 | **Web Push (VAPID)** | notificação do SOS no navegador | as chaves VAPID são geradas por nós (`npx web-push generate-vapid-keys`); não há conta |
 | **Push do Expo** | notificação do SOS no app | vem junto com o projeto do Expo |
 | **OpenStreetMap** | mapas | uso justo; sem chave |
+| **Photon (komoot)** | busca de destino ao digitar (direto do aparelho) e reserva para achar posto | público, sem chave, **uso justo**: em 2026-11-17 bloqueou o computador de teste depois de 12 consultas simultâneas. Nunca consultar em rajada; o servidor só o usa como reserva, uma vez por parada |
+| **Overpass (OpenStreetMap)** | ~~postos~~ — **não usar** | em 2026-11-17 os servidores públicos recusavam ou não respondiam; trocado pelo openrouteservice |
 
 ## Nos computadores de casa
 

@@ -115,6 +115,22 @@ completo, regras e exemplos em [plugins.md](plugins.md). Arquivo:
 | Plugin | `aguardar`, `entrar` | `plugin` + `chave` registrados em `MOTOREDE_PLUGINS` |
 | Plugin de IA | `aguardar` (recebe `tarefas`), `concluir` | `plugin` + `chave`, com `"tipo": "ia"` no registro |
 
+## `POST /api/viagem`
+
+Planejar viagem (ideia 40). Corpo: `{ origem: {lat,lng}, destino: {lat,lng}, autonomiaKm?: number }`.
+Resposta (`RotaViagem` em `packages/shared/src/domain/planoViagem.ts`):
+`{ distanciaKm, duracaoH, geometria: [lng,lat][], paradas: [{ km, ponto, posto: { nome, lat, lng, distanciaKm } | null }] }`.
+Traçado pelo openrouteservice (`ORS_API_KEY`, endereço `api.heigit.org`); para cada parada, o
+posto mais adiante nos 30 km de estrada antes dela (POIs do openrouteservice, categoria 596,
+até 500 m da pista), com o Photon de reserva. Combustível, pedágios (tabela `/dados/pedagios-sp.json`)
+e óleo são calculados no cliente. Erros: 400 (sem origem/destino), 422 (sem estrada perto),
+502 (serviço de rotas fora), 503 (chave não configurada).
+
+## `GET /api/lugares?q=&lat=&lng=`
+
+Reserva da busca de destino, quando o Photon não responde em 5 s: busca de endereços do
+openrouteservice. Resposta `{ lugares: LugarEncontrado[] }` (`buscaLugar.ts`).
+
 ## `POST /api/ficha-moto`
 
 Ficha técnica do modelo pesquisada pelo plugin de IA. Corpo

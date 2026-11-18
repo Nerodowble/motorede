@@ -333,7 +333,8 @@ function Aplicativo() {
             onDispensar={socorro.dispensarChamado}
           />
         )}
-        {aba === 'rotas' && <RoutesScreen motorcycle={motorcycle} />}
+        {aba === 'rotas' && <RoutesScreen motorcycle={motorcycle}
+          proximaTrocaOleoKm={maintenance.find((i) => i.category === 'engine_oil')?.nextChangeKm ?? null} />}
         {aba === 'moto' && (
           <MyMotorcycleScreen
             motorcycle={motorcycle}

@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Route, ArrowLeft, ArrowUpRight, Bookmark, Check, Compass, ExternalLink, Fuel, MapPin, Search, SlidersHorizontal, Stamp, X } from 'lucide-react';
+import { Navigation, Route, ArrowLeft, ArrowUpRight, Bookmark, Check, Compass, ExternalLink, Fuel, MapPin, Search, SlidersHorizontal, Stamp, X } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { useRotasSalvas } from '../hooks/useRotasSalvas';
 import { CartaoMonumento, RotaBikerLista } from '../components/RotaBikerLista';
+import { PlanejarViagem } from '../components/PlanejarViagem';
 import {
   CATALOGO_ROTAS, AVISO_CATALOGO_ROTAS, AVISO_CUSTO_ROTAS, AVISO_NAVEGACAO_ROTAS,
   ROTULOS_EXTENSAO, TAMANHO_LOTE_ROTAS, ROTULOS_PAVIMENTO, ROTULOS_CURVAS, buscarRotas, estimarCustoRota,
@@ -32,7 +33,7 @@ function LinkExterno({ href, children }: { href: string; children: React.ReactNo
 type Escolhas = Pick<FiltrosRotas, 'regiao' | 'extensao' | 'pavimento' | 'curvas'>;
 const SEM_FILTROS: Escolhas = { regiao: '', extensao: '', pavimento: '', curvas: '' };
 const REGIOES = Object.fromEntries([...new Set(CATALOGO_ROTAS.map(r => r.regiao))].sort().map(r => [r, r]));
-const ABAS = ['explorar', 'salvas', 'rotabiker'] as const;
+const ABAS = ['viagem', 'explorar', 'salvas', 'rotabiker'] as const;
 type Aba = typeof ABAS[number];
 const chip = 'min-h-12 px-4 py-2 rounded-full border inline-flex items-center justify-center gap-2 text-sm font-semibold transition-colors';
 
@@ -61,12 +62,12 @@ function Escolha({ titulo, valor, opcoes, mudar }: { titulo: string; valor: stri
   return <label className="block space-y-2 text-sm text-ink-muted"><span>{titulo}</span><select className={campo} value={valor} onChange={e => mudar(e.target.value)}><option value="">Qualquer</option>{Object.entries(opcoes).map(([id, nome]) => <option key={id} value={id}>{nome}</option>)}</select></label>;
 }
 
-export function RoutesView({ motorcycle, origem: origemInicial }: { motorcycle: Motorcycle | null; origem: GeoPoint | null }) {
+export function RoutesView({ motorcycle, origem: origemInicial, proximaTrocaOleoKm = null }: { motorcycle: Motorcycle | null; origem: GeoPoint | null; proximaTrocaOleoKm?: number | null }) {
   const [busca, setBusca] = useState('');
   const [filtros, setFiltros] = useState<Escolhas>(SEM_FILTROS);
   const [rascunho, setRascunho] = useState<Escolhas>(SEM_FILTROS);
   const [filtrando, setFiltrando] = useState(false);
-  const [modo, setModo] = useState<Aba>('explorar');
+  const [modo, setModo] = useState<Aba>('viagem');
   const [ordem, setOrdem] = useState<NonNullable<FiltrosRotas['ordem']>>('nome');
   const [limite, setLimite] = useState(TAMANHO_LOTE_ROTAS);
   const [aberta, setAberta] = useState<string | null>(null);
@@ -177,12 +178,13 @@ export function RoutesView({ motorcycle, origem: origemInicial }: { motorcycle: 
         </div>
     </div>;
   };
-  return <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
+  return <div className="max-w-5xl mx-auto px-4 pt-6 pb-28 sm:pb-24 space-y-6">
     <header className="space-y-3"><p className="text-xs font-bold uppercase tracking-[0.2em] text-ink-muted">A estrada começa aqui</p><h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">Encontre sua próxima rota</h1><p className="text-ink-muted">Descubra estradas, guarde seus passeios e planeje a saída.</p></header>
-    <div role="tablist" aria-label="Coleção de rotas" className="flex border-b border-line gap-6">
-      {ABAS.map(tab => <button key={tab} id={`aba-rotas-${tab}`} role="tab" tabIndex={modo === tab ? 0 : -1} onKeyDown={e => { if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) { e.preventDefault(); const i = ABAS.indexOf(tab); const proxima = ABAS[e.key === 'Home' ? 0 : e.key === 'End' ? ABAS.length - 1 : (i + (e.key === 'ArrowRight' ? 1 : ABAS.length - 1)) % ABAS.length]; setModo(proxima); document.getElementById(`aba-rotas-${proxima}`)?.focus(); } }} aria-selected={modo === tab} aria-controls="resultados-rotas" className={`min-h-14 inline-flex items-center gap-2 border-b-2 font-bold ${modo === tab ? 'border-brand text-ink' : 'border-transparent text-ink-muted'}`} onClick={() => setModo(tab)}>{tab === 'explorar' ? <Compass size={20} aria-hidden="true" /> : tab === 'salvas' ? <Bookmark size={20} aria-hidden="true" /> : <Stamp size={20} aria-hidden="true" />}{tab === 'explorar' ? 'Explorar' : tab === 'salvas' ? `Salvas · ${totalSalvas}` : 'Rota Biker'}</button>)}
+    <div role="tablist" aria-label="Coleção de rotas" className="flex border-b border-line gap-5 overflow-x-auto">
+      {ABAS.map(tab => <button key={tab} id={`aba-rotas-${tab}`} role="tab" tabIndex={modo === tab ? 0 : -1} onKeyDown={e => { if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) { e.preventDefault(); const i = ABAS.indexOf(tab); const proxima = ABAS[e.key === 'Home' ? 0 : e.key === 'End' ? ABAS.length - 1 : (i + (e.key === 'ArrowRight' ? 1 : ABAS.length - 1)) % ABAS.length]; setModo(proxima); document.getElementById(`aba-rotas-${proxima}`)?.focus(); } }} aria-selected={modo === tab} aria-controls="resultados-rotas" className={`min-h-14 shrink-0 inline-flex items-center gap-2 border-b-2 font-bold whitespace-nowrap ${modo === tab ? 'border-brand text-ink' : 'border-transparent text-ink-muted'}`} onClick={() => setModo(tab)}>{tab === 'viagem' ? <Navigation size={20} aria-hidden="true" /> : tab === 'explorar' ? <Compass size={20} aria-hidden="true" /> : tab === 'salvas' ? <Bookmark size={20} aria-hidden="true" /> : <Stamp size={20} aria-hidden="true" />}{tab === 'viagem' ? 'Viagem' : tab === 'explorar' ? 'Explorar' : tab === 'salvas' ? `Salvas · ${totalSalvas}` : 'Rota Biker'}</button>)}
     </div>
-    {modo === 'rotabiker' ? <section id="resultados-rotas" role="tabpanel" aria-labelledby="aba-rotas-rotabiker"><RotaBikerLista origem={origem} localizando={localizando} localizar={localizar} />{erro && <p role="alert" className="text-sm text-danger mt-4">{erro}</p>}</section> : <>
+    {modo === 'viagem' ? <section id="resultados-rotas" role="tabpanel" aria-labelledby="aba-rotas-viagem"><PlanejarViagem moto={motorcycle} proximaTrocaOleoKm={proximaTrocaOleoKm} origem={origem} /></section> :
+    modo === 'rotabiker' ? <section id="resultados-rotas" role="tabpanel" aria-labelledby="aba-rotas-rotabiker"><RotaBikerLista origem={origem} localizando={localizando} localizar={localizar} />{erro && <p role="alert" className="text-sm text-danger mt-4">{erro}</p>}</section> : <>
     <section className="space-y-4" aria-label="Encontrar rotas">
       <div className="flex flex-wrap sm:flex-nowrap gap-3"><label className="flex-1 min-w-52 relative"><span className="sr-only">Buscar rota por nome, cidade ou estado</span><Search aria-hidden="true" size={20} className="absolute left-4 top-4 text-ink-muted" /><input className={`${campo} pl-12`} value={busca} onChange={e => setBusca(e.target.value)} placeholder="Busque uma rota ou cidade" type="search" /></label><button className={link} onClick={() => { setRascunho({ ...filtros }); setFiltrando(true); }}><SlidersHorizontal size={18} aria-hidden="true" />Filtros{ativos.length ? ` · ${ativos.length}` : ''}</button></div>
       <div className="flex flex-wrap gap-2">

@@ -3,6 +3,7 @@ import { FlatList, Linking, Modal, Pressable, ScrollView, StyleSheet, Switch, Te
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRotasSalvas } from '../hooks/useRotasSalvas';
 import { CartaoMonumento, RotaBikerLista } from '../components/RotaBikerLista';
+import { PlanejarViagem } from '../components/PlanejarViagem';
 import * as Location from 'expo-location';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import {
@@ -41,16 +42,16 @@ function Opcoes({ rotulo, valor, mudar, opcoes }: {
 
 type Escolhas = Pick<FiltrosRotas, 'regiao' | 'extensao' | 'pavimento' | 'curvas'>;
 type ItemRota = ReturnType<typeof buscarRotas>[number];
-const ABAS = ['explorar', 'salvas', 'rotabiker'] as const;
+const ABAS = ['viagem', 'explorar', 'salvas', 'rotabiker'] as const;
 const SEM_FILTROS: Escolhas = { regiao: '', extensao: '', pavimento: '', curvas: '' };
 const REGIOES = Object.fromEntries([...new Set(CATALOGO_ROTAS.map(r => r.regiao))].sort().map(r => [r, r]));
 
-export function RoutesScreen({ motorcycle }: { motorcycle: Motorcycle | null }) {
+export function RoutesScreen({ motorcycle, proximaTrocaOleoKm = null }: { motorcycle: Motorcycle | null; proximaTrocaOleoKm?: number | null }) {
   const [busca, setBusca] = useState('');
   const [filtros, setFiltros] = useState<Escolhas>(SEM_FILTROS);
   const [rascunho, setRascunho] = useState<Escolhas>(SEM_FILTROS);
   const [filtrando, setFiltrando] = useState(false);
-  const [modo, setModo] = useState<typeof ABAS[number]>('explorar');
+  const [modo, setModo] = useState<typeof ABAS[number]>('viagem');
   const [ordem, setOrdem] = useState<NonNullable<FiltrosRotas['ordem']>>('nome');
   const [limite, setLimite] = useState(TAMANHO_LOTE_ROTAS);
   const [aberta, setAberta] = useState<string | null>(null);
@@ -177,8 +178,8 @@ export function RoutesScreen({ motorcycle }: { motorcycle: Motorcycle | null }) 
     <TituloTela sobrelinha="A ESTRADA COMEÇA AQUI" titulo="Encontre sua próxima rota" descricao="Descubra estradas, guarde seus passeios e planeje a saída." />
     <View style={styles.abas}>
       {ABAS.map(tab => <Pressable key={tab} accessibilityRole="tab" accessibilityState={{ selected: modo === tab }} onPress={() => setModo(tab)} style={[styles.aba, modo === tab && styles.abaAtiva]}>
-        <Ionicons name={tab === 'explorar' ? 'compass-outline' : tab === 'salvas' ? 'bookmark-outline' : 'ribbon-outline'} size={20} color={modo === tab ? COLORS.ink : COLORS.inkMuted} />
-        <Text style={TIPO.corpo}>{tab === 'explorar' ? 'Explorar' : tab === 'salvas' ? `Salvas · ${totalSalvas}` : 'Rota Biker'}</Text>
+        <Ionicons name={tab === 'viagem' ? 'navigate-outline' : tab === 'explorar' ? 'compass-outline' : tab === 'salvas' ? 'bookmark-outline' : 'ribbon-outline'} size={20} color={modo === tab ? COLORS.ink : COLORS.inkMuted} />
+        <Text style={[TIPO.apoio, modo === tab && { color: COLORS.ink }]} numberOfLines={1}>{tab === 'viagem' ? 'Viagem' : tab === 'explorar' ? 'Explorar' : tab === 'salvas' ? `Salvas · ${totalSalvas}` : 'Rota Biker'}</Text>
       </Pressable>)}
     </View>
   </>;
@@ -205,7 +206,8 @@ export function RoutesScreen({ motorcycle }: { motorcycle: Motorcycle | null }) 
   </View>;
 
   return <View style={{ flex: 1 }}>
-    {modo === 'rotabiker' ? <RotaBikerLista cabecalho={<View style={styles.cabecalho}>{topo}{erro !== '' && <Text style={estilosBase.erro} accessibilityRole="alert">{erro}</Text>}</View>}
+    {modo === 'viagem' ? <PlanejarViagem cabecalho={<View style={styles.cabecalho}>{topo}</View>} moto={motorcycle} proximaTrocaOleoKm={proximaTrocaOleoKm} /> :
+    modo === 'rotabiker' ? <RotaBikerLista cabecalho={<View style={styles.cabecalho}>{topo}{erro !== '' && <Text style={estilosBase.erro} accessibilityRole="alert">{erro}</Text>}</View>}
       origem={origem} localizando={localizando} localizar={() => void localizar()} abrir={url => void abrir(url)} /> :
     <FlatList<ItemRota> ref={lista} data={visiveis} keyExtractor={({ rota }) => rota.id} keyboardShouldPersistTaps="handled"
       contentContainerStyle={styles.lista} initialNumToRender={6} maxToRenderPerBatch={8} windowSize={5}
@@ -258,7 +260,8 @@ const styles = StyleSheet.create({
   lista: { padding: ESPACO.lg, paddingBottom: ESPACO.xxl },
   cabecalho: { gap: ESPACO.lg, paddingBottom: ESPACO.lg },
   abas: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: COLORS.line },
-  aba: { flex: 1, minHeight: ALVO.botao, gap: ESPACO.sm, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', borderBottomWidth: 3, borderBottomColor: 'transparent' },
+  // Quatro abas: ícone em cima do texto, para caber em celular de 360 dp.
+  aba: { flex: 1, minHeight: ALVO.botao, gap: 2, paddingVertical: ESPACO.xs, justifyContent: 'center', alignItems: 'center', borderBottomWidth: 3, borderBottomColor: 'transparent' },
   abaAtiva: { borderBottomColor: COLORS.brand },
   marcador: { minWidth: ALVO.min, minHeight: ALVO.min, alignItems: 'center', justifyContent: 'center' },
   selo: { backgroundColor: COLORS.elevated, padding: ESPACO.md, borderRadius: RAIO.md },

@@ -1349,7 +1349,18 @@ usada.
 
 ## 40. Custo da viagem e paradas para abastecer
 
-**Status (2026-11-17):** em aberto.
+**Status (2026-11-17):** primeira versão feita no app e na web — aba **Viagem** em
+Rotas. Destino digitado (Photon, reserva no openrouteservice), saída da
+posição de agora, distância e tempo, combustível, pedágios de SP praça a
+praça, troca de óleo (vencida, durante a viagem ou depois), paradas com posto
+na beira da estrada e "Abrir no Google Maps" com os postos como paradas.
+Teste real São Paulo → Foz do Iguaçu: 1.044 km, 12 h, 4 paradas com posto a
+100–300 m da pista, R$ 24,20 de pedágio em SP. Regras em
+`packages/shared/src/domain/planoViagem.ts`; API em `apps/web/api/viagem.ts`
+e `lugares.ts`; teste de ponta a ponta com a chave real em
+`scripts/testar-viagem.mts`. Falta: mapa desenhado na tela, preço médio da
+ANP, pedágios de outros estados e evitar falso pedágio quando a rota passa
+por baixo de um viaduto com praça (ex.: Rodoanel sobre a Castello).
 
 Pedido do piloto: um diferencial em Rotas. Ao escolher para onde vai, o app
 calcula a distância a partir de onde ele está e o gasto da viagem com base na

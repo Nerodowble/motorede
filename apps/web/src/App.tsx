@@ -450,7 +450,8 @@ export default function App() {
 
           
 
-          {activeTab === 'routes' && <RoutesView motorcycle={motorcycle} origem={userCoords} />}
+          {activeTab === 'routes' && <RoutesView motorcycle={motorcycle} origem={userCoords}
+            proximaTrocaOleoKm={maintenance.find((i) => i.category === 'engine_oil')?.nextChangeKm ?? null} />}
 
           {activeTab === 'motorcycle' && (
             <MyMotorcycleView
